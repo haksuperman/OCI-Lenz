@@ -5,7 +5,15 @@
       "status": "pending"
     },
     {
+      "dir": "2-reference-layout",
+      "status": "pending"
+    },
+    {
       "dir": "1-oci-diagrams",
+      "status": "pending"
+    },
+    {
+      "dir": "3-service-map",
       "status": "pending"
     }
   ]

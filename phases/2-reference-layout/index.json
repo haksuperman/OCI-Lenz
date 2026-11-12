@@ -1,0 +1,1 @@
+{"project":"OCI-Lenz","phase":"2-reference-layout","steps":[{"step":0,"name":"synthetic-reference-layout","status":"pending","ac":[["python3","-m","unittest","discover","-s","tests","-v"]]}]}

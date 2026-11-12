@@ -1,0 +1,2020 @@
+{
+  "version": 1,
+  "scope": {
+    "region": "sample-region",
+    "compartments": [
+      "synthetic-compartment-1",
+      "synthetic-compartment-2",
+      "synthetic-compartment-3",
+      "synthetic-compartment-4"
+    ]
+  },
+  "presentation": {
+    "groups": [
+      {
+        "label": "Service A",
+        "vcn_ids": [
+          "s1-vcn",
+          "s2-vcn"
+        ]
+      },
+      {
+        "label": "Service B",
+        "vcn_ids": [
+          "s3-vcn"
+        ]
+      },
+      {
+        "label": "Service C",
+        "vcn_ids": [
+          "s4-vcn"
+        ]
+      },
+      {
+        "label": "Shared services",
+        "role": "shared",
+        "vcn_ids": [
+          "s5-vcn"
+        ]
+      }
+    ]
+  },
+  "resources": [
+    {
+      "id": "s1-vcn",
+      "kind": "vcn",
+      "name": "s1-Vcn",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-public",
+      "kind": "subnet",
+      "name": "s1-Public",
+      "vcn_id": "s1-vcn",
+      "public": true,
+      "route_table_id": "s1-public-rt",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-private",
+      "kind": "subnet",
+      "name": "s1-Private",
+      "vcn_id": "s1-vcn",
+      "public": false,
+      "route_table_id": "s1-private-rt",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-nat",
+      "kind": "nat",
+      "name": "s1-Nat",
+      "vcn_id": "s1-vcn",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-internet",
+      "kind": "internet",
+      "name": "s1-Internet",
+      "vcn_id": "s1-vcn",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-service",
+      "kind": "service",
+      "name": "s1-Service",
+      "vcn_id": "s1-vcn",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-app-nsg",
+      "kind": "nsg",
+      "name": "s1-App Nsg",
+      "vcn_id": "s1-vcn",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-private-rt",
+      "kind": "route",
+      "name": "s1-Private Rt",
+      "vcn_id": "s1-vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "s1-nat"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-public-rt",
+      "kind": "route",
+      "name": "s1-Public Rt",
+      "vcn_id": "s1-vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "s1-internet"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-lb",
+      "kind": "lb",
+      "name": "s1-Lb",
+      "subnet_ids": [
+        "s1-public"
+      ],
+      "nsg_ids": [
+        "s1-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-backend-set",
+      "kind": "backend_set",
+      "name": "s1-Backend Set",
+      "lb_id": "s1-lb",
+      "backends": [
+        {
+          "ip_address": "10.0.1.10",
+          "port": 8080
+        },
+        {
+          "ip_address": "10.0.1.11",
+          "port": 8080
+        }
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-compute",
+      "kind": "compute",
+      "name": "s1-Compute",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-vnic",
+      "kind": "vnic",
+      "name": "s1-Vnic",
+      "instance_id": "s1-compute",
+      "subnet_id": "s1-private",
+      "vcn_id": "s1-vcn",
+      "private_ips": [
+        "10.0.1.10"
+      ],
+      "nsg_ids": [
+        "s1-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-compute-2",
+      "kind": "compute",
+      "name": "s1-Compute 2",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s1-vnic-2",
+      "kind": "vnic",
+      "name": "s1-VNIC 2",
+      "instance_id": "s1-compute-2",
+      "subnet_id": "s1-private",
+      "vcn_id": "s1-vcn",
+      "private_ips": [
+        "10.0.1.11"
+      ],
+      "nsg_ids": [
+        "s1-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "s2-vcn",
+      "kind": "vcn",
+      "name": "s2-Vcn",
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-public",
+      "kind": "subnet",
+      "name": "s2-Public",
+      "vcn_id": "s2-vcn",
+      "public": true,
+      "route_table_id": "s2-public-rt",
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-private",
+      "kind": "subnet",
+      "name": "s2-Private",
+      "vcn_id": "s2-vcn",
+      "public": false,
+      "route_table_id": "s2-private-rt",
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-nat",
+      "kind": "nat",
+      "name": "s2-Nat",
+      "vcn_id": "s2-vcn",
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-internet",
+      "kind": "internet",
+      "name": "s2-Internet",
+      "vcn_id": "s2-vcn",
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-service",
+      "kind": "service",
+      "name": "s2-Service",
+      "vcn_id": "s2-vcn",
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-app-nsg",
+      "kind": "nsg",
+      "name": "s2-App Nsg",
+      "vcn_id": "s2-vcn",
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-private-rt",
+      "kind": "route",
+      "name": "s2-Private Rt",
+      "vcn_id": "s2-vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "s2-nat"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-public-rt",
+      "kind": "route",
+      "name": "s2-Public Rt",
+      "vcn_id": "s2-vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "s2-internet"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-lb",
+      "kind": "lb",
+      "name": "s2-Lb",
+      "subnet_ids": [
+        "s2-public"
+      ],
+      "nsg_ids": [
+        "s2-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-backend-set",
+      "kind": "backend_set",
+      "name": "s2-Backend Set",
+      "lb_id": "s2-lb",
+      "backends": [
+        {
+          "ip_address": "10.0.1.10",
+          "port": 8080
+        },
+        {
+          "ip_address": "10.0.1.11",
+          "port": 8080
+        }
+      ],
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-compute",
+      "kind": "compute",
+      "name": "s2-Compute",
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-vnic",
+      "kind": "vnic",
+      "name": "s2-Vnic",
+      "instance_id": "s2-compute",
+      "subnet_id": "s2-private",
+      "vcn_id": "s2-vcn",
+      "private_ips": [
+        "10.0.1.10"
+      ],
+      "nsg_ids": [
+        "s2-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-compute-2",
+      "kind": "compute",
+      "name": "s2-Compute 2",
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s2-vnic-2",
+      "kind": "vnic",
+      "name": "s2-VNIC 2",
+      "instance_id": "s2-compute-2",
+      "subnet_id": "s2-private",
+      "vcn_id": "s2-vcn",
+      "private_ips": [
+        "10.0.1.11"
+      ],
+      "nsg_ids": [
+        "s2-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-2"
+    },
+    {
+      "id": "s3-vcn",
+      "kind": "vcn",
+      "name": "s3-Vcn",
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-public",
+      "kind": "subnet",
+      "name": "s3-Public",
+      "vcn_id": "s3-vcn",
+      "public": true,
+      "route_table_id": "s3-public-rt",
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-private",
+      "kind": "subnet",
+      "name": "s3-Private",
+      "vcn_id": "s3-vcn",
+      "public": false,
+      "route_table_id": "s3-private-rt",
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-nat",
+      "kind": "nat",
+      "name": "s3-Nat",
+      "vcn_id": "s3-vcn",
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-internet",
+      "kind": "internet",
+      "name": "s3-Internet",
+      "vcn_id": "s3-vcn",
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-service",
+      "kind": "service",
+      "name": "s3-Service",
+      "vcn_id": "s3-vcn",
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-app-nsg",
+      "kind": "nsg",
+      "name": "s3-App Nsg",
+      "vcn_id": "s3-vcn",
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-private-rt",
+      "kind": "route",
+      "name": "s3-Private Rt",
+      "vcn_id": "s3-vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "s3-nat"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-public-rt",
+      "kind": "route",
+      "name": "s3-Public Rt",
+      "vcn_id": "s3-vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "s3-internet"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-lb",
+      "kind": "lb",
+      "name": "s3-Lb",
+      "subnet_ids": [
+        "s3-public"
+      ],
+      "nsg_ids": [
+        "s3-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-backend-set",
+      "kind": "backend_set",
+      "name": "s3-Backend Set",
+      "lb_id": "s3-lb",
+      "backends": [
+        {
+          "ip_address": "10.0.1.10",
+          "port": 8080
+        },
+        {
+          "ip_address": "10.0.1.11",
+          "port": 8080
+        }
+      ],
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-compute",
+      "kind": "compute",
+      "name": "s3-Compute",
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-vnic",
+      "kind": "vnic",
+      "name": "s3-Vnic",
+      "instance_id": "s3-compute",
+      "subnet_id": "s3-private",
+      "vcn_id": "s3-vcn",
+      "private_ips": [
+        "10.0.1.10"
+      ],
+      "nsg_ids": [
+        "s3-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-compute-2",
+      "kind": "compute",
+      "name": "s3-Compute 2",
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s3-vnic-2",
+      "kind": "vnic",
+      "name": "s3-VNIC 2",
+      "instance_id": "s3-compute-2",
+      "subnet_id": "s3-private",
+      "vcn_id": "s3-vcn",
+      "private_ips": [
+        "10.0.1.11"
+      ],
+      "nsg_ids": [
+        "s3-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-3"
+    },
+    {
+      "id": "s4-vcn",
+      "kind": "vcn",
+      "name": "s4-Vcn",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-public",
+      "kind": "subnet",
+      "name": "s4-Public",
+      "vcn_id": "s4-vcn",
+      "public": true,
+      "route_table_id": "s4-public-rt",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-private",
+      "kind": "subnet",
+      "name": "s4-Private",
+      "vcn_id": "s4-vcn",
+      "public": false,
+      "route_table_id": "s4-private-rt",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-nat",
+      "kind": "nat",
+      "name": "s4-Nat",
+      "vcn_id": "s4-vcn",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-internet",
+      "kind": "internet",
+      "name": "s4-Internet",
+      "vcn_id": "s4-vcn",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-service",
+      "kind": "service",
+      "name": "s4-Service",
+      "vcn_id": "s4-vcn",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-app-nsg",
+      "kind": "nsg",
+      "name": "s4-App Nsg",
+      "vcn_id": "s4-vcn",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-private-rt",
+      "kind": "route",
+      "name": "s4-Private Rt",
+      "vcn_id": "s4-vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "s4-nat"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-public-rt",
+      "kind": "route",
+      "name": "s4-Public Rt",
+      "vcn_id": "s4-vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "s4-internet"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-lb",
+      "kind": "lb",
+      "name": "s4-Lb",
+      "subnet_ids": [
+        "s4-public"
+      ],
+      "nsg_ids": [
+        "s4-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-backend-set",
+      "kind": "backend_set",
+      "name": "s4-Backend Set",
+      "lb_id": "s4-lb",
+      "backends": [
+        {
+          "ip_address": "10.0.1.10",
+          "port": 8080
+        },
+        {
+          "ip_address": "10.0.1.11",
+          "port": 8080
+        }
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-compute",
+      "kind": "compute",
+      "name": "s4-Compute",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-vnic",
+      "kind": "vnic",
+      "name": "s4-Vnic",
+      "instance_id": "s4-compute",
+      "subnet_id": "s4-private",
+      "vcn_id": "s4-vcn",
+      "private_ips": [
+        "10.0.1.10"
+      ],
+      "nsg_ids": [
+        "s4-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-compute-2",
+      "kind": "compute",
+      "name": "s4-Compute 2",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s4-vnic-2",
+      "kind": "vnic",
+      "name": "s4-VNIC 2",
+      "instance_id": "s4-compute-2",
+      "subnet_id": "s4-private",
+      "vcn_id": "s4-vcn",
+      "private_ips": [
+        "10.0.1.11"
+      ],
+      "nsg_ids": [
+        "s4-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-vcn",
+      "kind": "vcn",
+      "name": "s5-Vcn",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-public",
+      "kind": "subnet",
+      "name": "s5-Public",
+      "vcn_id": "s5-vcn",
+      "public": true,
+      "route_table_id": "s5-public-rt",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-private",
+      "kind": "subnet",
+      "name": "s5-Private",
+      "vcn_id": "s5-vcn",
+      "public": false,
+      "route_table_id": "s5-private-rt",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-nat",
+      "kind": "nat",
+      "name": "s5-Nat",
+      "vcn_id": "s5-vcn",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-internet",
+      "kind": "internet",
+      "name": "s5-Internet",
+      "vcn_id": "s5-vcn",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-service",
+      "kind": "service",
+      "name": "s5-Service",
+      "vcn_id": "s5-vcn",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-app-nsg",
+      "kind": "nsg",
+      "name": "s5-App Nsg",
+      "vcn_id": "s5-vcn",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-private-rt",
+      "kind": "route",
+      "name": "s5-Private Rt",
+      "vcn_id": "s5-vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "s5-nat"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-public-rt",
+      "kind": "route",
+      "name": "s5-Public Rt",
+      "vcn_id": "s5-vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "s5-internet"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-lb",
+      "kind": "lb",
+      "name": "s5-Lb",
+      "subnet_ids": [
+        "s5-public"
+      ],
+      "nsg_ids": [
+        "s5-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-backend-set",
+      "kind": "backend_set",
+      "name": "s5-Backend Set",
+      "lb_id": "s5-lb",
+      "backends": [
+        {
+          "ip_address": "10.0.1.10",
+          "port": 8080
+        },
+        {
+          "ip_address": "10.0.1.11",
+          "port": 8080
+        }
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-compute",
+      "kind": "compute",
+      "name": "s5-Compute",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-vnic",
+      "kind": "vnic",
+      "name": "s5-Vnic",
+      "instance_id": "s5-compute",
+      "subnet_id": "s5-private",
+      "vcn_id": "s5-vcn",
+      "private_ips": [
+        "10.0.1.10"
+      ],
+      "nsg_ids": [
+        "s5-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-compute-2",
+      "kind": "compute",
+      "name": "s5-Compute 2",
+      "compartment_id": "synthetic-compartment-4"
+    },
+    {
+      "id": "s5-vnic-2",
+      "kind": "vnic",
+      "name": "s5-VNIC 2",
+      "instance_id": "s5-compute-2",
+      "subnet_id": "s5-private",
+      "vcn_id": "s5-vcn",
+      "private_ips": [
+        "10.0.1.11"
+      ],
+      "nsg_ids": [
+        "s5-app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-4"
+    }
+  ],
+  "coverage": [
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "backend_set",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "compute",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "internet",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "lb",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "nat",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "nsg",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "route",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "service",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "subnet",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "vcn",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "vnic",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "backend_set",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "compute",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "internet",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "lb",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "nat",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "nsg",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "route",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "service",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "subnet",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "vcn",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-2",
+      "service": "vnic",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "backend_set",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "compute",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "internet",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "lb",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "nat",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "nsg",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "route",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "service",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "subnet",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "vcn",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-3",
+      "service": "vnic",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "backend_set",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "compute",
+      "status": "ok",
+      "count": 4,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "internet",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "lb",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "nat",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "nsg",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "route",
+      "status": "ok",
+      "count": 4,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "service",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "subnet",
+      "status": "ok",
+      "count": 4,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "vcn",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-4",
+      "service": "vnic",
+      "status": "ok",
+      "count": 4,
+      "source": "synthetic"
+    }
+  ],
+  "relationships": [
+    {
+      "source": "s1-public",
+      "target": "s1-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s1-public",
+      "target": "s1-public-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "s1-public",
+      "target": "s1-internet",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id → RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "s1-private",
+      "target": "s1-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s1-private",
+      "target": "s1-private-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "s1-private",
+      "target": "s1-nat",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id → RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "s1-nat",
+      "target": "s1-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s1-internet",
+      "target": "s1-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s1-service",
+      "target": "s1-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s1-app-nsg",
+      "target": "s1-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s1-private-rt",
+      "target": "s1-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s1-public-rt",
+      "target": "s1-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s1-lb",
+      "target": "s1-public",
+      "kind": "subnet_ids",
+      "evidence": "subnet_ids",
+      "label": ""
+    },
+    {
+      "source": "s1-lb",
+      "target": "s1-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s1-backend-set",
+      "target": "s1-lb",
+      "kind": "lb_id",
+      "evidence": "lb_id",
+      "label": ""
+    },
+    {
+      "source": "s1-backend-set",
+      "target": "s1-compute",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "s1-backend-set",
+      "target": "s1-compute-2",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "s1-vnic",
+      "target": "s1-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s1-vnic",
+      "target": "s1-private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "s1-vnic",
+      "target": "s1-compute",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "s1-vnic",
+      "target": "s1-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s1-vnic-2",
+      "target": "s1-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s1-vnic-2",
+      "target": "s1-private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "s1-vnic-2",
+      "target": "s1-compute-2",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "s1-vnic-2",
+      "target": "s1-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s2-public",
+      "target": "s2-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s2-public",
+      "target": "s2-public-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "s2-public",
+      "target": "s2-internet",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id → RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "s2-private",
+      "target": "s2-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s2-private",
+      "target": "s2-private-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "s2-private",
+      "target": "s2-nat",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id → RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "s2-nat",
+      "target": "s2-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s2-internet",
+      "target": "s2-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s2-service",
+      "target": "s2-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s2-app-nsg",
+      "target": "s2-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s2-private-rt",
+      "target": "s2-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s2-public-rt",
+      "target": "s2-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s2-lb",
+      "target": "s2-public",
+      "kind": "subnet_ids",
+      "evidence": "subnet_ids",
+      "label": ""
+    },
+    {
+      "source": "s2-lb",
+      "target": "s2-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s2-backend-set",
+      "target": "s2-lb",
+      "kind": "lb_id",
+      "evidence": "lb_id",
+      "label": ""
+    },
+    {
+      "source": "s2-backend-set",
+      "target": "s2-compute",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "s2-backend-set",
+      "target": "s2-compute-2",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "s2-vnic",
+      "target": "s2-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s2-vnic",
+      "target": "s2-private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "s2-vnic",
+      "target": "s2-compute",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "s2-vnic",
+      "target": "s2-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s2-vnic-2",
+      "target": "s2-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s2-vnic-2",
+      "target": "s2-private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "s2-vnic-2",
+      "target": "s2-compute-2",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "s2-vnic-2",
+      "target": "s2-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s3-public",
+      "target": "s3-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s3-public",
+      "target": "s3-public-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "s3-public",
+      "target": "s3-internet",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id → RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "s3-private",
+      "target": "s3-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s3-private",
+      "target": "s3-private-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "s3-private",
+      "target": "s3-nat",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id → RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "s3-nat",
+      "target": "s3-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s3-internet",
+      "target": "s3-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s3-service",
+      "target": "s3-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s3-app-nsg",
+      "target": "s3-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s3-private-rt",
+      "target": "s3-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s3-public-rt",
+      "target": "s3-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s3-lb",
+      "target": "s3-public",
+      "kind": "subnet_ids",
+      "evidence": "subnet_ids",
+      "label": ""
+    },
+    {
+      "source": "s3-lb",
+      "target": "s3-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s3-backend-set",
+      "target": "s3-lb",
+      "kind": "lb_id",
+      "evidence": "lb_id",
+      "label": ""
+    },
+    {
+      "source": "s3-backend-set",
+      "target": "s3-compute",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "s3-backend-set",
+      "target": "s3-compute-2",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "s3-vnic",
+      "target": "s3-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s3-vnic",
+      "target": "s3-private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "s3-vnic",
+      "target": "s3-compute",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "s3-vnic",
+      "target": "s3-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s3-vnic-2",
+      "target": "s3-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s3-vnic-2",
+      "target": "s3-private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "s3-vnic-2",
+      "target": "s3-compute-2",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "s3-vnic-2",
+      "target": "s3-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s4-public",
+      "target": "s4-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s4-public",
+      "target": "s4-public-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "s4-public",
+      "target": "s4-internet",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id → RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "s4-private",
+      "target": "s4-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s4-private",
+      "target": "s4-private-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "s4-private",
+      "target": "s4-nat",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id → RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "s4-nat",
+      "target": "s4-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s4-internet",
+      "target": "s4-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s4-service",
+      "target": "s4-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s4-app-nsg",
+      "target": "s4-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s4-private-rt",
+      "target": "s4-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s4-public-rt",
+      "target": "s4-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s4-lb",
+      "target": "s4-public",
+      "kind": "subnet_ids",
+      "evidence": "subnet_ids",
+      "label": ""
+    },
+    {
+      "source": "s4-lb",
+      "target": "s4-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s4-backend-set",
+      "target": "s4-lb",
+      "kind": "lb_id",
+      "evidence": "lb_id",
+      "label": ""
+    },
+    {
+      "source": "s4-backend-set",
+      "target": "s4-compute",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "s4-backend-set",
+      "target": "s4-compute-2",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "s4-vnic",
+      "target": "s4-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s4-vnic",
+      "target": "s4-private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "s4-vnic",
+      "target": "s4-compute",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "s4-vnic",
+      "target": "s4-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s4-vnic-2",
+      "target": "s4-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s4-vnic-2",
+      "target": "s4-private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "s4-vnic-2",
+      "target": "s4-compute-2",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "s4-vnic-2",
+      "target": "s4-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s5-public",
+      "target": "s5-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s5-public",
+      "target": "s5-public-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "s5-public",
+      "target": "s5-internet",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id → RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "s5-private",
+      "target": "s5-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s5-private",
+      "target": "s5-private-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "s5-private",
+      "target": "s5-nat",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id → RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "s5-nat",
+      "target": "s5-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s5-internet",
+      "target": "s5-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s5-service",
+      "target": "s5-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s5-app-nsg",
+      "target": "s5-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s5-private-rt",
+      "target": "s5-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s5-public-rt",
+      "target": "s5-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s5-lb",
+      "target": "s5-public",
+      "kind": "subnet_ids",
+      "evidence": "subnet_ids",
+      "label": ""
+    },
+    {
+      "source": "s5-lb",
+      "target": "s5-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s5-backend-set",
+      "target": "s5-lb",
+      "kind": "lb_id",
+      "evidence": "lb_id",
+      "label": ""
+    },
+    {
+      "source": "s5-backend-set",
+      "target": "s5-compute",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "s5-backend-set",
+      "target": "s5-compute-2",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "s5-vnic",
+      "target": "s5-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s5-vnic",
+      "target": "s5-private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "s5-vnic",
+      "target": "s5-compute",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "s5-vnic",
+      "target": "s5-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "s5-vnic-2",
+      "target": "s5-vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "s5-vnic-2",
+      "target": "s5-private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "s5-vnic-2",
+      "target": "s5-compute-2",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "s5-vnic-2",
+      "target": "s5-app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    }
+  ]
+}
