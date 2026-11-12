@@ -1,0 +1,12 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "0-harness-check",
+  "steps": [
+    {
+      "step": 0,
+      "name": "harness-check",
+      "status": "pending",
+      "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]
+    }
+  ]
+}

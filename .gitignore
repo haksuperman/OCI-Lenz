@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
+.aws/
+.oci/
+.env
+.env.*
+*.pem
+*.key
+artifacts/live/
+phases/**/.executor.lock/
