@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "oci-lenz"
+version = "0.1.0"
+description = "OCI inventory to editable Draw.io with Codex skills"
+requires-python = ">=3.10"
+dependencies = ["oci>=2.150,<3"]
+[project.scripts]
+oci-lenz = "oci_lenz.cli:main"
+[tool.setuptools]
+packages = ["oci_lenz"]
+[tool.setuptools.data-files]
+"share/oci-lenz/assets/oci" = ["assets/oci/library.xml", "assets/oci/SOURCE.md"]
+"share/oci-lenz/.agents/skills/drawio" = [".agents/skills/drawio/SKILL.md", ".agents/skills/drawio/LICENSE"]
+"share/oci-lenz/.agents/skills/oci-drawio" = [".agents/skills/oci-drawio/SKILL.md"]

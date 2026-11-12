@@ -1,80 +1,74 @@
 # OCI-Lenz
 
-OCI 테넌시에 배포된 리소스를 읽기 전용으로 조회하고, Oracle 공식 아이콘을 사용한 **편집 가능한 Draw.io 다이어그램과 PNG**를 생성하는 프로젝트입니다.
-
-소스 코드는 GitHub에서 관리하고, 실행 환경은 별도 서버에 설치하는 방식을 목표로 합니다. 동일한 애플리케이션 코드를 사용하면서 고객사마다 OCI 인증 프로필과 조회 범위를 별도로 설정합니다.
-
-> 출시 전 개발 중입니다. 설치·실행 방법은 제품 기능 구현과 검증 후 제공할 예정입니다.
-
-## 목표 기능
-
-- 지정한 리전·컴파트먼트의 리전 요약과 VCN별 상세 페이지 생성
-- VCN, Public/Private Subnet, Compute, Load Balancer, Internet/NAT/Service Gateway 표시
-- Route Table의 목적지·다음 홉, NSG 연결, LB Backend Set과 Backend 관계 표시
-- API 필드에 근거한 관계 구성 및 범위 밖·불명확한 대상의 `대상 미확인` 표시
-- 동일 스냅샷의 배치 재현과 공유용 PNG의 OCID·IP 기본 숨김
-- 조회 성공 0건과 권한 부족·호출 실패를 구분하는 `coverage.json` 생성
-
-IAM 정책 변경은 수행하지 않습니다. 연결선은 OCI에 설정된 관계를 나타냅니다. 실제 트래픽 도달성을 검증하는 기능은 범위에 포함하지 않습니다. DB, OKE, DRG·피어링은 후속 범위입니다.
-
-## 설치 및 실행
-
-별도 서버에 설치하고 고객사별 OCI 프로필과 조회 범위를 지정해 실행하는 방식을 목표로 합니다. 배포 패키지, 실행 의존성, 실제 CLI 명령은 구현 및 검증 후 이 절에 안내합니다.
-
-## 생성 결과
-
-| 산출물 | 용도 |
-| --- | --- |
-| `architecture.drawio` | 리전 요약과 VCN별 상세 페이지를 담은 편집 가능한 원본 |
-| 리전 요약·VCN별 PNG | 문서 및 보고서에 사용할 이미지 |
-| 스냅샷 | 다이어그램 재생성에 필요한 리소스·관계·근거 필드 |
-| `coverage.json` | 조회 범위, 서비스별 조회 결과와 누락·실패 기록 |
-
-아이콘·라벨·컨테이너·연결선을 각각 편집할 수 있게 구성하고, PNG는 동일한 Draw.io 파일에서 내보내는 것을 목표로 합니다.
-
-## 고객사별 OCI 연동 구성
-
-다음은 수집기 구현에 적용할 구성 원칙입니다. 현재 고객사 설정을 읽는 애플리케이션 CLI는 구현 전입니다.
-
-| 구분 | 관리 위치 | 고객사별 설정 |
-| --- | --- | --- |
-| 앱 코드·테스트·가상 샘플 | GitHub 저장소 | 공통 코드 사용 |
-| OCI 인증 프로필·개인 키·암호 | 실행 서버의 저장소 밖 경로 또는 비밀정보 관리 시스템 | 고객사별 분리 |
-| 조회 범위 | 실행 시 입력 또는 서버 전용 설정 | 리전, 컴파트먼트 OCID, 선택적 VCN OCID |
-| 실행 결과 | 저장소 밖 고객사별 출력 디렉터리 | 스냅샷, Draw.io, PNG, coverage |
-
-고객사마다 다음 값을 준비합니다.
-
-- 로컬 OCI SDK 프로필 이름과 설정 파일 위치
-- 해당 프로필이 참조하는 인증정보와 개인 키의 서버 내 위치
-- 대상 리전과 컴파트먼트 OCID, 선택적 VCN OCID
-- 읽기 전용 조회 권한과 고객사별 출력 디렉터리
-
-프로필 이름은 인증정보를 선택하는 식별자입니다. 프로필 이름만 바꿔 고객사가 격리되었다고 간주하지 않으며, 각 프로필의 테넌시·사용자와 허용 범위를 확인해야 합니다. 일반적인 OCI 조회는 대상 서비스·리전과 인증 프로필을 기준으로 구성하고, 별도 API 엔드포인트가 필요한 환경은 수집기 구현 시 지원 범위를 정합니다.
-
-예시 운영 디렉터리는 다음과 같습니다. **아래는 배치 예시이며 현재 자동 생성하거나 읽는 경로가 아닙니다.**
+OCI 테넌시에 배포된 리소스를 읽기 전용으로 조회하고, **Codex Draw.io 스킬과 Oracle 공식 OCI 아이콘**으로 편집 가능한 Draw.io 다이어그램과 PNG를 생성합니다. 아키텍처 예시 사진을 함께 전달해 배치·표현의 기준으로 사용할 수 있습니다.
 
 ```text
-/opt/oci-lenz/                    # GitHub에서 받은 공통 소스
-/etc/oci-lenz/customer-a/         # 고객사 A 서버 전용 설정·인증 참조
-/etc/oci-lenz/customer-b/         # 고객사 B 서버 전용 설정·인증 참조
-/var/lib/oci-lenz/customer-a/     # 고객사 A 실행 결과
-/var/lib/oci-lenz/customer-b/     # 고객사 B 실행 결과
+로컬 OCI API 프로필 → Python SDK 조회 → 리소스·관계 스냅샷
+                                      ↓
+                  Codex Draw.io 스킬 + 공식 아이콘 + 예시 사진
+                                      ↓
+                          architecture.drawio + PNG
 ```
 
-설정·키·결과는 실행 계정에 필요한 권한만 부여하고, 고객사별 실행 계정 또는 배포 환경을 분리하는 방식을 기본 운영 방향으로 둡니다. 고객사별 계정·배포 환경 분리를 전제로 하며, 애플리케이션의 멀티테넌트 접근 제어는 첫 버전 범위에 포함하지 않습니다.
+## 설치
 
-## GitHub 관리 및 업데이트
+Python 3.10+, Git, Draw.io Desktop, 인증된 Codex CLI가 필요합니다. 실제 OCI 조회에는 사용자가 로컬에 준비한 읽기 전용 OCI SDK 프로필을 사용합니다. 고객사 인증정보를 앱에서 등록하거나 OAuth로 관리하지 않습니다.
 
-- 공통 소스, 문서, 테스트, 비식별 가상 데이터만 저장소에 포함합니다.
-- 실제 고객사 인증 설정, 개인 키, 암호, 실행 로그, 스냅샷 및 다이어그램은 커밋하지 않습니다. 다이어그램에도 고객사 인프라 정보가 포함될 수 있습니다.
-- 현재 `.gitignore`는 `.oci/`, `.env` 계열, `*.pem`, `*.key`, `artifacts/live/` 등을 제외합니다. 다른 파일명·경로의 민감정보까지 자동 판별하지 않으므로 실제 데이터는 저장소 밖에서 관리합니다.
-- 서버 배포 시 검증한 태그 또는 커밋을 기록합니다. 업데이트 전 작업 트리와 실행 상태를 확인하고, 소스를 갱신한 뒤 테스트를 다시 실행합니다.
+```sh
+git clone https://github.com/haksuperman/OCI-Lenz.git
+cd OCI-Lenz
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -e .
+```
 
-## 프로젝트 문서
+서버의 Draw.io 실행 경로는 `DRAWIO_BIN`으로 지정합니다. Linux의 화면 없는 환경에서는 Draw.io Desktop과 Xvfb가 필요합니다. 자세한 설치·의존성·진단 방법은 [사용 문서](docs/USAGE.md)를 참고하세요.
 
-- [요구사항](docs/PRD.md)
-- [아키텍처](docs/ARCHITECTURE.md)
-- [개발 참여 및 검증](CONTRIBUTING.md)
-- [Oracle 공식 OCI 아이콘](https://docs.oracle.com/en-us/iaas/Content/General/Reference/graphicsfordiagrams.htm)
-- [다이어그램 레이아웃 참고](https://docs.oracle.com/en/solutions/autoscale-webapp/index.html)
+## 가상 환경으로 실행
+
+```sh
+oci-lenz sample --output artifacts/sample
+oci-lenz draw --snapshot artifacts/sample/snapshot.json --output artifacts/diagram
+```
+
+`draw`는 Codex를 실제 호출합니다. 예시 사진이 있으면 `--references /path/to/images`를 추가합니다. 스킬이 배치를 정하고 로컬 도우미가 공식 편집 가능 스텐실·컨테이너·연결선을 작성한 뒤 입력 관계와 검증합니다. PNG는 동일 Draw.io 파일에서 내보내며 원본을 보존합니다.
+
+모델 호출 없이 저장된 배치를 재사용할 수 있습니다.
+
+```sh
+oci-lenz draw --snapshot artifacts/sample/snapshot.json \
+  --reuse-layout artifacts/diagram/skill-layout.json --output artifacts/repeat
+```
+
+## 실제 OCI 환경 조회
+
+```sh
+oci-lenz collect --profile READONLY --region REGION \
+  --compartment-id COMPARTMENT_OCID --output /local/private-snapshot
+oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
+  --references /local/reference-images --output /local/private-diagram
+```
+
+조회 시 선택적 `--vcn-id`, `--config-file`을 사용할 수 있습니다. 키·암호는 SDK가 로컬 프로필에서 참조하고 AI 입력으로 전달하지 않습니다. 고객사마다 프로필·조회 범위·출력 디렉터리를 분리합니다. IAM 정책 변경은 수행하지 않습니다. API별 권한은 [IAM 문서](docs/IAM.md)에 정리했습니다.
+
+## 표시 범위와 결과
+
+- 리전 인벤토리와 VCN별 상세 페이지
+- Public/Private Subnet, Compute와 VNIC, Load Balancer와 Backend Set
+- Internet/NAT/Service Gateway, Route 목적지·다음 홉, NSG 연결
+- 범위 밖·모호한 관계의 `대상 미확인` 표시
+- `architecture.drawio`, `region.png`, `vcn-N.png`, `coverage.json`, `validation.json`
+
+예시 사진은 시각적 기준입니다. 리소스나 연결의 존재는 OCI 응답을 기준으로 판단하며 실제 트래픽 도달성을 보장하지 않습니다. DB·OKE·DRG·피어링은 후속 범위입니다.
+
+공유 PNG는 OCID·IP와 원래 리소스 이름 대신 표시용 별칭을 사용하며 원본 XML을 포함하지 않습니다. Draw.io 파일·스냅샷에는 내부 식별자가 남으므로 고객사 결과는 저장소 밖에 보관하세요. AI에는 별칭과 리소스 유형·관계 및 사용자가 지정한 참고 사진을 전달합니다.
+
+가상 환경의 실제 생성 예시는 [샘플 산출물](artifacts/sample)에 있습니다. 실제 고객사 OCI 조회, Linux 서버 실행 및 사용자 제공 사진에 대한 스타일 검수는 해당 환경·입력으로 추가 검증해야 합니다. 복잡하거나 큰 환경의 배치는 추가 개선이 필요합니다.
+
+## 개발 문서
+
+- [개발 및 테스트](CONTRIBUTING.md)
+- [설치·실행·제약사항](docs/USAGE.md)
+- [스킬 선정·출처](docs/SKILLS.md)
+- [공식 아이콘 출처·매핑](assets/oci/SOURCE.md)
+- [요구사항](docs/PRD.md) · [아키텍처](docs/ARCHITECTURE.md) · [설계 결정](docs/ADR.md)

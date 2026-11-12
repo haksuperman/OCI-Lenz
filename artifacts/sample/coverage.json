@@ -1,0 +1,58 @@
+[
+  {
+    "region": "sample-region",
+    "compartment": "sample",
+    "service": "vcn",
+    "status": "ok",
+    "count": 1,
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "sample",
+    "service": "subnet",
+    "status": "ok",
+    "count": 2,
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "sample",
+    "service": "compute",
+    "status": "ok",
+    "count": 1,
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "sample",
+    "service": "lb",
+    "status": "ok",
+    "count": 1,
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "sample",
+    "service": "gateways",
+    "status": "ok",
+    "count": 3,
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "sample",
+    "service": "nsg",
+    "status": "ok",
+    "count": 1,
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "sample",
+    "service": "route",
+    "status": "ok",
+    "count": 2,
+    "source": "synthetic"
+  }
+]

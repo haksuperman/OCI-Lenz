@@ -1,7 +1,7 @@
 # OCI-Lenz
 
 ## Scope
-- Python 3.10+ standard library harness; OCI SDK and Draw.io integration are future work.
+- Python 3.10+ application and standard library development harness. Read docs/USAGE.md for OCI SDK and Draw.io integration.
 - Read `docs/HARNESS.md`, `docs/PRD.md`, `docs/ARCHITECTURE.md`, and `docs/ADR.md` before changes.
 - Use the phase/step workflow from `docs/HARNESS.md`. Each step must specify readable inputs, interfaces, scope, executable AC, and concrete prohibitions.
 

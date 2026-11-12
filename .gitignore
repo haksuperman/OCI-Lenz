@@ -10,3 +10,8 @@ __pycache__/
 *.key
 artifacts/live/
 phases/**/.executor.lock/
+
+*.egg-info/
+build/
+dist/
+artifacts/skill-sample/

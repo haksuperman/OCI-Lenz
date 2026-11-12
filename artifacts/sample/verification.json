@@ -1,0 +1,29 @@
+{
+  "tests_passed": 22,
+  "actual_codex_skill_call": {
+    "graph_valid": true,
+    "skill_invoked": true,
+    "reused_layout": false,
+    "references": []
+  },
+  "replay_matches_installed_wheel": true,
+  "editable_cells_per_page": 164,
+  "png_visual_review": "Official icons rendered; built-in labels removed to prevent overlaps; source XML retained.",
+  "pngs": {
+    "region.png": {
+      "width": 1374,
+      "height": 941,
+      "sha256": "cd70b9f87258bb6d25f3d928e82c658d6d9b0d0a65731de3fa6a97ebd6f48ef3"
+    },
+    "vcn-1.png": {
+      "width": 1374,
+      "height": 941,
+      "sha256": "cd70b9f87258bb6d25f3d928e82c658d6d9b0d0a65731de3fa6a97ebd6f48ef3"
+    }
+  },
+  "pending": [
+    "Actual OCI profile/region/compartment validation",
+    "User supplied reference image acceptance",
+    "Linux headless deployment verification"
+  ]
+}

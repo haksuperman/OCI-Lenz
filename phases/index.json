@@ -1,3 +1,12 @@
 {
-  "phases": [{"dir": "0-harness-check", "status": "pending"}]
+  "phases": [
+    {
+      "dir": "0-harness-check",
+      "status": "pending"
+    },
+    {
+      "dir": "1-oci-diagrams",
+      "status": "pending"
+    }
+  ]
 }

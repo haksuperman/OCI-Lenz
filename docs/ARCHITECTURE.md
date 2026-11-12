@@ -10,3 +10,8 @@
 향후 앱 경로: OCI collector / synthetic fixture → 공통 snapshot → 관계 모델 →
 Draw.io generator → 같은 파일의 PNG export. 수집과 렌더링은 분리한다.
 연결에는 근거 API 필드를 보존하며 범위 밖·불명확한 대상은 미확인으로 표시한다.
+
+## Implemented application flow
+
+`oci-lenz sample` or `collect` → minimal snapshot → `model.graph` → `draw`.
+Draw explicitly loads the pinned jgraph Draw.io skill and OCI project skill; Codex returns bounded alias-keyed card positions. Local helpers apply official editable stencils, create XML and validate graph consistency before Desktop export. Saved layout can be replayed. CLI is the first interface; no web UI or credential registration service.

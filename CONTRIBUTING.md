@@ -39,3 +39,5 @@ python3 scripts/execute.py 0-harness-check --timeout 1800
 - README의 출시 전 안내는 설치·실행 절차가 검증되면 삭제하고 실제 명령으로 교체합니다.
 - 구현 전 기능과 예시를 이미 제공되는 기능으로 표현하지 않습니다.
 - OCI 인증과 고객사 실데이터를 테스트·문서·커밋에 포함하지 않습니다.
+
+앱 전체 테스트는 `pip install -e .` 후 `python3 -m unittest discover -s tests -v`로 실행합니다. SDK 어댑터 테스트는 OCI 패키지가 없으면 skip되므로 CI/최종 검증에서는 의존성을 설치해야 합니다. 실제 생성 검증은 docs/USAGE.md의 sample/draw 명령을 실행합니다. 실제 고객사 데이터는 커밋하지 않습니다.
