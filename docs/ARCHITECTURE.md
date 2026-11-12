@@ -15,3 +15,16 @@ Draw.io generator → 같은 파일의 PNG export. 수집과 렌더링은 분리
 
 `oci-lenz sample` or `collect` → minimal snapshot → `model.graph` → `draw`.
 Draw explicitly loads the pinned jgraph Draw.io skill and OCI project skill; Codex returns bounded alias-keyed card positions. Local helpers apply official editable stencils, create XML and validate graph consistency before Desktop export. Saved layout can be replayed. CLI is the first interface; no web UI or credential registration service.
+
+The renderer computes growing region/compartment/VCN/subnet containers and keeps
+orthogonal edges in the nearest common ancestor. Compartment labels are aliases;
+membership comes from the VCN compartment ID. Reference composition conventions
+are recorded without customer content. The overview synthetic fixture exercises
+multiple VCNs and compartments without reproducing any supplied customer topology.
+
+Default CLI rendering now uses an adaptive service map (`service_map.py`). Optional
+presentation groups are explicit; unassigned VCNs use API compartment grouping.
+Grid and shelf dimensions derive from resource counts, and backend cluster order
+derives from evidence edges. Summary pages retain hidden technical cells/edges;
+detail pages expose them. All share the same model and validator. Canvas size is
+an output of layout, never copied from reference imagery.

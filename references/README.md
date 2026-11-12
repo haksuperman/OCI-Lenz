@@ -1,5 +1,5 @@
 # Architecture reference images
 
-Place the user's OCI architecture PNG/JPEG examples here or in a local external directory. Pass the directory using `--references`. Images are passed to Codex as visual input; never include customer secrets in them. Images guide visual composition, not resource existence. No user images have been supplied yet.
+Keep user-supplied OCI architecture examples in a local directory outside this repository. Pass that directory using `--references` (currently PNG/JPEG). Images are passed to Codex as visual input; remove customer and personal information before use. Images guide visual composition, not resource existence. User examples have been supplied in the development conversation; do not copy their files, identifying filenames, or customer details into this repository.
 
 Initial composition reference: https://docs.oracle.com/en/solutions/autoscale-webapp/index.html

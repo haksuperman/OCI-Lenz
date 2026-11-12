@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "scope": {
+    "region": "sample-region",
+    "compartments": [
+      "sample"
+    ]
+  },
+  "coverage": [
+    {
+      "region": "sample-region",
+      "compartment": "sample",
+      "service": "vcn",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "sample",
+      "service": "subnet",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "sample",
+      "service": "compute",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "sample",
+      "service": "lb",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "sample",
+      "service": "gateways",
+      "status": "ok",
+      "count": 3,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "sample",
+      "service": "nsg",
+      "status": "ok",
+      "count": 1,
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "sample",
+      "service": "route",
+      "status": "ok",
+      "count": 2,
+      "source": "synthetic"
+    }
+  ],
+  "resources": [
+    {
+      "id": "vcn",
+      "kind": "vcn",
+      "name": "Vcn"
+    },
+    {
+      "id": "public",
+      "kind": "subnet",
+      "name": "Public",
+      "vcn_id": "vcn",
+      "public": true,
+      "route_table_id": "public-rt"
+    },
+    {
+      "id": "private",
+      "kind": "subnet",
+      "name": "Private",
+      "vcn_id": "vcn",
+      "public": false,
+      "route_table_id": "private-rt"
+    },
+    {
+      "id": "nat",
+      "kind": "nat",
+      "name": "Nat",
+      "vcn_id": "vcn"
+    },
+    {
+      "id": "internet",
+      "kind": "internet",
+      "name": "Internet",
+      "vcn_id": "vcn"
+    },
+    {
+      "id": "service",
+      "kind": "service",
+      "name": "Service",
+      "vcn_id": "vcn"
+    },
+    {
+      "id": "app-nsg",
+      "kind": "nsg",
+      "name": "App Nsg",
+      "vcn_id": "vcn"
+    },
+    {
+      "id": "private-rt",
+      "kind": "route",
+      "name": "Private Rt",
+      "vcn_id": "vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "nat"
+        }
+      ]
+    },
+    {
+      "id": "public-rt",
+      "kind": "route",
+      "name": "Public Rt",
+      "vcn_id": "vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "internet"
+        }
+      ]
+    },
+    {
+      "id": "lb",
+      "kind": "lb",
+      "name": "Lb",
+      "subnet_ids": [
+        "public"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ]
+    },
+    {
+      "id": "backend-set",
+      "kind": "backend_set",
+      "name": "Backend Set",
+      "lb_id": "lb",
+      "backends": [
+        {
+          "ip_address": "10.0.1.10",
+          "port": 8080
+        }
+      ]
+    },
+    {
+      "id": "compute",
+      "kind": "compute",
+      "name": "Compute"
+    },
+    {
+      "id": "vnic",
+      "kind": "vnic",
+      "name": "Vnic",
+      "instance_id": "compute",
+      "subnet_id": "private",
+      "vcn_id": "vcn",
+      "private_ips": [
+        "10.0.1.10"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "public",
+      "target": "vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "public",
+      "target": "public-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "public",
+      "target": "internet",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id \u2192 RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "private",
+      "target": "vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "private",
+      "target": "private-rt",
+      "kind": "route_table_id",
+      "evidence": "route_table_id",
+      "label": ""
+    },
+    {
+      "source": "private",
+      "target": "nat",
+      "kind": "route",
+      "evidence": "Subnet.route_table_id \u2192 RouteTable.route_rules[].network_entity_id",
+      "label": "0.0.0.0/0"
+    },
+    {
+      "source": "nat",
+      "target": "vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "internet",
+      "target": "vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "service",
+      "target": "vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "app-nsg",
+      "target": "vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "private-rt",
+      "target": "vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "public-rt",
+      "target": "vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "lb",
+      "target": "public",
+      "kind": "subnet_ids",
+      "evidence": "subnet_ids",
+      "label": ""
+    },
+    {
+      "source": "lb",
+      "target": "app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    },
+    {
+      "source": "backend-set",
+      "target": "lb",
+      "kind": "lb_id",
+      "evidence": "lb_id",
+      "label": ""
+    },
+    {
+      "source": "backend-set",
+      "target": "compute",
+      "kind": "backend",
+      "evidence": "BackendSet.backends[].ip_address \u2192 unique VNIC/PrivateIp in LB VCN",
+      "label": "Backend :8080"
+    },
+    {
+      "source": "vnic",
+      "target": "vcn",
+      "kind": "vcn_id",
+      "evidence": "vcn_id",
+      "label": ""
+    },
+    {
+      "source": "vnic",
+      "target": "private",
+      "kind": "subnet_id",
+      "evidence": "subnet_id",
+      "label": ""
+    },
+    {
+      "source": "vnic",
+      "target": "compute",
+      "kind": "instance_id",
+      "evidence": "instance_id",
+      "label": ""
+    },
+    {
+      "source": "vnic",
+      "target": "app-nsg",
+      "kind": "nsg_ids",
+      "evidence": "nsg_ids",
+      "label": ""
+    }
+  ]
+}

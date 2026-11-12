@@ -38,3 +38,67 @@ Set `DRAWIO_BIN` to the Draw.io Desktop executable. macOS's standard installatio
 Run `python3 -m unittest discover -s tests -v`, `codex login status`, and `"$DRAWIO_BIN" --help` locally. Child output is suppressed to avoid persisting sensitive data; errors report only their class. SDK API failures are summarized in coverage by service/API/status, not raw exception text. A partial snapshot is still usable; coverage must be checked. Reuse a saved layout to avoid another model call. `--no-png` retains XML without requiring Desktop.
 
 Current limitations: real OCI access and user reference-image style acceptance require their respective inputs; complex and large graph layouts need further visual evaluation. Backend Sets use the LB icon as a conceptual grouping. Public/private subnet containers use VCN visual grouping. The model preserves all subnet associations even though a multi-subnet LB is placed once, in its first subnet.
+
+## Synthetic architecture overview
+
+```sh
+python3 -m oci_lenz sample --scenario overview --output artifacts/reference-layout
+python3 -m oci_lenz draw --snapshot artifacts/reference-layout/snapshot.json --output artifacts/reference-layout
+python3 -m oci_lenz draw --snapshot artifacts/reference-layout/snapshot.json \
+  --reuse-layout artifacts/reference-layout/skill-layout.json --output /tmp/oci-lenz-replay
+```
+
+This independently synthetic scenario contains two compartments and three VCNs.
+Region and VCN pages use neutral region/compartment frames and orange dashed
+network boundaries, with container sizes calculated from their contents. API
+compartment membership controls VCN grouping; application service groups are not
+guessed. A VCN without compartment metadata is grouped in an unspecified alias
+compartment. Related resources from other compartments remain in their evidenced
+network location. Dense cross-container edges may still need manual refinement.
+The saved card layout reproduces XML exactly; PNG bytes may depend on Desktop and
+fonts. No customer images or identifying text are bundled or required by this example.
+Reference images passed with `--references` go to Codex, so sanitize them first;
+the customer originals supplied in chat have not been passed to a child model.
+
+## Adaptive service architecture layout (default)
+
+```sh
+python3 -m oci_lenz sample --scenario service-map --output artifacts/main-reference
+python3 -m oci_lenz draw --snapshot artifacts/main-reference/snapshot.json \
+  --style service-map --output artifacts/main-reference
+python3 -m oci_lenz draw --snapshot artifacts/main-reference/snapshot.json \
+  --style service-map --reuse-layout artifacts/main-reference/skill-layout.json \
+  --output /tmp/oci-lenz-service-replay
+```
+
+The main reference guides resource spacing, backend flow and visual hierarchy;
+its canvas dimensions, customer topology and number of panels are not templates.
+Subnet grids grow with the number of cards, related backends stay adjacent, VCNs
+wrap into shelves and region size follows the resulting content. Small and large
+inventories use the same renderer. Codex supplies stable ordering hints; the
+helper fits them to a compact grid and preserves the evidence graph.
+
+Optional snapshot presentation metadata declares user-controlled service groups:
+
+```json
+{"presentation":{"groups":[
+  {"label":"Example service","vcn_ids":["synthetic-vcn"]},
+  {"label":"Shared services","role":"shared","vcn_ids":["synthetic-shared-vcn"]}
+]}}
+```
+
+Groups are presentation metadata, not OCI resources or discovered application
+semantics. The collector does not infer service membership. Without groups,
+VCNs are automatically grouped by their API compartment IDs; unmatched VCNs in a
+partial mapping also fall back to compartment groups. Default shared outputs
+alias group names as well as resource names. Use `--style inventory` for the
+previous compartment inventory renderer.
+
+The overview keeps editable technical cells and every relationship in XML but
+hides VNIC/NSG/route-table shapes and technical edges. VCN detail pages show them.
+The LB-to-Backend-Set display arrow expresses ownership while the XML source and
+target retain the API evidence direction (`BackendSet.lb_id`). Backend arrows
+represent configured targets, not proven traffic. Dense detail edges can still
+share segments and may require editing. No DB or WAF resources are added from a
+picture. Unknown targets remain visible. The fixture is independently synthetic;
+no customer image is sent to the child Codex process.
