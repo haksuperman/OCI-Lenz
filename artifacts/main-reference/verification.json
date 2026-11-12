@@ -1,0 +1,108 @@
+{
+  "tests": {
+    "passed": 39,
+    "skipped": 0,
+    "interpreter": ".venv/bin/python"
+  },
+  "synthetic_resources": 75,
+  "relationships": 125,
+  "pages": 6,
+  "actual_codex_skill_invocation_observed": true,
+  "final_render": "Replay of the layout saved by the actual Codex skill invocation",
+  "customer_reference_images_copied": false,
+  "customer_reference_images_sent_to_child_model": false,
+  "reference_use": "Resource spacing, hierarchy and flow conventions abstracted from main reference; no canvas size or customer topology copied",
+  "xml_replay_identical": true,
+  "png_replay_identical": true,
+  "png_metadata_text_chunks": false,
+  "editable_cells_per_page": [
+    974,
+    199,
+    199,
+    199,
+    199,
+    199
+  ],
+  "pngs": [
+    {
+      "file": "region.png",
+      "dimensions": [
+        1482,
+        1113
+      ],
+      "sha256": "c3fdda42f27a715bbdd3d95fb535b013c753e5868d30f6211396b4bc8f227077"
+    },
+    {
+      "file": "vcn-1.png",
+      "dimensions": [
+        1040,
+        739
+      ],
+      "sha256": "2ddbfee1b7c3260a72940b6e8f27a26ba65e8245ec2ef5758146c5367a85b352"
+    },
+    {
+      "file": "vcn-2.png",
+      "dimensions": [
+        1040,
+        739
+      ],
+      "sha256": "6e4c90602631a23d30523f5b6008e9a838de8769b7a0654e9ec9ad22a643d999"
+    },
+    {
+      "file": "vcn-3.png",
+      "dimensions": [
+        1040,
+        739
+      ],
+      "sha256": "7edb4a1c600c8c416628662ecf95b1397042b931b4e9a22d2236969c291334a0"
+    },
+    {
+      "file": "vcn-4.png",
+      "dimensions": [
+        1040,
+        739
+      ],
+      "sha256": "a4c97dcbbf4e9ad6d41af1e9570497273da304058bcc37e08d4de2d5bdc5a401"
+    },
+    {
+      "file": "vcn-5.png",
+      "dimensions": [
+        1040,
+        739
+      ],
+      "sha256": "f1a63c2da2929c08d35a0b7f2df138153d473c0d05a668c9d3d8a31a9d942d18"
+    }
+  ],
+  "variants": [
+    {
+      "name": "sparse",
+      "resources": 13,
+      "vcn_count": 1,
+      "region_png_dimensions": [
+        854,
+        1049
+      ]
+    },
+    {
+      "name": "dense",
+      "resources": 94,
+      "vcn_count": 3,
+      "region_png_dimensions": [
+        1422,
+        1913
+      ]
+    }
+  ],
+  "validation": [
+    "all resources and relationship endpoints retained",
+    "bounds and non-overlap checks passed",
+    "region and all five VCN pages visually inspected",
+    "sparse and dense PNGs generated"
+  ],
+  "limitations": [
+    "dense technical connector segments can overlap; configuration list provided",
+    "manual GUI editing not exercised",
+    "actual OCI validation and Linux export pending"
+  ],
+  "git_publication": "Artifact generation preceded publication; see docs/reviews/adaptive-layout-privacy.md for the publication review."
+}

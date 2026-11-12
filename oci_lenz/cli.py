@@ -5,12 +5,15 @@ from .draw import render,validate,export,ROOT
 
 def save(path,data):path.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
 
-def skill_layout(snapshot,output,references):
+def skill_layout(snapshot,output,references,style='inventory'):
     nodes,_=graph(snapshot)
     # No credentials, OCIDs, IPs or source names are passed to the model.
     ids={key:'r'+str(i) for i,key in enumerate(sorted(nodes))}
     request={'nodes':[{'id':ids[k],'kind':v['kind']} for k,v in nodes.items()],
              'edges':[{'source':ids[e['source']],'target':ids[e['target']],'kind':e['kind']} for e in graph(snapshot)[1]]}
+    request['style']=style
+    request['service_groups']=[{'vcn_ids':[ids[k] for k in g['vcn_ids'] if k in ids],
+                               'shared':g.get('role')=='shared'} for g in snapshot.get('presentation',{}).get('groups',[])]
     with tempfile.TemporaryDirectory(prefix='oci-lenz-skill-') as tmp:
         result=Path(tmp)/'layout.json'
         schema=Path(tmp)/'schema.json'
@@ -31,13 +34,13 @@ def skill_layout(snapshot,output,references):
 
 def main():
     p=argparse.ArgumentParser(prog='oci-lenz');sub=p.add_subparsers(dest='command',required=True)
-    a=sub.add_parser('sample');a.add_argument('--output',type=Path,required=True)
+    a=sub.add_parser('sample');a.add_argument('--output',type=Path,required=True);a.add_argument('--scenario',choices=('basic','overview','service-map'),default='basic')
     a=sub.add_parser('collect');a.add_argument('--profile',required=True);a.add_argument('--region',required=True);a.add_argument('--compartment-id',required=True,action='append');a.add_argument('--vcn-id');a.add_argument('--config-file');a.add_argument('--output',type=Path,required=True)
-    a=sub.add_parser('draw');a.add_argument('--snapshot',type=Path,required=True);a.add_argument('--references',type=Path);a.add_argument('--output',type=Path,required=True);a.add_argument('--reuse-layout',type=Path);a.add_argument('--no-ai',action='store_true',help='Deterministic helper only; does not call the skill');a.add_argument('--no-png',action='store_true')
+    a=sub.add_parser('draw');a.add_argument('--snapshot',type=Path,required=True);a.add_argument('--references',type=Path);a.add_argument('--output',type=Path,required=True);a.add_argument('--reuse-layout',type=Path);a.add_argument('--style',choices=('inventory','service-map'),default='service-map');a.add_argument('--no-ai',action='store_true',help='Deterministic helper only; does not call the skill');a.add_argument('--no-png',action='store_true')
     args=p.parse_args();args.output.mkdir(parents=True,exist_ok=True,mode=0o700)
     try:
         if args.command=='sample':
-            s=sample();s['relationships']=graph(s)[1];save(args.output/'snapshot.json',s);return
+            s=sample(args.scenario);s['relationships']=graph(s)[1];save(args.output/'snapshot.json',s);return
         if args.command=='collect':
             from .collect import collect
             snapshots=[collect(args.profile,args.region,c,args.config_file) for c in args.compartment_id]
@@ -57,20 +60,24 @@ def main():
             save(args.output/'snapshot.json',s);save(args.output/'coverage.json',s['coverage']);return
         s=json.loads(args.snapshot.read_text());refs=[]
         if args.references: refs=sorted(x for x in args.references.iterdir() if x.suffix.lower() in ('.png','.jpg','.jpeg'))
-        layout=json.loads(args.reuse_layout.read_text()) if args.reuse_layout else (None if args.no_ai else skill_layout(s,args.output,refs))
+        layout=json.loads(args.reuse_layout.read_text()) if args.reuse_layout else (None if args.no_ai else skill_layout(s,args.output,refs,args.style))
         # Labels are aliases by default; full local snapshot is never copied into shared output.
-        nodes,_=graph(s); alias={k:r['kind']+' '+str(i+1) for i,(k,r) in enumerate(sorted(nodes.items()))}
+        nodes,_=graph(s)
+        labels={'compute':'VM','lb':'LB','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','unknown':'대상 미확인'}
+        alias={k:labels.get(r['kind'],r['kind'])+' '+str(i+1) for i,(k,r) in enumerate(sorted(nodes.items()))}
         safe=json.loads(json.dumps(s))
         for r in safe['resources']:
             r['name']=alias[r['id']]
             for rule in r.get('rules',[]):
                 if rule.get('destination')!='0.0.0.0/0': rule['destination']='Route destination hidden'
+        for i,g in enumerate(safe.get('presentation',{}).get('groups',[])):
+            g['label']='Shared services' if g.get('role')=='shared' else 'Service '+str(i+1)
         if layout: save(args.output/'skill-layout.json',layout)
-        xml=render(safe,layout);validate(xml,safe)
+        xml=render(safe,layout,style=args.style);validate(xml,safe)
         path=args.output/'architecture.drawio';path.write_text(xml)
         save(args.output/'coverage.json',s.get('coverage',[]))
         if not args.no_png:export(path)
-        save(args.output/'validation.json',{'graph_valid':True,'skill_invoked':not args.no_ai and not bool(args.reuse_layout),'reused_layout':bool(args.reuse_layout),'references':[{'name':r.name,'sha256':hashlib.sha256(r.read_bytes()).hexdigest()} for r in refs]})
+        save(args.output/'validation.json',{'graph_valid':True,'style':args.style,'skill_invoked':not args.no_ai and not bool(args.reuse_layout),'reused_layout':bool(args.reuse_layout),'references':[{'name':r.name,'sha256':hashlib.sha256(r.read_bytes()).hexdigest()} for r in refs]})
         print(path.resolve())
     except Exception as exc:
         # Do not print exception bodies: SDK/child errors can contain secrets.
