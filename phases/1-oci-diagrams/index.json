@@ -1,0 +1,1 @@
+{"project":"OCI-Lenz","phase":"1-oci-diagrams","steps":[{"step":0,"name":"snapshot-and-draw","status":"pending","ac":[["python3","-m","unittest","discover","-s","tests","-v"]]}]}
