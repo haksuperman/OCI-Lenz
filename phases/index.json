@@ -15,6 +15,10 @@
     {
       "dir": "3-service-map",
       "status": "pending"
+    },
+    {
+      "dir": "4-collector-sdk-fix",
+      "status": "pending"
     }
   ]
 }

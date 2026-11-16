@@ -29,7 +29,7 @@ def collect(profile,region,compartment,config_file=None,vcn_id=None):
     for v in vcns:
         if not vcn_id or v.id==vcn_id:add(v,'vcn')
     for api,kind in [('list_subnets','subnet'),('list_route_tables','route'),('list_network_security_groups','nsg'),('list_nat_gateways','nat'),('list_internet_gateways','internet'),('list_service_gateways','service')]:
-        for r in call('network',api,compartment) or []:
+        for r in call('network',api,compartment_id=compartment) or []:
             if vcn_id and r.vcn_id!=vcn_id:continue
             fields={'vcn_id':r.vcn_id}
             if kind=='subnet':fields.update(public=not r.prohibit_public_ip_on_vnic,route_table_id=r.route_table_id)
@@ -46,7 +46,9 @@ def collect(profile,region,compartment,config_file=None,vcn_id=None):
         subnet=subnets.get(v.subnet_id)
         if vcn_id and (not subnet or subnet['vcn_id']!=vcn_id):continue
         ips=call('network','list_private_ips',vnic_id=v.id)
-        add(v,'vnic',instance_id=a.instance_id,subnet_id=v.subnet_id,vcn_id=subnet['vcn_id'] if subnet else None,nsg_ids=v.nsg_ids or [],private_ips=sorted({p.ip_address for p in ips or []}|{v.private_ip_address}))
+        private_ips={p.ip_address for p in ips or [] if p.ip_address}
+        if v.private_ip:private_ips.add(v.private_ip)
+        add(v,'vnic',instance_id=a.instance_id,subnet_id=v.subnet_id,vcn_id=subnet['vcn_id'] if subnet else None,nsg_ids=v.nsg_ids or [],private_ips=sorted(private_ips))
         selected.add(a.instance_id)
     for r in instances:
         if not vcn_id or r.id in selected:add(r,'compute')

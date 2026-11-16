@@ -15,6 +15,7 @@
 - Keep resources and relationships evidence-based and layout deterministic.
 - Do not bypass sandbox/approval controls. Do not spawn agents unless explicitly requested.
 - Do not automatically commit or push. When requested, use conventional commit messages.
+- 앞으로 생성하는 모든 PR의 제목과 본문은 한글로 작성한다. 변경 이유·내용·검증 결과·남은 한계도 한글로 설명하되 코드 식별자, 명령어, 경로, 제품명과 Conventional Commit 접두사는 원문을 유지할 수 있다.
 - Phase status belongs to the executor; do not change AC or executor code to make a task pass.
 
 ## Checks
