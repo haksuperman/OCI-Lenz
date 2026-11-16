@@ -8,27 +8,33 @@ from oci_lenz.collect import collect
 
 @unittest.skipIf(oci is None,'install project OCI dependency to test SDK adapter')
 class CollectorTests(unittest.TestCase):
-    def run_collect(self,fail=None):
+    def run_collect(self,fail=None,primary_ip='10.0.0.2'):
         def obj(id,**kw):return N(id=id,display_name=id,**kw)
         responses={
             'list_vcns':[obj('v')], 'list_subnets':[obj('s',vcn_id='v',prohibit_public_ip_on_vnic=True,route_table_id='rt')],
             'list_route_tables':[obj('rt',vcn_id='v',route_rules=[N(destination='0.0.0.0/0',network_entity_id='nat')])],
             'list_nat_gateways':[obj('nat',vcn_id='v')], 'list_instances':[obj('instance')],
+            'list_network_security_groups':[oci.core.models.NetworkSecurityGroup(id='nsg',vcn_id='v')],
             'list_vnic_attachments':[N(vnic_id='vn',instance_id='instance'),N(vnic_id='vn2',instance_id='instance')],
-            'get_vnic':obj('vn',subnet_id='s',nsg_ids=[],private_ip_address='10.0.0.2'),
             'list_private_ips':[N(ip_address='10.0.0.2')],
             'list_load_balancers':[obj('lb',subnet_ids=['s'],network_security_group_ids=[])],
             'list_backend_sets':[N(name='set')], 'list_backends':[N(ip_address='10.0.0.2',port=80)]}
         calls=[]
         class Client:
             def __init__(self,*a,**kw):pass
+            # The real SDK NSG list method accepts keyword arguments only.
+            def list_network_security_groups(self,**kwargs):
+                compartment_scope=kwargs['compartment_id']
+                if compartment_scope!='c':raise ValueError('unexpected synthetic scope')
+                return self.__getattr__('list_network_security_groups')(**kwargs)
             def __getattr__(self,name):
                 assert name.startswith(('get_','list_','search_'))
                 def call(*a,**kw):
                     calls.append(name)
                     if name==fail: raise oci.exceptions.ServiceError(403,'NotAuthorized',{},'sensitive error')
                     value=responses.get(name,[])
-                    if name=='get_vnic': value=obj(a[0],subnet_id='s',nsg_ids=[],private_ip_address='10.0.0.2')
+                    if name=='get_vnic':
+                        value=oci.core.models.Vnic(id=a[0],subnet_id='s',nsg_ids=[],private_ip=primary_ip)
                     return N(data=value)
                 return call
         with patch.object(oci.config,'from_file',return_value={'tenancy':'t','region':'r'}),patch.object(oci.identity,'IdentityClient',Client),patch.object(oci.core,'ComputeClient',Client),patch.object(oci.core,'VirtualNetworkClient',Client),patch.object(oci.load_balancer,'LoadBalancerClient',Client),patch.object(oci.resource_search,'ResourceSearchClient',Client),patch.object(oci.pagination,'list_call_get_all_results',side_effect=lambda fn,*a,**kw:fn(*a,**kw)):
@@ -43,6 +49,22 @@ class CollectorTests(unittest.TestCase):
         result=next(c for c in s['coverage'] if c['api']=='list_instances')
         self.assertEqual(result['status'],'permission_denied');self.assertNotIn('count',result)
         self.assertNotIn('sensitive',str(s))
+    def test_real_sdk_vnic_primary_ip_when_private_ip_listing_denied(self):
+        s,_=self.run_collect('list_private_ips')
+        vnics=[r for r in s['resources'] if r['kind']=='vnic']
+        self.assertEqual(len(vnics),2)
+        self.assertTrue(all(v['private_ips']==['10.0.0.2'] for v in vnics))
+        coverage=[c for c in s['coverage'] if c.get('api')=='list_private_ips']
+        self.assertTrue(all(c['status']=='permission_denied' for c in coverage))
+    def test_real_sdk_vnic_missing_primary_ip_keeps_listed_ips(self):
+        s,_=self.run_collect(primary_ip=None)
+        self.assertTrue(all(r['private_ips']==['10.0.0.2'] for r in s['resources'] if r['kind']=='vnic'))
+    def test_nsg_list_uses_keyword_compartment_and_keeps_resources(self):
+        s,_=self.run_collect()
+        coverage=next(c for c in s['coverage'] if c.get('api')=='list_network_security_groups')
+        self.assertEqual(coverage['status'],'ok')
+        self.assertEqual(coverage['count'],1)
+        self.assertEqual([r['id'] for r in s['resources'] if r['kind']=='nsg'],['nsg'])
 
 @unittest.skipIf(oci is None,'install OCI SDK')
 class PaginationTests(unittest.TestCase):
