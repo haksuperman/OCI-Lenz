@@ -66,7 +66,7 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
   --references /local/reference-images --output /local/private-diagram
 ```
 
-조회 시 선택적 `--vcn-id`, `--config-file`을 사용할 수 있습니다. 키·암호는 SDK가 로컬 프로필에서 참조하고 AI 입력으로 전달하지 않습니다. 고객사마다 프로필·조회 범위·출력 디렉터리를 분리합니다. IAM 정책 변경은 수행하지 않습니다. API별 권한은 [IAM 문서](docs/IAM.md)에 정리했습니다.
+조회 범위는 리전과 컴파트먼트로 지정하며, 지정한 컴파트먼트의 지원 대상 리소스를 VCN 필터 없이 수집합니다. 여러 컴파트먼트는 `--compartment-id`를 반복해 지정합니다. `--config-file`로 로컬 프로필 파일 경로를 선택할 수 있습니다. 키·암호는 SDK가 로컬 프로필에서 참조하고 AI 입력으로 전달하지 않습니다. 고객사마다 프로필·조회 범위·출력 디렉터리를 분리합니다. IAM 정책 변경은 수행하지 않습니다. API별 권한은 [IAM 문서](docs/IAM.md)에 정리했습니다.
 
 ## 표시 범위와 결과
 

@@ -5,7 +5,7 @@ description: Draw OCI architecture from a local OCI-Lenz snapshot using Oracle's
 
 Read the project Draw.io skill at ../drawio/SKILL.md. OCI uses native editable XML, not flattened Mermaid images. Preserve both .drawio and PNG; do not delete the source.
 
-Accept region, compartment, optional VCN and local SDK profile through `oci-lenz collect`. Never inspect or transmit credentials. Use `oci-lenz draw --snapshot PATH --references DIRECTORY --output DIRECTORY` to apply the skill. For deterministic rerenders use `--reuse-layout PREVIOUS/skill-layout.json`.
+Accept region, one or more explicit compartments and local SDK profile through `oci-lenz collect`. Collect all supported resources in those compartments without a VCN filter. Never inspect or transmit credentials. Use `oci-lenz draw --snapshot PATH --references DIRECTORY --output DIRECTORY` to apply the skill. For deterministic rerenders use `--reuse-layout PREVIOUS/skill-layout.json`.
 
 Operational outputs must show actual resource names and observed IP/CIDR/backend
 information from the snapshot. Apply labels locally after the alias-only model

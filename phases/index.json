@@ -39,6 +39,10 @@
     {
       "dir": "9-service-visual-review",
       "status": "pending"
+    },
+    {
+      "dir": "10-compartment-scope",
+      "status": "pending"
     }
   ]
 }

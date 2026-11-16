@@ -68,7 +68,7 @@ def skill_layout(snapshot,output,references,style='inventory',timeout=600,provid
 def main():
     p=argparse.ArgumentParser(prog='oci-lenz');sub=p.add_subparsers(dest='command',required=True)
     a=sub.add_parser('sample');a.add_argument('--output',type=Path,required=True);a.add_argument('--scenario',choices=('basic','overview','service-map'),default='basic')
-    a=sub.add_parser('collect');a.add_argument('--profile',required=True);a.add_argument('--region',required=True);a.add_argument('--compartment-id',required=True,action='append');a.add_argument('--vcn-id');a.add_argument('--config-file');a.add_argument('--output',type=Path,required=True)
+    a=sub.add_parser('collect');a.add_argument('--profile',required=True);a.add_argument('--region',required=True);a.add_argument('--compartment-id',required=True,action='append');a.add_argument('--config-file');a.add_argument('--output',type=Path,required=True)
     a=sub.add_parser('draw');a.add_argument('--snapshot',type=Path,required=True);a.add_argument('--references',type=Path);a.add_argument('--output',type=Path,required=True);a.add_argument('--reuse-layout',type=Path);a.add_argument('--style',choices=('architecture','inventory','service-map'),default='architecture');a.add_argument('--no-ai',action='store_true',help='Deterministic helper only; does not call the skill');a.add_argument('--no-png',action='store_true');a.add_argument('--skill-timeout',type=positive_seconds,default=600,help='AI timeout per attempt in seconds (default: 600)');a.add_argument('--redact',action='store_true',help='Sharing only: hide resource names and IPs in visible labels');a.add_argument('--ai-provider',choices=('codex','openai'),default=os.environ.get('OCI_LENZ_AI_PROVIDER','codex'));a.add_argument('--model',default=os.environ.get('OCI_LENZ_AI_MODEL'))
     a.add_argument('--detail-pages',action='store_true',help='Optional separate VCN network-detail pages (architecture style)')
     a.add_argument('--groups',type=Path,help='Local explicit service-group JSON; never inferred from names')
@@ -85,13 +85,6 @@ def main():
             for other in snapshots[1:]:
                 s['resources'].extend(other['resources']);s['coverage'].extend(other['coverage'])
             s['resources']=list({r['id']:r for r in s['resources']}.values())
-            if args.vcn_id:
-                selected={r['id'] for r in s['resources'] if r.get('vcn_id')==args.vcn_id or r['id']==args.vcn_id}
-                for r in s['resources']:
-                    if r.get('subnet_id') in selected or any(i in selected for i in r.get('subnet_ids',[])): selected.add(r['id'])
-                selected|={r['instance_id'] for r in s['resources'] if r['id'] in selected and r.get('instance_id')}
-                selected|={r['id'] for r in s['resources'] if r.get('lb_id') in selected}
-                s['resources']=[r for r in s['resources'] if r['id'] in selected]
             s['relationships']=graph(s)[1]
             save(args.output/'snapshot.json',s);save(args.output/'coverage.json',s['coverage']);return
         s=json.loads(args.snapshot.read_text());refs=[]

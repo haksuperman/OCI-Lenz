@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "10-compartment-scope",
+  "steps": [
+    {
+      "step": 0,
+      "name": "compartment-only-collection",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

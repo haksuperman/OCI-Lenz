@@ -30,3 +30,10 @@ appendix. Deterministic obstacle-aware routing refines connectors without moving
 resources; overview emphasizes backend flow and VCN pages show network links.
 Objective checks cannot guarantee subjective quality for every topology; new
 sparse/dense/complex cases must extend the regression suite.
+
+## 006 — Compartment-only collection scope
+Collection uses a region and one or more explicitly selected compartments.
+Remove the VCN filter from both CLI and collector interface. Preserve every
+supported resource returned for that scope and resolve cross-compartment
+relationships after combining snapshots. This does not enable tenancy-wide
+crawling or change optional VCN detail pages in diagram output.
