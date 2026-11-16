@@ -129,7 +129,7 @@ oci-lenz draw --snapshot /local/private-output/snapshot.json \
   --references /local/reference-images --output /local/private-diagram
 ```
 
-Set `--config-file /path/to/config` and optional `--vcn-id OCID` on collect. Repeat `--compartment-id` to explicitly include multiple compartments. Their snapshots are combined before relationship resolution; references outside that set stay unresolved. No automatic tenancy-wide crawl. An attached VNIC is fetched to establish instance relationships. Profile keys/passwords are read by the SDK only.
+Set `--config-file /path/to/config` on collect when needed. Collection is scoped by region and explicitly selected compartments, with no VCN selection/filter. All supported resources returned for those compartments are retained, including instances with no observed VNIC and references to networks outside the selected compartments. Repeat `--compartment-id` to explicitly include multiple compartments. Their snapshots are combined before relationship resolution; references outside that set stay unresolved. No automatic tenancy-wide crawl. An attached VNIC is fetched to establish instance relationships. Profile keys/passwords are read by the SDK only.
 
 Default output is an operational customer diagram: actual names, observed private
 and public VNIC addresses (including secondary VNICs), LB addresses, backend

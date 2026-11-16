@@ -3,7 +3,8 @@
 Read AGENTS.md, docs/HARNESS.md, PRD, ARCHITECTURE, ADR, USAGE,
 oci_lenz/collect.py, model.py and tests/test_collect.py.
 Inputs: installed OCI SDK models and synthetic mocked API responses.
-Interface: collect(profile, region, compartment, config_file=None, vcn_id=None).
+Original interface: collect(profile, region, compartment, config_file=None, vcn_id=None).
+The VCN filter is superseded by phase 10; current interface omits vcn_id.
 Scope: reproduce AttributeError with an actual SDK Vnic model, use its private_ip
 field, retain secondary Private IPs, and exclude missing IP values from matching.
 Also reproduce the keyword-only ListNetworkSecurityGroups SDK signature, pass
