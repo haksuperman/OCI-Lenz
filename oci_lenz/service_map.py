@@ -2,6 +2,7 @@
 import math
 import xml.etree.ElementTree as E
 from .model import graph
+from .display import resource_label,network_label
 
 
 def groups_for(snapshot):
@@ -46,12 +47,16 @@ def render_service_map(snapshot, layout=None):
             cells[k]=c
         def size(k):
             g=cells[k].find('mxGeometry');return float(g.get('width')),float(g.get('height'))
-        def card(k,x,y,parent):
-            rect(k,x,y,110,78,parent)
-            c=cells[k];c.set('value',nodes[k]['name']);c.set('style','text;whiteSpace=wrap;html=0;fontSize=10;verticalAlign=bottom;spacingBottom=3;')
-            if nodes[k]['kind']=='backend_set':
+        def label(k):
+            value=resource_label(nodes[k],width=19)
+            if nodes[k]['kind']=='backend_set' and not nodes[k].get('display_details'):
                 ports=sorted({str(b['port']) for b in nodes[k].get('backends',[])})
-                if ports:c.set('value',nodes[k]['name']+'\n:'+','.join(ports))
+                if ports:value+='\n:'+','.join(ports)
+            return value
+        def card_height(k):return max(78,60+12*len(label(k).splitlines()))
+        def card(k,x,y,parent,height=None):
+            rect(k,x,y,110,height or card_height(k),parent)
+            c=cells[k];c.set('value',label(k));c.set('style','text;whiteSpace=wrap;html=0;fontSize=10;verticalAlign=bottom;spacingBottom=3;')
             if k+'-icon' in cells:rect(k+'-icon',28,3,54,54)
         backend_cluster={}
         for e in sorted(edges,key=lambda e:(e['source'],e['target'])):
@@ -59,7 +64,7 @@ def render_service_map(snapshot, layout=None):
         for v in vcns:
             subnets=sorted((k for k,r in nodes.items() if r['kind']=='subnet' and r.get('vcn_id')==v and k in cells),key=lambda k:(not nodes[k].get('public',False),k))
             shared=next((g.get('role')=='shared' for g in groups if v in g['vcn_ids']),False)
-            y=48;vwidth=320;empty_subnets=[];populated=0
+            y=max(48,18+12*len(network_label(nodes[v],'VCN / ').splitlines()));vwidth=320;empty_subnets=[];populated=0
             for si,sub in enumerate(subnets):
                 members=[k for k in nodes if k in cells and cells[k].get('parent')==sub]
                 visible=[]
@@ -72,8 +77,10 @@ def render_service_map(snapshot, layout=None):
                 if not visible:
                     empty_subnets.append(sub);continue
                 columns=min(4,max(2,math.ceil(math.sqrt(len(visible) or 1))))
-                for j,k in enumerate(visible):card(k,18+(j%columns)*130,44+(j//columns)*96,sub)
-                h=52+max(1,math.ceil(len(visible)/columns))*96
+                rowheight=max(96,max(card_height(k) for k in visible)+18)
+                header=max(44,16+12*len(cells[sub].get('value').splitlines()))
+                for j,k in enumerate(visible):card(k,18+(j%columns)*130,header+(j//columns)*rowheight,sub,height=rowheight-18)
+                h=header+8+max(1,math.ceil(len(visible)/columns))*rowheight
                 subwidth=24+columns*130
                 # Shared-service horizontal lanes are optional and wrap after two subnets.
                 if shared and summary:
@@ -97,14 +104,15 @@ def render_service_map(snapshot, layout=None):
                     cells[k].set('visible','0');rect(k,0,0,0,0)
                 else:visible.append(k)
             # Compact network support strip, independent of application backend paths.
+            stripstep=max([100]+[card_height(k)+18 for k in visible])
             for j,k in enumerate(visible):
-                card(k,12+(j%3)*100 if summary else vwidth+12+(j%2)*100,y+(j//3)*88 if summary else 64+(j//2)*100,v)
+                card(k,12+(j%3)*100 if summary else vwidth+12+(j%2)*100,y+(j//3)*stripstep if summary else 64+(j//2)*stripstep,v)
                 cells[k].find('mxGeometry').set('width','90')
                 if k+'-icon' in cells:cells[k+'-icon'].find('mxGeometry').set('x','18')
-            height=y+((len(visible)+2)//3)*88+14 if summary else max(y,64+((len(visible)+1)//2)*100)+14
+            height=y+((len(visible)+2)//3)*stripstep+14 if summary else max(y,64+((len(visible)+1)//2)*stripstep)+14
             if not summary:vwidth+=220
             rect(v,0,0,vwidth,height)
-            c=cells[v];c.set('value',nodes[v]['name']+' / VCN')
+            c=cells[v];c.set('value',network_label(nodes[v],'VCN / '))
         panel_style='rounded=0;fillColor=none;strokeColor=#D6C9BF;verticalAlign=top;align=left;spacing=10;fontSize=14;fontStyle=1;whiteSpace=wrap;'
         present=[]
         for i,g in enumerate(groups):
@@ -156,7 +164,8 @@ def render_service_map(snapshot, layout=None):
         if loose:height+=((len(loose)+5)//6)*110+20
         rect('layout-region',20,90,width,height)
         synthetic=bool(snapshot.get('coverage')) and all(c.get('source')=='synthetic' for c in snapshot['coverage'])
-        cells['notice'].set('value','OCI-Lenz | Service architecture'+(' — SYNTHETIC' if synthetic else '')+'\nConfigured inventory and backend relationships | IPs and OCIDs hidden')
+        redacted=snapshot.get('presentation',{}).get('redacted',False)
+        cells['notice'].set('value','OCI-Lenz | Service architecture'+(' — SYNTHETIC' if synthetic else '')+'\nConfigured inventory and backend relationships | '+('IPs and OCIDs hidden' if redacted else 'Operational resource names and observed IPs'))
         rect('notice',20,10,max(width,800),60)
         # Put frame cells before their children in serialization for editor friendliness.
         def depth(c):

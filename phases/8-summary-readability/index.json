@@ -1,0 +1,1 @@
+{"project":"OCI-Lenz","phase":"8-summary-readability","steps":[{"step":0,"name":"summary-addresses-and-fanout","status":"pending","ac":[["python3","-m","unittest","discover","-s","tests","-v"],["python3","scripts/execute.py","0-harness-check","--check"]]}]}

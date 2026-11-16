@@ -18,6 +18,7 @@ The app never creates policies. The operator provides an existing API-signing pr
 | GetVnic | read vnics |
 | ListPrivateIps | inspect private-ips |
 | ListLoadBalancers | inspect load-balancers |
+| GetLoadBalancer | read load-balancers; allowlisted listener protocol/port/default backend set only |
 | ListBackendSets, ListBackends | read load-balancers for backend details |
 | SearchResources | visibility follows permissions of the searched resource types; results are not a completeness guarantee |
 

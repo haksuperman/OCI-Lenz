@@ -3,6 +3,7 @@ import base64,copy,json,os,shutil,subprocess,sys,urllib.parse,zlib
 from pathlib import Path
 import xml.etree.ElementTree as E
 from .model import graph
+from .display import resource_label,network_label
 ROOT=Path(__file__).resolve().parents[1]
 if not (ROOT/'assets/oci/library.xml').exists(): ROOT=Path(sys.prefix)/'share/oci-lenz'
 ICONS={'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'backend_set':18,'route':29,'service':31,'internet':32,'nat':33,'nsg':114}
@@ -35,7 +36,10 @@ def icon(root, rid, kind, x,y):
                     g.set(key,str(value*scale))
         root.append(c)
 
-def render(snapshot, layout=None, style='inventory'):
+def render(snapshot, layout=None, style='inventory',detail_pages=False):
+    if style=='architecture':
+        from .architecture import apply_design
+        return apply_design(snapshot,layout,detail_pages=detail_pages)
     if style == 'service-map':
         from .service_map import render_service_map
         return render_service_map(snapshot,layout)
@@ -65,17 +69,19 @@ def render(snapshot, layout=None, style='inventory'):
             if r['kind']=='backend_set':
                 sub=next(iter(nodes.get(r.get('lb_id'),{}).get('subnet_ids',[])),None)
             if r['kind']=='compute':
-                sub=next((v.get('subnet_id') for v in sorted(nodes.values(),key=lambda n:n['id']) if v.get('instance_id')==k),None)
+                sub=next((v.get('subnet_id') for v in sorted(nodes.values(),key=lambda n:(n.get('is_primary') is not True,n['id'])) if v.get('instance_id')==k),None)
             if sub in children and r['kind'] not in ('vcn','subnet'): children[sub].append(k)
         def setbox(k,label,x,y,w,h,parent,kind):
             parents[k]=parent; sizes[k]=(w,h); specs[k]=(label,x,y,w,h,parent,kind)
+        cardheight=max([125]+[65+14*len(resource_label(r,width=30).splitlines()) for r in nodes.values()])
+        rowstep=cardheight+20
         for sub,items in children.items():
             maxx,maxy=600,230
             for j,k in enumerate(items):
-                x,y=25+(j%3)*185,65+(j//3)*145
+                x,y=25+(j%3)*185,65+(j//3)*rowstep
                 if layout and k in layout: x,y=layout[k]['x'],layout[k]['y']
-                setbox(k,nodes[k]['name'] if nodes[k]['name'].lower().startswith(nodes[k]['kind']) else nodes[k]['name']+'\n'+nodes[k]['kind'],x,y,170,125,sub,'card')
-                maxx=max(maxx,x+195);maxy=max(maxy,y+150)
+                setbox(k,resource_label(nodes[k],width=30),x,y,170,cardheight,sub,'card')
+                maxx=max(maxx,x+195);maxy=max(maxy,y+rowstep)
             sizes[sub]=(maxx,maxy)
         attached=set(k for items in children.values() for k in items)
         extras={v:[] for v in vcns}; unplaced=[]
@@ -98,13 +104,13 @@ def render(snapshot, layout=None, style='inventory'):
             width,bottom=650,65
             for sub,x,y in pack(subs,2):
                 w,h=sizes[sub];r=nodes[sub]
-                setbox(sub,('Public' if r.get('public') else 'Private')+' Subnet / '+r['name'],x,y,w,h,v,'subnet')
+                setbox(sub,network_label(r,('Public' if r.get('public') else 'Private')+' Subnet / '),x,y,w,h,v,'subnet')
                 width=max(width,x+w+25);bottom=max(bottom,y+h+25)
             for j,k in enumerate(extras[v]):
-                x,y=25+(j%5)*190,bottom+45+(j//5)*145
-                setbox(k,nodes[k]['name'] if nodes[k]['name'].lower().startswith(nodes[k]['kind']) else nodes[k]['name']+'\n'+nodes[k]['kind'],x,y,170,125,v,'card')
+                x,y=25+(j%5)*190,bottom+45+(j//5)*rowstep
+                setbox(k,resource_label(nodes[k],width=30),x,y,170,cardheight,v,'card')
                 width=max(width,x+195)
-            height=bottom+(45+((len(extras[v])+4)//5)*145 if extras[v] else 0)+25
+            height=bottom+(45+((len(extras[v])+4)//5)*rowstep if extras[v] else 0)+25
             sizes[v]=(width,height)
         # Only API compartment IDs determine compartment membership; display aliases.
         compartments={}
@@ -113,7 +119,7 @@ def render(snapshot, layout=None, style='inventory'):
         for i,(comp,vs) in enumerate(sorted(compartments.items())):
             ck='layout-compartment-'+str(i);compkeys.append(ck);width,bottom=0,0
             for v,x,y in pack(vs,1):
-                w,h=sizes[v];setbox(v,nodes[v]['name']+' / VCN',x,y,w,h,ck,'vcn')
+                w,h=sizes[v];setbox(v,network_label(nodes[v],'VCN / '),x,y,w,h,ck,'vcn')
                 width=max(width,x+w+25);bottom=max(bottom,y+h+25)
             sizes[ck]=(max(width,700),max(bottom,150))
         region='layout-region';width,bottom=700,65
@@ -121,15 +127,15 @@ def render(snapshot, layout=None, style='inventory'):
             w,h=sizes[ck];setbox(ck,'Compartment '+str(compkeys.index(ck)+1),x,y,w,h,region,'compartment')
             width=max(width,x+w+25);bottom=max(bottom,y+h+25)
         for j,k in enumerate(unplaced):
-            x,y=25+(j%5)*190,bottom+45+(j//5)*145
-            setbox(k,nodes[k]['name'] if nodes[k]['name'].lower().startswith(nodes[k]['kind']) else nodes[k]['name']+'\n'+nodes[k]['kind'],x,y,170,125,region,'card')
+            x,y=25+(j%5)*190,bottom+45+(j//5)*rowstep
+            setbox(k,resource_label(nodes[k],width=30),x,y,170,cardheight,region,'card')
             width=max(width,x+195)
         # Subnets whose VCN is outside the scope remain explicit ungrouped containers.
         for sub in subnets:
             if sub not in specs:
                 w,h=sizes[sub];setbox(sub,nodes[sub]['name']+' / Subnet',25,bottom,w,h,region,'subnet');bottom+=h+25
                 width=max(width,w+50)
-        height=bottom+(45+((len(unplaced)+4)//5)*145 if unplaced else 0)+25
+        height=bottom+(45+((len(unplaced)+4)//5)*rowstep if unplaced else 0)+25
         setbox(region,'OCI Region / '+snapshot['scope']['region'],20,85,width,height,'1','region')
         def depth(k):
             d=0
@@ -165,20 +171,35 @@ def render(snapshot, layout=None, style='inventory'):
 
 def validate(xml,snapshot):
     doc=E.fromstring(xml); nodes,edges=graph(snapshot)
-    if len(doc.findall('diagram'))!=1+sum(r['kind']=='vcn' for r in nodes.values()): raise ValueError('page count')
+    if doc.get('style')=='architecture':
+        from .architecture import validate_architecture
+        return validate_architecture(xml,snapshot)
+    if doc.get('pageMode','split') not in ('single','split'):raise ValueError('page mode')
+    page_count=1 if doc.get('pageMode')=='single' else 1+sum(r['kind']=='vcn' for r in nodes.values())
+    if len(doc.findall('diagram'))!=page_count: raise ValueError('page count')
     for page in doc.findall('diagram'):
         cells=list(page.iter('mxCell')); ids={c.get('id') for c in cells}
         if len(ids)!=len(cells):raise ValueError('duplicate cell')
-        vertices={c.get('id') for c in cells if c.get('vertex')=='1' and c.get('id')!='notice' and not any(c.get('id').startswith(k+'-i-') or c.get('id')==k+'-icon' for k in nodes)}
+        vertices={c.get('id') for c in cells if c.get('vertex')=='1' and c.get('id')!='notice' and not any(c.get('id').startswith(k+'-i-') or c.get('id') in (k+'-icon',k+'-label-name',k+'-label-details') for k in nodes)}
         present_vcns=[k for k in vertices if k in nodes and nodes[k]['kind']=='vcn']
         compartment_count=len({nodes[k].get('compartment_id') or 'unspecified' for k in present_vcns})
         structural={'layout-region'}|{'layout-compartment-'+str(i) for i in range(compartment_count)}
+        structural|={'layout-service-'+str(i) for i in range(len(snapshot.get('presentation',{}).get('groups',[])))}
         if doc.get('style')=='service-map':
             from .service_map import groups_for
             structural={'layout-region','layout-notes'}|{('layout-compartment-' if g.get('automatic') else 'layout-service-')+str(i) for i,g in enumerate(groups_for(snapshot)) if any(v in present_vcns for v in g['vcn_ids'])}
         resource_cells=vertices-structural
         if not resource_cells<=set(nodes): raise ValueError('invented resource')
         cellmap={c.get('id'):c for c in cells}
+        for rid in nodes:
+            for suffix in ('name','details'):
+                label=cellmap.get(rid+'-label-'+suffix)
+                if label is None:continue
+                if label.get('parent')!=rid:raise ValueError('label parent mismatch')
+                g=label.find('mxGeometry');parent=cellmap[rid].find('mxGeometry')
+                x,y,w,h=(float(g.get(k,0)) for k in ('x','y','width','height'))
+                if min(x,y,w,h)<0 or x+w>float(parent.get('width')) or y+h>float(parent.get('height')):
+                    raise ValueError('label exceeds card')
         rectangles={}
         for rid in vertices:
             c=cellmap[rid]; parent=c.get('parent')
@@ -205,7 +226,7 @@ def export(path, binary=None):
     if not binary:raise RuntimeError('Install Draw.io Desktop and set DRAWIO_BIN; Linux: use xvfb-run')
     outputs=[]
     for i,page in enumerate(E.parse(path).getroot().findall('diagram'),1):
-        output=path.parent/('region.png' if i==1 else f'vcn-{i-1}.png')
+        output=path.parent/('information-index.png' if page.get('id')=='information-index' else ('region.png' if i==1 else f'vcn-{i-1}.png'))
         cmd=[binary,'-x','-f','png','-b','25','-p',str(i),'-o',str(output),str(path)]
         if os.name=='posix' and not os.environ.get('DISPLAY') and shutil.which('xvfb-run'): cmd=['xvfb-run','-a',*cmd]
         subprocess.run(cmd,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=120)

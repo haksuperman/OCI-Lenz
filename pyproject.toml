@@ -13,5 +13,6 @@ oci-lenz = "oci_lenz.cli:main"
 packages = ["oci_lenz"]
 [tool.setuptools.data-files]
 "share/oci-lenz/assets/oci" = ["assets/oci/library.xml", "assets/oci/SOURCE.md"]
+"share/oci-lenz/assets/reference" = ["assets/reference/layout-guide.png", "assets/reference/layout-guide.drawio", "assets/reference/SOURCE.md"]
 "share/oci-lenz/.agents/skills/drawio" = [".agents/skills/drawio/SKILL.md", ".agents/skills/drawio/LICENSE"]
 "share/oci-lenz/.agents/skills/oci-drawio" = [".agents/skills/oci-drawio/SKILL.md"]
