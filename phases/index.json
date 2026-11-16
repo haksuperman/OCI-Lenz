@@ -19,6 +19,26 @@
     {
       "dir": "4-collector-sdk-fix",
       "status": "pending"
+    },
+    {
+      "dir": "5-layout-timeout",
+      "status": "pending"
+    },
+    {
+      "dir": "6-private-labels",
+      "status": "pending"
+    },
+    {
+      "dir": "7-ai-architecture",
+      "status": "pending"
+    },
+    {
+      "dir": "8-summary-readability",
+      "status": "pending"
+    },
+    {
+      "dir": "9-service-visual-review",
+      "status": "pending"
     }
   ]
 }

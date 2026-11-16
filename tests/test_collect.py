@@ -11,13 +11,14 @@ class CollectorTests(unittest.TestCase):
     def run_collect(self,fail=None,primary_ip='10.0.0.2'):
         def obj(id,**kw):return N(id=id,display_name=id,**kw)
         responses={
-            'list_vcns':[obj('v')], 'list_subnets':[obj('s',vcn_id='v',prohibit_public_ip_on_vnic=True,route_table_id='rt')],
+            'list_vcns':[oci.core.models.Vcn(id='v',compartment_id='c',cidr_blocks=['10.0.0.0/16'])], 'list_subnets':[oci.core.models.Subnet(id='s',vcn_id='v',prohibit_public_ip_on_vnic=True,route_table_id='rt',cidr_block='10.0.0.0/24')],
             'list_route_tables':[obj('rt',vcn_id='v',route_rules=[N(destination='0.0.0.0/0',network_entity_id='nat')])],
             'list_nat_gateways':[obj('nat',vcn_id='v')], 'list_instances':[obj('instance')],
             'list_network_security_groups':[oci.core.models.NetworkSecurityGroup(id='nsg',vcn_id='v')],
             'list_vnic_attachments':[N(vnic_id='vn',instance_id='instance'),N(vnic_id='vn2',instance_id='instance')],
             'list_private_ips':[N(ip_address='10.0.0.2')],
-            'list_load_balancers':[obj('lb',subnet_ids=['s'],network_security_group_ids=[])],
+            'list_load_balancers':[oci.load_balancer.models.LoadBalancer(id='lb',subnet_ids=['s'],network_security_group_ids=[],ip_addresses=[oci.load_balancer.models.IpAddress(ip_address='192.0.2.20',is_public=True)])],
+            'get_load_balancer':oci.load_balancer.models.LoadBalancer(id='lb',listeners={'https':oci.load_balancer.models.Listener(name='https',protocol='TCP',port=443,default_backend_set_name='set')}),
             'list_backend_sets':[N(name='set')], 'list_backends':[N(ip_address='10.0.0.2',port=80)]}
         calls=[]
         class Client:
@@ -34,7 +35,7 @@ class CollectorTests(unittest.TestCase):
                     if name==fail: raise oci.exceptions.ServiceError(403,'NotAuthorized',{},'sensitive error')
                     value=responses.get(name,[])
                     if name=='get_vnic':
-                        value=oci.core.models.Vnic(id=a[0],subnet_id='s',nsg_ids=[],private_ip=primary_ip)
+                        value=oci.core.models.Vnic(id=a[0],subnet_id='s',nsg_ids=[],private_ip=primary_ip,public_ip='192.0.2.10',is_primary=a[0]=='vn')
                     return N(data=value)
                 return call
         with patch.object(oci.config,'from_file',return_value={'tenancy':'t','region':'r'}),patch.object(oci.identity,'IdentityClient',Client),patch.object(oci.core,'ComputeClient',Client),patch.object(oci.core,'VirtualNetworkClient',Client),patch.object(oci.load_balancer,'LoadBalancerClient',Client),patch.object(oci.resource_search,'ResourceSearchClient',Client),patch.object(oci.pagination,'list_call_get_all_results',side_effect=lambda fn,*a,**kw:fn(*a,**kw)):
@@ -65,6 +66,27 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(coverage['status'],'ok')
         self.assertEqual(coverage['count'],1)
         self.assertEqual([r['id'] for r in s['resources'] if r['kind']=='nsg'],['nsg'])
+    def test_operational_addresses_and_network_cidrs_are_allowlisted(self):
+        s,_=self.run_collect()
+        resources={r['id']:r for r in s['resources']}
+        self.assertEqual(resources['v']['cidr_blocks'],['10.0.0.0/16'])
+        self.assertEqual(resources['v']['compartment_id'],'c')
+        self.assertEqual(resources['s']['cidr_block'],'10.0.0.0/24')
+        self.assertEqual(resources['vn']['public_ip'],'192.0.2.10')
+        self.assertEqual(resources['lb']['ip_addresses'],[{'ip_address':'192.0.2.20','is_public':True}])
+
+    def test_primary_vnic_and_listener_fields_use_actual_sdk_models(self):
+        s,_=self.run_collect();resources={r['id']:r for r in s['resources']}
+        self.assertTrue(resources['vn']['is_primary'])
+        self.assertFalse(resources['vn2']['is_primary'])
+        self.assertEqual(resources['vn']['primary_private_ip'],'10.0.0.2')
+        self.assertEqual(resources['lb']['listeners'],[{'name':'https','protocol':'TCP','port':443,'default_backend_set_name':'set'}])
+
+    def test_denied_listener_detail_keeps_lb_and_records_coverage(self):
+        s,_=self.run_collect('get_load_balancer')
+        lb=next(r for r in s['resources'] if r['kind']=='lb')
+        self.assertEqual(lb['listeners'],[])
+        self.assertEqual(next(c for c in s['coverage'] if c.get('api')=='get_load_balancer')['status'],'permission_denied')
 
 @unittest.skipIf(oci is None,'install OCI SDK')
 class PaginationTests(unittest.TestCase):

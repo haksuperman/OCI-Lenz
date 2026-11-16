@@ -1,0 +1,1 @@
+{"project":"OCI-Lenz","phase":"6-private-labels","steps":[{"step":0,"name":"operational-labels","status":"pending","ac":[["python3","-m","unittest","discover","-s","tests","-v"],["python3","scripts/execute.py","0-harness-check","--check"]]}]}

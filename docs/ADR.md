@@ -13,3 +13,20 @@ Git 변경과 원격 쓰기는 자동화하지 않는다.
 
 ## 003 — Draw.io skill and OCI collection
 Use the official jgraph Codex Draw.io skill with OCI-specific adapter instructions. SDK is the sole v1 collector; OCI CLI remains an independent verification tool. Credentials remain local. Codex receives alias IDs and kinds, not SDK objects or OCI authentication. Keep the source XML when exporting PNG; omit embedded XML from shareable PNGs. Deterministic helpers enforce graph structure and replay saved layout.
+
+## 004 — Operational labels and publication
+Default local diagrams show real resource names and observed addresses. Redaction
+is an explicit sharing option, not the operational pipeline. GitHub examples use
+synthetic data. Neither real customer diagrams nor snapshots belong in Git, even
+after visible-label redaction. Codex layout requests always remain alias-only.
+
+## 005 — Model-owned architecture and user authentication
+The default renderer applies full AI geometry, not bounded ordering hints.
+Geometry/topology checks and bounded model repair are part of the product.
+Each installation uses its own Codex login or runtime OpenAI API key/model.
+Only aliases, topology and label footprints reach the model. A synthetic bundled
+image supplies composition guidance. Address details remain in an editable
+appendix. Deterministic obstacle-aware routing refines connectors without moving
+resources; overview emphasizes backend flow and VCN pages show network links.
+Objective checks cannot guarantee subjective quality for every topology; new
+sparse/dense/complex cases must extend the regression suite.
