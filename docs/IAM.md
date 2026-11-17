@@ -15,6 +15,10 @@ The app never creates policies. The operator provides an existing API-signing pr
 | ListNatGateways | inspect nat-gateways |
 | ListInternetGateways | inspect internet-gateways |
 | ListServiceGateways | inspect service-gateways |
+| ListDrgs | inspect drg-object (DRG_READ); inspect drgs includes it |
+| ListDrgAttachments (attachment_type=ALL) | inspect drg-attachments (DRG_ATTACHMENT_READ); inspect drgs includes it |
+| ListLocalPeeringGateways | inspect local-peering-gateways (LOCAL_PEERING_GATEWAY_READ) |
+| ListRemotePeeringConnections | inspect remote-peering-connections (REMOTE_PEERING_CONNECTION_READ) |
 | ListInstances | read instances (INSTANCE_READ), not only inspect |
 | ListVnicAttachments | read vnic-attachments plus inspect instances |
 | GetVnic | read vnics |

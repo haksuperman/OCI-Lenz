@@ -28,7 +28,7 @@ def prepare_display(snapshot,redact=False):
     result=copy.deepcopy(snapshot)
     result.setdefault('presentation',{})['redacted']=redact
     nodes,_=graph(result)
-    aliases={'compute':'VM','lb':'LB','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','unknown':'대상 미확인'}
+    aliases={'compute':'VM','lb':'LB','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','drg':'DRG','drg_attachment':'DRG attachment','lpg':'LPG','rpc':'RPC','unknown':'대상 미확인'}
     alias={k:aliases.get(r['kind'],r['kind'])+' '+str(i+1) for i,(k,r) in enumerate(sorted(nodes.items()))}
     for r in result['resources']:
         r.pop('display_details',None)
@@ -69,6 +69,8 @@ def prepare_display(snapshot,redact=False):
             details.append(label)
         if r['kind']=='backend_set':
             details.extend(sorted({str(b['ip_address'])+':'+str(b['port']) for b in r.get('backends',[])}))
+        for field,label in (('peering_status','Peering status'),('peer_region_name','Peer region'),('network_type','Attachment network type')):
+            if r.get(field):details.append(label+': '+str(r[field]))
         r['display_details']=details
         r['summary_details']=summary
     if redact:

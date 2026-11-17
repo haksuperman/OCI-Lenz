@@ -90,6 +90,14 @@ def graph(snapshot):
             if r.get(field): edge(rid,r[field],field,field)
         for field in ('subnet_ids','nsg_ids'):
             for target in r.get(field,[]): edge(rid,target,field,field)
+        if kind in ('drg_attachment','rpc') and r.get('drg_id'):
+            edge(rid,r['drg_id'],'drg_id',('DrgAttachment' if kind=='drg_attachment' else 'RemotePeeringConnection')+'.drg_id')
+        if kind=='drg_attachment':
+            edge(rid,r.get('network_id') or 'missing-attachment-network:'+rid,'attachment_network',r.get('network_evidence') or 'DrgAttachment.network_details.id')
+        if kind in ('lpg','rpc'):
+            evidence=('LocalPeeringGateway' if kind=='lpg' else 'RemotePeeringConnection')+'.peer_id'
+            if r.get('peer_id'):edge(rid,r['peer_id'],'peer_id',evidence)
+            elif r.get('peering_status')=='PEERED':edge(rid,'peer:'+rid,'peer_id',evidence+' unavailable; peering_status=PEERED')
         if kind=='subnet':
             rt=nodes.get(r.get('route_table_id'),{})
             for rule in rt.get('rules',[]):

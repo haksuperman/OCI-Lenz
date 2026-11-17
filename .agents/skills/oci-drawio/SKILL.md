@@ -65,3 +65,13 @@ names with quieter observed IP labels. During visual review, X/0 labels are
 privacy placeholders preserving real footprints: evaluate geometry/hierarchy,
 not literal words. Revise only known rectangles/routes. Never add resources or
 change immutable parent memberships. Report remaining issues as needs_review.
+
+DRG and peering items use only observed attachment and peer_id relationships.
+DRGs are regional resources, not children of one arbitrarily selected VCN.
+DRG Attachment and LPG name tags are logical objects; DRG/RPC use official
+stencils. Leave out-of-scope peers unknown. Do not infer direct or transitive
+VCN connectivity, traverse peer scopes or treat configured peering as verified
+traffic. DRG route-policy evaluation, VPN/FastConnect and DB/OKE remain separate.
+
+LPGs belong to their actual VCN. Peer links are dashed configured relations;
+API field names stay hidden on the canvas.

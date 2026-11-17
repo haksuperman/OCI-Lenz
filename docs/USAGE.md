@@ -307,3 +307,38 @@ be regenerated. Reuse never silently changes an incompatible saved placement.
 Saved real-AI synthetic examples and their inspection notes are in
 [`artifacts/ai-quality`](../artifacts/ai-quality/README.md). `accepted` records a
 model's judgment of that particular preview, not a guarantee for every inventory.
+
+## DRG and peering scope
+
+Collection includes scoped DRGs, DRG Attachments, Local Peering Gateways (LPG) and
+Remote Peering Connections (RPC). `ListDrgAttachments` explicitly requests ALL
+attachment types; the SDK default is VCN-only. `network_details.id/type` take
+priority over deprecated VCN attachment fields. Permission failures and successful
+empty lists remain distinct coverage records. Shared SDK pagination/retry applies.
+
+The graph preserves attachment → DRG/network and peer_id relationships with API
+field evidence. It does not infer a direct VCN-to-VCN relationship or traffic
+reachability. Only resources returned for selected compartments are resolved;
+remote regions/tenancies/compartments are never fetched automatically. An API
+reports PEERED but omits the peer ID → the peer remains explicitly unknown.
+Non-VCN/RPC attachment network types are retained as references and recorded as
+unsupported endpoints; VPN/FastConnect and DRG route-policy evaluation are not
+implemented. DB and OKE remain follow-up scope. IAM policies are never changed.
+
+DRG and RPC use official native toolkit icons. LPG and DRG Attachment use logical
+editable name tags because the bundle has no dedicated LPG stencil. Captions
+remain names/observed IPs; peering state, peer region and attachment network type
+appear in the information appendix. Recollect older snapshots to obtain these
+new resource types; old snapshots still render without invented network data.
+
+```sh
+oci-lenz sample --scenario network-peering --output /tmp/oci-lenz-network-sample
+oci-lenz draw --snapshot /tmp/oci-lenz-network-sample/snapshot.json --output /tmp/oci-lenz-network-diagram
+# Explicit diagnostic run without model calls:
+oci-lenz draw --snapshot /tmp/oci-lenz-network-sample/snapshot.json --output /tmp/oci-lenz-network-diagnostic --no-ai
+```
+
+This independently synthetic case includes cross-compartment attachments, two
+known LPG endpoints and an unresolved remote RPC. For semantics/permissions see
+[Oracle SDK](https://docs.oracle.com/en-us/iaas/tools/python/latest/api/core/client/oci.core.VirtualNetworkClient.html)
+and [Core IAM reference](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/corepolicyreference.htm).

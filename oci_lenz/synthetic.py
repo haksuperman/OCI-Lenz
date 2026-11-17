@@ -2,13 +2,13 @@
 import copy
 from collections import Counter
 
-SCENARIOS=('long-names','dense','fanout','cross-compartment','unresolved','empty')
+SCENARIOS=('long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering')
 
 
 def build_scenario(case):
     from .model import sample
     if case not in SCENARIOS:raise ValueError('unknown synthetic matrix case')
-    s=sample('overview' if case=='cross-compartment' else 'basic')
+    s=sample('overview' if case in ('cross-compartment','network-peering') else 'basic')
     if case=='empty':s['resources']=[]
     elif case=='long-names':
         for r in s['resources']:
@@ -38,6 +38,14 @@ def build_scenario(case):
         secondary=copy.deepcopy(nic);secondary.update(id='qa-secondary',name='Synthetic secondary NIC',is_primary=False,subnet_id='demo-3-private',vcn_id='demo-3-vcn',private_ips=['10.0.3.99'],compartment_id='synthetic-compartment-2')
         s['resources'].append(secondary)
         lb=next(r for r in s['resources'] if r['id']=='demo-1-lb');lb['subnet_ids'].append('demo-1-private')
+    elif case=='network-peering':
+        s['resources'].extend([
+            {'id':'qa-drg','kind':'drg','name':'Synthetic shared DRG','compartment_id':'synthetic-compartment-1'},
+            {'id':'qa-attach-a','kind':'drg_attachment','name':'Synthetic attachment A','drg_id':'qa-drg','network_id':'demo-1-vcn','network_type':'VCN'},
+            {'id':'qa-attach-b','kind':'drg_attachment','name':'Synthetic attachment B','drg_id':'qa-drg','network_id':'demo-3-vcn','network_type':'VCN','compartment_id':'synthetic-compartment-2'},
+            {'id':'qa-lpg-a','kind':'lpg','name':'Synthetic local peer A','vcn_id':'demo-1-vcn','peer_id':'qa-lpg-b','peering_status':'PEERED'},
+            {'id':'qa-lpg-b','kind':'lpg','name':'Synthetic local peer B','vcn_id':'demo-3-vcn','peer_id':'qa-lpg-a','peering_status':'PEERED','compartment_id':'synthetic-compartment-2'},
+            {'id':'qa-rpc','kind':'rpc','name':'Synthetic remote peer','drg_id':'qa-drg','peer_id':'qa-outside-rpc','peer_region_name':'other-synthetic-region','peering_status':'PEERED'}])
     elif case=='unresolved':
         s['resources']=[r for r in s['resources'] if r['id'] not in ('nat','vcn')]
         bs=next(r for r in s['resources'] if r['kind']=='backend_set')

@@ -8,6 +8,7 @@ from .display import scope_title
 from .typography import card_metrics,style_card,header_metrics,wrap_text,text_width
 
 GATEWAY_KINDS=('internet','nat','service')
+OVERVIEW_EDGE_KINDS=('backend','lb_id','drg_id','attachment_network','peer_id')
 
 
 class LayoutFormatError(ValueError):
@@ -43,7 +44,7 @@ def make_scene(snapshot,view='detail'):
     compact_nodes,_=graph(compact)
     hidden={k for k,r in nodes.items() if view=='overview' and r['kind'] in ('vnic','route','nsg')}
     if view=='overview':
-        flow_nodes={key for e in edges if e['kind'] in ('backend','lb_id') and e['source'] not in hidden and e['target'] not in hidden for key in (e['source'],e['target'])}
+        flow_nodes={key for e in edges if e['kind'] in OVERVIEW_EDGE_KINDS and e['source'] not in hidden and e['target'] not in hidden for key in (e['source'],e['target'])}
         hidden|={k for k,r in nodes.items() if r['kind']=='unknown' and k not in flow_nodes}
     for k in hidden:
         if k in cells:
@@ -66,7 +67,7 @@ def make_scene(snapshot,view='detail'):
                   'min_width':220 if container else width,
                   'min_height':64 if container else card_metrics(compact_nodes[key],width)['height'],
                   'container':container}
-        if not container:items[a]['representation']='name_tag' if kind=='backend_set' else 'icon_label'
+        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','drg_attachment','lpg') else 'icon_label'
         if container:
             header=header_metrics(c.get('value',''),220,container_font(kind))
             items[a]['header_height']=header['header_height']
@@ -233,12 +234,15 @@ def apply_plan(snapshot,scene,plan,region_only=False):
         for i,e in enumerate(edges):
             c=cells.get('edge-'+str(i))
             if c is None:continue
-            if page.get('id')=='region' and e['kind'] not in ('backend','lb_id'):
+            if page.get('id')=='region' and e['kind'] not in OVERVIEW_EDGE_KINDS:
                 c.set('visible','0')
             if e['kind'] in ('route','route_table_id','nsg_ids'):
                 c.set('style',c.get('style')+'textOpacity=0;')
             if e['kind']=='lb_id':c.set('style',c.get('style')+'startArrow=block;endArrow=none;textOpacity=0;')
             if e['kind']=='backend':c.set('style',c.get('style')+'textOpacity=0;')
+            if e['kind'] in ('drg_id','attachment_network','peer_id'):
+                c.set('style',c.get('style')+'textOpacity=0;')
+                if e['kind']=='peer_id':c.set('style',c.get('style')+'dashed=1;')
             if 'e'+str(i) in route_map:
                 g=c.find('mxGeometry');parent=boxes.get(c.get('parent'),{'x':0,'y':0})
                 array=E.SubElement(g,'Array',**{'as':'points'})

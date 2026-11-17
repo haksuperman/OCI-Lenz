@@ -7,7 +7,7 @@ from .model import graph
 from .display import resource_label,network_label
 ROOT=Path(__file__).resolve().parents[1]
 if not (ROOT/'assets/oci/library.xml').exists(): ROOT=Path(sys.prefix)/'share/oci-lenz'
-ICONS={'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'route':29,'service':31,'internet':32,'nat':33,'nsg':114}
+ICONS={'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'route':29,'service':31,'internet':32,'nat':33,'nsg':114,'drg':30,'rpc':34}
 
 def edge_label(edge):
     return edge['label'] or {'nsg_ids':'NSG','route_table_id':'Route table','lb_id':'Backend set'}.get(edge['kind'],edge['kind'])

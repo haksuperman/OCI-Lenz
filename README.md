@@ -76,10 +76,11 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 - VCN별 별도 상세 페이지는 `--detail-pages`로 선택
 - Public/Private Subnet, Compute와 VNIC, Load Balancer와 Backend Set
 - Internet/NAT/Service Gateway, Route 목적지·다음 홉, NSG 연결
+- DRG·Attachment, 로컬 피어링(LPG)·원격 피어링 연결(RPC)
 - 범위 밖·모호한 관계의 `대상 미확인` 표시
 - `architecture.drawio`, `architecture.png`, `information-index.png`, `coverage.json`, `validation.json` (선택 시 `vcn-N.png` 추가)
 
-예시 사진은 시각적 기준입니다. 리소스나 연결의 존재는 OCI 응답을 기준으로 판단하며 실제 트래픽 도달성을 보장하지 않습니다. DB·OKE·DRG·피어링은 후속 범위입니다.
+예시 사진은 시각적 기준입니다. 리소스나 연결의 존재는 OCI 응답을 기준으로 판단하며 실제 트래픽 도달성을 보장하지 않습니다. DB·OKE, DRG 내부 라우팅 정책, VPN·FastConnect는 후속 범위입니다. 피어가 지정 범위 밖이면 자동 조회하지 않고 `대상 미확인`으로 표시합니다.
 
 기본 구성도는 운영용으로 실제 리소스 이름과 수집된 IP·CIDR·백엔드 주소를 표시합니다. 고객사 PNG·Draw.io 파일·스냅샷은 모두 저장소 밖에 보관하세요. GitHub 예시는 가상 데이터로 생성합니다. 별도 공유용 PNG가 필요하면 `draw --redact`로 이름과 IP를 숨길 수 있지만, XML에는 내부 식별자가 남으므로 익명화된 공개 파일로 취급하면 안 됩니다. PNG에는 원본 XML을 포함하지 않습니다. 표시 모드와 관계없이 AI에는 별칭과 리소스 유형·관계만 전달하며, 참고 사진은 사용자가 명시적으로 지정한 경우 전달합니다.
 

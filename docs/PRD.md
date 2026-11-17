@@ -6,7 +6,8 @@ OCI 테넌시의 읽기 전용 인벤토리에서 편집 가능한 Draw.io와 �
 VCN·Subnet·Compute·LB·Internet/NAT/Service Gateway,
 Route Table 목적지/다음 홉, NSG와 LB Backend Set 관계를 포함한다.
 Oracle 공식 아이콘을 사용하고 같은 Draw.io에서 PNG를 내보낸다.
-DB, OKE, DRG, 피어링은 후속 범위다.
+DRG·Attachment, LPG·RPC의 구성 관계까지 수집한다. 범위 밖 피어를 자동 조회하거나
+VCN 간 전이 연결을 추론하지 않는다. DB·OKE, DRG 라우팅 정책·VPN·FastConnect는 후속 범위다.
 
 가상 데이터 산출물은 실제 OCI 접근 없이 검증한다. 실제 조회는 리전·컴파트먼트·프로필이
 지정되었을 때만 수행한다. 공유용 익명 PNG는 `--redact`로 별도 생성한다.

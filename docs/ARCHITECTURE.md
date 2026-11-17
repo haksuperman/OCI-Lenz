@@ -148,3 +148,14 @@ silently interpreted as current geometry. Nested per-scene version-2 metadata
 inside current version-3 plans is still part of the active model protocol.
 Published examples live in artifacts/ai-quality; obsolete generated examples are
 available in Git history. Dated publication reviews live under docs/history.
+
+`network.collect_network` uses the shared scoped, paginated, bounded-retry API
+wrapper for DRGs, all attachment types, LPGs and RPCs. Attachment network_details
+take priority over deprecated vcn_id. Only allowlisted IDs/type/peering state and
+peer region are stored. No remote region, tenant or compartment is traversed.
+Graph edges retain exact field evidence; peers missing from the selected scope
+stay unknown and visible in overview. DRG/RPC icons and logical attachment/LPG
+tags join the same alias-only AI pipeline. No direct/transitive VCN peering edge
+or traffic reachability is invented. DRG route/distribution policies remain
+unsupported. Search reconciliation still covers the original supported types;
+new network resources use their List API coverage, not assumed Search support.

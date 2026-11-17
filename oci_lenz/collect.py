@@ -66,6 +66,8 @@ def collect(profile,region,compartment,config_file=None):
         for bs in sets or []:
             backends=call('lb','list_backends',lb.id,bs.name)
             s['resources'].append({'id':lb.id+'/backend-set/'+bs.name,'kind':'backend_set','name':bs.name,'lb_id':lb.id,'backends':[{'ip_address':b.ip_address,'port':b.port} for b in backends or []]})
+    from .network import collect_network
+    collect_network(call,add,s,compartment)
     # Search counts are inventory evidence only, never inferred graph relationships.
     query=oci.resource_search.models.StructuredSearchDetails(query=f"query all resources where compartmentId = '{compartment}'")
     inventory=call('search','search_resources',query)
@@ -73,6 +75,6 @@ def collect(profile,region,compartment,config_file=None):
         mapping={'Vcn':'vcn','Subnet':'subnet','Instance':'compute','LoadBalancer':'lb','NatGateway':'nat','InternetGateway':'internet','ServiceGateway':'service','NetworkSecurityGroup':'nsg','RouteTable':'route'}
         s['coverage'][-1]['inventory_comparison']={kind:{'search':sum(getattr(r,'resource_type',None)==api_type for r in inventory),'collected':sum(r['kind']==kind for r in s['resources'])} for api_type,kind in mapping.items()}
         s['coverage'][-1]['comparison_note']='Search visibility/indexing may differ; differences do not establish missing resources.'
-    for kind in ('database','oke','drg','peering'):
+    for kind in ('database','oke','drg_routing'):
         s['coverage'].append({'region':region,'compartment':compartment,'service':kind,'status':'unsupported'})
     return s

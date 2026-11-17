@@ -55,3 +55,12 @@ fallbacks, full appendix data and strict graph/geometry validation. Remove unuse
 scene boxes and port-summary calculations; do not change visible output or
 current scene signatures. Retain current AI examples; earlier generated outputs
 remain in Git history and dated reviews are explicitly historical records.
+
+## 009 — Evidence-based DRG and peering expansion
+Collect DRG, all attachment types, LPG and RPC within the specified region and
+compartments. Preserve attachment and peer endpoints as API fields; prefer modern
+network_details and retain an explicit deprecated-VCN fallback. Out-of-scope
+endpoints remain unknown; never recurse into peer scopes or infer transitive
+VCN connectivity. Use native official DRG/RPC art and editable logical labels
+where the bundled toolkit has no dedicated stencil. Keep routing-policy analysis,
+VPN/FastConnect, DB and OKE separate from this expansion.

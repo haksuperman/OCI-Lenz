@@ -58,7 +58,7 @@ def style_card(root,cell,resource,width):
     g=icon.find('mxGeometry') if icon is not None else None
     if g is not None:
         g.set('x',str((width-float(g.get('width')))/2));g.set('y','8')
-    logical=resource['kind']=='backend_set'
+    logical=resource['kind'] in ('backend_set','drg_attachment','lpg')
     height=float(cell.find('mxGeometry').get('height'))
     top=(height-metrics['label_height'])/2 if logical else metrics['label_top']
     def value(text):return escape(text).replace('\n','<br>')

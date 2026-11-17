@@ -8,7 +8,7 @@ from oci_lenz.collect import collect
 
 @unittest.skipIf(oci is None,'install project OCI dependency to test SDK adapter')
 class CollectorTests(unittest.TestCase):
-    def run_collect(self,fail=None,primary_ip='10.0.0.2'):
+    def run_collect(self,fail=None,primary_ip='10.0.0.2',extra=None):
         def obj(id,**kw):return N(id=id,display_name=id,**kw)
         responses={
             'get_tenancy':N(name='Synthetic Tenant',description='not-needed',freeform_tags={'private':'not-needed'}),
@@ -23,6 +23,7 @@ class CollectorTests(unittest.TestCase):
             'list_load_balancers':[oci.load_balancer.models.LoadBalancer(id='lb',subnet_ids=['s'],network_security_group_ids=[],ip_addresses=[oci.load_balancer.models.IpAddress(ip_address='192.0.2.20',is_public=True)])],
             'get_load_balancer':oci.load_balancer.models.LoadBalancer(id='lb',listeners={'https':oci.load_balancer.models.Listener(name='https',protocol='TCP',port=443,default_backend_set_name='set')}),
             'list_backend_sets':[N(name='set')], 'list_backends':[N(ip_address='10.0.0.2',port=80)]}
+        responses.update(extra or {})
         calls=[]
         class Client:
             def __init__(self,*a,**kw):pass
@@ -31,6 +32,9 @@ class CollectorTests(unittest.TestCase):
                 compartment_scope=kwargs['compartment_id']
                 if compartment_scope!='c':raise ValueError('unexpected synthetic scope')
                 return self.__getattr__('list_network_security_groups')(**kwargs)
+            def list_drg_attachments(self,*args,**kwargs):
+                assert kwargs.get('attachment_type')=='ALL'
+                return self.__getattr__('list_drg_attachments')(*args,**kwargs)
             def __getattr__(self,name):
                 assert name.startswith(('get_','list_','search_'))
                 def call(*a,**kw):

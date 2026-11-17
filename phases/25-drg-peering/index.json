@@ -1,0 +1,5 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "25-drg-peering",
+  "steps": [{"step": 0, "name": "collect-and-render-evidenced-drg-peering", "status": "pending", "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]}]
+}
