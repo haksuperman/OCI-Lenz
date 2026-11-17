@@ -1,0 +1,5 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "24-post-cleanup-validation",
+  "steps": [{"step": 0, "name": "fresh-ai-design-from-existing-private-snapshot", "status": "pending", "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]}]
+}
