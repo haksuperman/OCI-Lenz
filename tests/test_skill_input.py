@@ -10,6 +10,8 @@ from unittest.mock import patch
 from types import SimpleNamespace
 from oci_lenz.cli import skill_layout,main,SkillLayoutTimeout
 from oci_lenz.model import sample
+from oci_lenz.display import prepare_display
+from oci_lenz.architecture import make_scene,seed_plan
 
 
 class SkillInputTests(unittest.TestCase):
@@ -47,6 +49,7 @@ class SkillInputTests(unittest.TestCase):
             self.assertEqual(caught.exception.code,2)
 
     def test_child_timeout_and_working_directory_are_explicit(self):
+        snapshot=prepare_display(sample());geometry=seed_plan(make_scene(snapshot,view='overview'))
         def fake_run(command,**kwargs):
             self.assertEqual(kwargs['timeout'],900)
             self.assertNotEqual(Path(kwargs['cwd']).resolve(),Path.cwd())
@@ -54,10 +57,10 @@ class SkillInputTests(unittest.TestCase):
             self.assertIn('--sandbox',command)
             self.assertIn('read-only',command)
             self.assertTrue(Path(command[command.index('-i')+1]).is_absolute())
-            Path(command[command.index('-o')+1]).write_text('{"positions":[]}')
+            Path(command[command.index('-o')+1]).write_text(json.dumps(geometry))
             return SimpleNamespace(returncode=0)
         with tempfile.TemporaryDirectory() as tmp,patch('oci_lenz.cli.subprocess.run',side_effect=fake_run):
-            self.assertEqual(skill_layout(sample(),Path(tmp),[Path('synthetic-reference.png')],timeout=900),{})
+            self.assertEqual(skill_layout(snapshot,Path(tmp),[Path('synthetic-reference.png')],timeout=900)['version'],3)
 
     def test_timeout_error_does_not_expose_child_command_or_output(self):
         secret='PRIVATE-CHILD-ERROR-SENTINEL'
@@ -69,17 +72,18 @@ class SkillInputTests(unittest.TestCase):
             self.assertFalse((Path(tmp)/'skill-layout.json').exists())
 
     def test_service_metadata_and_resource_identifiers_are_aliased(self):
-        snapshot=sample('service-map')
+        snapshot=prepare_display(sample('service-map'))
+        geometry=seed_plan(make_scene(snapshot,view='overview'))
         snapshot['presentation']['groups'][0]['label']='PRIVATE-LABEL-SENTINEL'
         def fake_run(command,**kwargs):
             prompt=kwargs['input']
             self.assertNotIn('PRIVATE-LABEL-SENTINEL',prompt)
             self.assertNotIn('s1-vcn',prompt)
             self.assertNotIn('10.0.1.10',prompt)
-            request=json.loads(prompt.split('\n')[-1])
-            self.assertEqual(request['style'],'service-map')
-            self.assertTrue(all(k.startswith('r') for g in request['service_groups'] for k in g['vcn_ids']))
-            Path(command[command.index('-o')+1]).write_text('{"positions":[]}')
+            request=json.loads(prompt[prompt.index('{"view":'):])
+            self.assertTrue(all(k.startswith('n') for k in request['items']))
+            self.assertTrue(any(v['kind']=='service_group' for v in request['items'].values()))
+            Path(command[command.index('-o')+1]).write_text(json.dumps(geometry))
             return SimpleNamespace(returncode=0)
         with tempfile.TemporaryDirectory() as tmp,patch('oci_lenz.cli.subprocess.run',side_effect=fake_run):
-            self.assertEqual(skill_layout(snapshot,Path(tmp),[],style='service-map'),{})
+            self.assertEqual(skill_layout(snapshot,Path(tmp),[])['version'],3)

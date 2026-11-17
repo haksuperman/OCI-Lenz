@@ -1,12 +1,22 @@
 """Explicit presentation panels; resource ownership/evidence is unchanged."""
 import xml.etree.ElementTree as E
+from .model import graph
+
+
+def validate_groups(snapshot):
+    """Validate explicit VCN membership without inferring any service groups."""
+    nodes,_=graph(snapshot);seen=set()
+    for group in snapshot.get('presentation',{}).get('groups',[]):
+        for vcn in group['vcn_ids']:
+            if vcn in seen or nodes.get(vcn,{}).get('kind')!='vcn':
+                raise ValueError('invalid presentation membership')
+            seen.add(vcn)
 
 
 def service_frames(doc,snapshot):
     groups=snapshot.get('presentation',{}).get('groups',[])
     if not groups:return
-    from .service_map import groups_for
-    groups_for(snapshot)  # Validate membership and duplicate VCN assignments.
+    validate_groups(snapshot)
     root=doc.find('diagram/mxGraphModel/root');cells={c.get('id'):c for c in root}
     cursor=24;max_height=0
     for i,group in enumerate(groups):

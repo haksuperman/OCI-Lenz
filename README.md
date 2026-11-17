@@ -29,8 +29,8 @@ python -m pip install -e .
 ## 가상 환경으로 실행
 
 ```sh
-oci-lenz sample --output artifacts/sample
-oci-lenz draw --snapshot artifacts/sample/snapshot.json --output artifacts/diagram
+oci-lenz sample --output /tmp/oci-lenz-sample
+oci-lenz draw --snapshot /tmp/oci-lenz-sample/snapshot.json --output /tmp/oci-lenz-diagram
 ```
 
 기본 `draw`는 AI가 전체 컨테이너·리소스 좌표와 연결선 경로를 설계합니다. 고객사 정보가 없는 기본 참고 이미지를 함께 보내며, 별도 사진은 `--references /path/to/sanitized-images`로 지정합니다. 앱은 공식 아이콘과 실제 이름·IP를 적용하고 겹침·경계·관계를 검증합니다. 잘못된 배치는 AI에 최대 두 번 수정 요청하며 실패를 고정 배치로 숨기지 않습니다. PNG는 동일 Draw.io 파일에서 내보내며 원본을 보존합니다.
@@ -55,8 +55,8 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 모델 호출 없이 저장된 배치를 재사용할 수 있습니다.
 
 ```sh
-oci-lenz draw --snapshot artifacts/sample/snapshot.json \
-  --reuse-layout artifacts/diagram/skill-layout.json --output artifacts/repeat
+oci-lenz draw --snapshot /tmp/oci-lenz-sample/snapshot.json \
+  --reuse-layout /tmp/oci-lenz-diagram/skill-layout.json --output /tmp/oci-lenz-repeat
 ```
 
 ## 실제 OCI 환경 조회

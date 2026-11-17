@@ -40,5 +40,4 @@ class GraphEdgeCases(unittest.TestCase):
         self.assertTrue(any(x['kind']=='backend' and x['target']=='compute' for x in e))
     def test_overlapping_skill_positions_fail(self):
         s=sample()
-        xml=render(s,{'compute':{'x':30,'y':60},'vnic':{'x':30,'y':60}})
-        with self.assertRaises(ValueError):validate(xml,s)
+        with self.assertRaises(ValueError):render(s,{'compute':{'x':30,'y':60},'vnic':{'x':30,'y':60}})

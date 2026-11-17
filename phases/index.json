@@ -87,6 +87,14 @@
     {
       "dir": "21-ai-quality-matrix",
       "status": "pending"
+    },
+    {
+      "dir": "22-generation-cleanup",
+      "status": "pending"
+    },
+    {
+      "dir": "23-obsolete-paths",
+      "status": "pending"
     }
   ]
 }

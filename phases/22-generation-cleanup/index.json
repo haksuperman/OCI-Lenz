@@ -1,0 +1,5 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "22-generation-cleanup",
+  "steps": [{"step": 0, "name": "unify-generation-and-skip-unused-pages", "status": "pending", "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]}]
+}

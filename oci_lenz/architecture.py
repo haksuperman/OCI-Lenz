@@ -4,10 +4,14 @@ import math
 import hashlib
 import xml.etree.ElementTree as E
 from .model import graph
-from .display import resource_label,scope_title
+from .display import scope_title
 from .typography import card_metrics,style_card,header_metrics,wrap_text,text_width
 
 GATEWAY_KINDS=('internet','nat','service')
+
+
+class LayoutFormatError(ValueError):
+    """Retired top-level layout format; no source fields in CLI diagnostics."""
 
 
 def container_font(kind):
@@ -27,9 +31,9 @@ def compact_snapshot(snapshot):
 
 def make_scene(snapshot,view='detail'):
     if view not in ('detail','overview'):raise ValueError('unknown architecture view')
-    from .draw import render
+    from .draw import build_document
     compact=compact_snapshot(snapshot)
-    doc=E.fromstring(render(compact))
+    doc=E.fromstring(build_document(compact,detail_pages=view=='detail'))
     if view=='overview':
         from .presentation import service_frames
         service_frames(doc,snapshot)
@@ -48,14 +52,9 @@ def make_scene(snapshot,view='detail'):
             for f in ('x','y','width','height'):g.set(f,'0')
     keys=sorted(k for k,c in cells.items() if k not in hidden and c.get('vertex')=='1' and (k in nodes or k.startswith('layout-')))
     aliases={key:'n'+str(i) for i,key in enumerate(keys)}
-    items={};boxes={}
-    def absolute(key):
-        c=cells[key];g=c.find('mxGeometry');x=float(g.get('x',0));y=float(g.get('y',0));p=c.get('parent')
-        if p in aliases:
-            px,py=absolute(p);x+=px;y+=py
-        return x,y
+    items={}
     for key in keys:
-        c=cells[key];g=c.find('mxGeometry');a=aliases[key]
+        c=cells[key];a=aliases[key]
         kind=nodes[key]['kind'] if key in nodes else ('region' if key=='layout-region' else ('service_group' if key.startswith('layout-service-') else 'compartment'))
         container=kind in ('vcn','subnet','region','compartment','service_group')
         width=170
@@ -74,9 +73,6 @@ def make_scene(snapshot,view='detail'):
             items[a]['min_height']=max(64,header['header_height']+12)
         if kind=='subnet':items[a]['public']=bool(nodes[key].get('public'))
         if kind=='service_group':items[a]['shared']=snapshot['presentation']['groups'][int(key.rsplit('-',1)[1])].get('role')=='shared'
-        # The seed is only used by explicit --no-ai and test fixtures.
-        x,y=absolute(key)
-        boxes[a]={'id':a,'x':int(x),'y':int(y),'width':int(float(g.get('width'))),'height':int(float(g.get('height')))}
     gateway_groups=[]
     for vcn in (k for k in keys if nodes.get(k,{}).get('kind')=='vcn'):
         members=[k for k in keys if nodes.get(k,{}).get('kind') in GATEWAY_KINDS and nodes[k].get('vcn_id')==vcn and items[aliases[k]]['parent']==aliases[vcn]]
@@ -84,7 +80,7 @@ def make_scene(snapshot,view='detail'):
         if members:gateway_groups.append({'vcn':aliases[vcn],'members':[aliases[k] for k in members],'max_gap':12,'edge_inset':40})
     request={'view':view,'items':items,'edges':[{'id':'e'+str(i),'source':aliases[e['source']],'target':aliases[e['target']],'kind':e['kind']} for i,e in enumerate(edges) if e['source'] in aliases and e['target'] in aliases],'gateway_groups':gateway_groups,'target_aspect_ratio':1.7}
     signature=hashlib.sha256(repr((keys,items,request['edges'],gateway_groups)).encode()).hexdigest()
-    return {'view':view,'items':items,'region':aliases['layout-region'],'aliases':aliases,'keys':{v:k for k,v in aliases.items()},'boxes':boxes,'request':request,'signature':signature,'xml':E.tostring(doc,encoding='unicode')}
+    return {'view':view,'items':items,'region':aliases['layout-region'],'aliases':aliases,'keys':{v:k for k,v in aliases.items()},'request':request,'signature':signature,'xml':E.tostring(doc,encoding='unicode')}
 
 
 def seed_plan(scene):
@@ -277,12 +273,7 @@ def append_information_index(doc,snapshot,nodes):
 
 def apply_design(snapshot,plan=None,detail_pages=False):
     if plan is not None and plan.get('version')!=3:
-        doc=E.fromstring(apply_plan(snapshot,make_scene(snapshot),plan))
-        if not detail_pages:
-            for page in list(doc.findall('diagram'))[1:-1]:doc.remove(page)
-        doc.set('pageMode','split' if detail_pages else 'single')
-        apply_scope_heading(doc,snapshot)
-        return E.tostring(doc,encoding='unicode')
+        raise LayoutFormatError('Only version-3 architecture layouts are supported; regenerate the layout.')
     overview=make_scene(snapshot,view='overview')
     if plan is None:
         plan={'version':3,'overview':seed_plan(overview)}

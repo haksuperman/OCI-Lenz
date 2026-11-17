@@ -57,25 +57,26 @@ def icon_extent(kind):
     g=root.find("mxCell[@id='measure-icon']/mxGeometry")
     return float(g.get('width')),float(g.get('height'))
 
-def render(snapshot, layout=None, style='inventory',detail_pages=False):
-    if style=='architecture':
-        from .architecture import apply_design
-        return apply_design(snapshot,layout,detail_pages=detail_pages)
-    if style == 'service-map':
-        from .service_map import render_service_map
-        return render_service_map(snapshot,layout)
-    if style not in ('inventory','service-map'):raise ValueError('unknown diagram style')
+def render(snapshot, layout=None, style='architecture',detail_pages=False):
+    if style!='architecture':raise ValueError('Only architecture rendering is supported; regenerate legacy layouts.')
+    from .architecture import apply_design
+    return apply_design(snapshot,layout,detail_pages=detail_pages)
+
+
+def build_document(snapshot,detail_pages=False):
+    """Internal native XML scaffold, with optional VCN pages; not a layout API."""
     nodes,edges=graph(snapshot); doc=E.Element('mxfile',host='OCI-Lenz')
     pages=[('region','Region summary',set(nodes))]
-    for v in sorted((r for r in nodes.values() if r['kind']=='vcn'),key=lambda r:r['id']):
-        ids={v['id']}|{r['id'] for r in nodes.values() if r.get('vcn_id')==v['id']}
-        for _ in range(len(nodes)):
-            before=len(ids)
-            for e in edges:
-                if e['target'] in ids: ids.add(e['source'])
-            if len(ids)==before: break
-        ids|={e['target'] for e in edges if e['source'] in ids}
-        pages.append((v['id'],v['name'],ids))
+    if detail_pages:
+        for v in sorted((r for r in nodes.values() if r['kind']=='vcn'),key=lambda r:r['id']):
+            ids={v['id']}|{r['id'] for r in nodes.values() if r.get('vcn_id')==v['id']}
+            for _ in range(len(nodes)):
+                before=len(ids)
+                for e in edges:
+                    if e['target'] in ids: ids.add(e['source'])
+                if len(ids)==before: break
+            ids|={e['target'] for e in edges if e['source'] in ids}
+            pages.append((v['id'],v['name'],ids))
     for page,title,ids in pages:
         diagram=E.SubElement(doc,'diagram',id=page,name=title)
         root=E.SubElement(E.SubElement(diagram,'mxGraphModel',page='0',background='#ffffff'),'root')
@@ -100,7 +101,6 @@ def render(snapshot, layout=None, style='inventory',detail_pages=False):
             maxx,maxy=600,230
             for j,k in enumerate(items):
                 x,y=25+(j%3)*185,65+(j//3)*rowstep
-                if layout and k in layout: x,y=layout[k]['x'],layout[k]['y']
                 setbox(k,resource_label(nodes[k],width=30),x,y,170,cardheight,sub,'card')
                 maxx=max(maxx,x+195);maxy=max(maxy,y+rowstep)
             sizes[sub]=(maxx,maxy)
@@ -204,14 +204,11 @@ def validate(xml,snapshot):
     for page in doc.findall('diagram'):
         cells=list(page.iter('mxCell')); ids={c.get('id') for c in cells}
         if len(ids)!=len(cells):raise ValueError('duplicate cell')
-        vertices={c.get('id') for c in cells if c.get('vertex')=='1' and c.get('id')!='notice' and not any(c.get('id').startswith(k+'-i-') or c.get('id') in (k+'-icon',k+'-label-name',k+'-label-details') for k in nodes)}
+        vertices={c.get('id') for c in cells if c.get('vertex')=='1' and c.get('id')!='notice' and not any(c.get('id').startswith(k+'-i-') or c.get('id')==k+'-icon' for k in nodes)}
         present_vcns=[k for k in vertices if k in nodes and nodes[k]['kind']=='vcn']
         compartment_count=len({nodes[k].get('compartment_id') or 'unspecified' for k in present_vcns})
         structural={'layout-region'}|{'layout-compartment-'+str(i) for i in range(compartment_count)}
         structural|={'layout-service-'+str(i) for i in range(len(snapshot.get('presentation',{}).get('groups',[])))}
-        if doc.get('style')=='service-map':
-            from .service_map import groups_for
-            structural={'layout-region','layout-notes'}|{('layout-compartment-' if g.get('automatic') else 'layout-service-')+str(i) for i,g in enumerate(groups_for(snapshot)) if any(v in present_vcns for v in g['vcn_ids'])}
         resource_cells=vertices-structural
         if not resource_cells<=set(nodes): raise ValueError('invented resource')
         cellmap={c.get('id'):c for c in cells}
@@ -225,14 +222,6 @@ def validate(xml,snapshot):
                 height=metrics['name_height']+(2+metrics['detail_height'] if metrics['details'] else 0)
                 top=float(options.get('spacingTop',0))
                 if top<0 or top+height>h:raise ValueError('native label exceeds card')
-            for suffix in ('name','details'):
-                label=cellmap.get(rid+'-label-'+suffix)
-                if label is None:continue
-                if label.get('parent')!=rid:raise ValueError('label parent mismatch')
-                g=label.find('mxGeometry');parent=cellmap[rid].find('mxGeometry')
-                x,y,w,h=(float(g.get(k,0)) for k in ('x','y','width','height'))
-                if min(x,y,w,h)<0 or x+w>float(parent.get('width')) or y+h>float(parent.get('height')):
-                    raise ValueError('label exceeds card')
         rectangles={}
         for rid in vertices:
             c=cellmap[rid]; parent=c.get('parent')

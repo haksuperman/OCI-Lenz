@@ -37,3 +37,21 @@ Remove the VCN filter from both CLI and collector interface. Preserve every
 supported resource returned for that scope and resolve cross-compartment
 relationships after combining snapshots. This does not enable tenancy-wide
 crawling or change optional VCN detail pages in diagram output.
+
+## 007 — One public generation path
+Use architecture rendering for both CLI and library calls. Remove the old
+inventory/service-map renderers and their independent Codex ordering-hint
+adapter. Keep the shared native XML scaffold and explicit user-group validation
+separate. Build VCN pages only when a detail scene requests them. Current saved
+version-3 AI plans must replay to exactly the same XML after this refactor;
+legacy hint-only plans require regeneration. Preserve editable source files,
+operational labels, optional details and the evidence graph.
+
+## 008 — Current layout protocol and examples
+Accept only version-3 top-level saved layouts. Remove old top-level geometry and
+separate-label compatibility instead of retaining unused execution paths. Keep
+per-scene metadata used by the current model adapter, source snapshot field
+fallbacks, full appendix data and strict graph/geometry validation. Remove unused
+scene boxes and port-summary calculations; do not change visible output or
+current scene signatures. Retain current AI examples; earlier generated outputs
+remain in Git history and dated reviews are explicitly historical records.
