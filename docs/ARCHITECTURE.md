@@ -72,3 +72,9 @@ identifier fragments. The native router handles LB ownership fanout in display
 direction while retaining BackendSet.lb_id source/target and separate evidence
 edges. Model prompts request content-sized containers; helpers never resize or
 repack model placements to reduce whitespace.
+
+`synthetic` provides a customer-free matrix for long labels, dense subnets,
+fanout, cross-compartment networks, unresolved scope and empty inventories.
+`scripts/validate_scenarios.py` serially exercises native PNG exports and replay.
+Scene container footprints reserve measured title heights. Index text is wrapped
+before measuring rows, and validation rejects clipping and row overlap.

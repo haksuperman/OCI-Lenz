@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "12-topology-matrix",
+  "steps": [
+    {
+      "step": 0,
+      "name": "topology-and-label-matrix",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

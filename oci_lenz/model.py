@@ -1,6 +1,8 @@
 """Minimal snapshots and evidence-based relationships. Never stores SDK objects."""
 
 def sample(scenario='basic'):
+    from .synthetic import SCENARIOS,build_scenario
+    if scenario in SCENARIOS:return build_scenario(scenario)
     if scenario == 'service-map':
         import copy
         resources=[]
