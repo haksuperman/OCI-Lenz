@@ -1,0 +1,194 @@
+[
+  {
+    "case": "basic",
+    "resources": {
+      "vcn": 1,
+      "subnet": 2,
+      "nat": 1,
+      "internet": 1,
+      "service": 1,
+      "nsg": 1,
+      "route": 2,
+      "lb": 1,
+      "backend_set": 1,
+      "compute": 1,
+      "vnic": 1
+    },
+    "snapshot_hash": "1ab5edee676f72c13abf6a25a32c84f51e41801672633e1b82e41cc031569744",
+    "ai_invoked": true,
+    "resumed": true,
+    "graph_valid": true,
+    "replay_equal": true,
+    "png_dimensions": {
+      "architecture.png": [
+        1074,
+        743
+      ],
+      "information-index.png": [
+        1154,
+        890
+      ]
+    },
+    "graph_nodes": 13,
+    "evidence_edges": 20,
+    "native_resource_labels": 6,
+    "official_vector_groups": 5,
+    "visual_review_status": "accepted",
+    "artifact_hashes": {
+      "snapshot.json": "835454c8563219b24ccdba2e9a5c070097d854409b18adfc318a5843dde927cd",
+      "coverage.json": "a1a1344d142614a54b77123255f59a210b17af87fd5a984ee9dd7a43bec83472",
+      "architecture.drawio": "122926b4232baf0a13490ca3aae3ab4b02ee8069317cc4860a043dc2634c23fe",
+      "architecture.png": "cdda8d273561293a62d39ac3973a59e66e5ddc14731dd768d5a1ac25aaaa1f31",
+      "information-index.png": "59791c27aebdd653e914a2f63e828f3f742de68fb985e7b828c47d6a48fd0ef5",
+      "visual-review.json": "77cbba9edbf0a23034016d46b085cb92914afaaf64e1cc189b23953006715292",
+      "validation.json": "4a75a7fb4a5fcbe2a4f7d01502997e0d49471b4c9effc24e70d07d55d008073b",
+      "skill-layout.json": "60692fedc4514d0ce19353185111ea4e8c15af3178fbeea3f9c7bc5df0a5238c"
+    },
+    "status": "accepted",
+    "elapsed_seconds": 0.09
+  },
+  {
+    "case": "overview",
+    "resources": {
+      "vcn": 3,
+      "subnet": 6,
+      "nat": 3,
+      "internet": 3,
+      "service": 3,
+      "nsg": 3,
+      "route": 6,
+      "lb": 3,
+      "backend_set": 3,
+      "compute": 3,
+      "vnic": 3
+    },
+    "snapshot_hash": "08a5197ee0a850b976ea777e3ba6019a9be6821b781f3d7b9b90649b1faa54e0",
+    "ai_invoked": true,
+    "resumed": true,
+    "graph_valid": true,
+    "replay_equal": true,
+    "png_dimensions": {
+      "architecture.png": [
+        1281,
+        843
+      ],
+      "information-index.png": [
+        1154,
+        2582
+      ]
+    },
+    "graph_nodes": 39,
+    "evidence_edges": 60,
+    "native_resource_labels": 18,
+    "official_vector_groups": 15,
+    "visual_review_status": "accepted",
+    "artifact_hashes": {
+      "snapshot.json": "08a5197ee0a850b976ea777e3ba6019a9be6821b781f3d7b9b90649b1faa54e0",
+      "coverage.json": "c24aa141aa302ca434b1412a1625e3cb99e4992a1057c4b05004eb0d2206f817",
+      "architecture.drawio": "2dc6cbcec7acaefa3688df272e72459cc853cc3d3d2d4f736bd753377152e76d",
+      "architecture.png": "9c53a1dd8e6bfb3a5845fed8ba84dac24facbc14aeaa50cff5bf030ac3804420",
+      "information-index.png": "a16739ad0bed4b87f0f0caa8b3bdf94d2fb408069e326961ed2051a7741b0c79",
+      "visual-review.json": "cde46d11dab49b2a2a8f273e555da273be831cd3b07007629d3109f7964f0e0d",
+      "validation.json": "4a75a7fb4a5fcbe2a4f7d01502997e0d49471b4c9effc24e70d07d55d008073b",
+      "skill-layout.json": "2cfddc8d5b2766fe3b6f739586bb3d2c0af386d340b8e0aa58acbdb0e8f50a2b"
+    },
+    "status": "accepted",
+    "elapsed_seconds": 0.21
+  },
+  {
+    "case": "fanout",
+    "resources": {
+      "vcn": 1,
+      "subnet": 2,
+      "nat": 1,
+      "internet": 1,
+      "service": 1,
+      "nsg": 1,
+      "route": 2,
+      "lb": 1,
+      "backend_set": 3,
+      "compute": 8,
+      "vnic": 8
+    },
+    "snapshot_hash": "abac618e8f76a2044d57380b5435674863ee8285a99fe3e023751d7fd55c169f",
+    "ai_invoked": true,
+    "resumed": true,
+    "graph_valid": true,
+    "replay_equal": true,
+    "png_dimensions": {
+      "architecture.png": [
+        1414,
+        943
+      ],
+      "information-index.png": [
+        1154,
+        2086
+      ]
+    },
+    "graph_nodes": 29,
+    "evidence_edges": 57,
+    "native_resource_labels": 15,
+    "official_vector_groups": 12,
+    "visual_review_status": "accepted",
+    "artifact_hashes": {
+      "snapshot.json": "abac618e8f76a2044d57380b5435674863ee8285a99fe3e023751d7fd55c169f",
+      "coverage.json": "036a43097d223f9d403d5021f6cd7bfc70d75335a4e486dab7341e4d3ab7c94c",
+      "architecture.drawio": "17ee242e35bf5cf9c919d08e93a8e5299e645b285b8495d0d9813d09cf058765",
+      "architecture.png": "715d53c710e9d8af6a0dbcbf36c80225ef4a89409e9c45ce1d396f70400b2de4",
+      "information-index.png": "20053716dd9bba1464afe973a5d611086036a4133faba268956650f0d4cdd066",
+      "visual-review.json": "cde46d11dab49b2a2a8f273e555da273be831cd3b07007629d3109f7964f0e0d",
+      "validation.json": "4a75a7fb4a5fcbe2a4f7d01502997e0d49471b4c9effc24e70d07d55d008073b",
+      "skill-layout.json": "40d55af405b2a68bf2fb7ccb8da56cff4465ef3d61f143cc2bdacd38f34d4920"
+    },
+    "status": "accepted",
+    "elapsed_seconds": 0.17
+  },
+  {
+    "case": "dense",
+    "resources": {
+      "vcn": 1,
+      "subnet": 6,
+      "nat": 1,
+      "internet": 1,
+      "service": 1,
+      "nsg": 1,
+      "route": 2,
+      "lb": 1,
+      "backend_set": 1,
+      "compute": 24,
+      "vnic": 24
+    },
+    "snapshot_hash": "0d2be9f181b863f8dce3e3b8f16146224792a27705cb9651b9c0653f9b9b8627",
+    "ai_invoked": true,
+    "resumed": true,
+    "graph_valid": true,
+    "replay_equal": true,
+    "png_dimensions": {
+      "architecture.png": [
+        1630,
+        1045
+      ],
+      "information-index.png": [
+        1154,
+        4778
+      ]
+    },
+    "graph_nodes": 63,
+    "evidence_edges": 139,
+    "native_resource_labels": 29,
+    "official_vector_groups": 28,
+    "visual_review_status": "accepted",
+    "artifact_hashes": {
+      "snapshot.json": "0d2be9f181b863f8dce3e3b8f16146224792a27705cb9651b9c0653f9b9b8627",
+      "coverage.json": "58e89a1593da2217ca54f4f213d626a69ef8ed40c139e487cc2dd0817726db5b",
+      "architecture.drawio": "e84a6864c872102fc79c6444aa59eff530e171553ede255299d2ee540d9cab96",
+      "architecture.png": "f4c705ad81716c79db9ff5a3279928f6b32ad73bf076da483f302d5a92f97f18",
+      "information-index.png": "53be8d98e0ea1b6f61e803f10e347844b5b6756d28a064afd0a6b7c1e8a2f81c",
+      "visual-review.json": "cde46d11dab49b2a2a8f273e555da273be831cd3b07007629d3109f7964f0e0d",
+      "validation.json": "4a75a7fb4a5fcbe2a4f7d01502997e0d49471b4c9effc24e70d07d55d008073b",
+      "skill-layout.json": "37f99a19584bcccf4799142871886cafb2b05a4b66d8c17d2b66e4b79952f288"
+    },
+    "status": "accepted",
+    "elapsed_seconds": 0.42
+  }
+]

@@ -1,0 +1,117 @@
+{
+  "version": 3,
+  "overview": {
+    "placements": [
+      {
+        "id": "n4",
+        "x": 40,
+        "y": 100,
+        "width": 1020,
+        "height": 600
+      },
+      {
+        "id": "n3",
+        "x": 52,
+        "y": 148,
+        "width": 996,
+        "height": 540
+      },
+      {
+        "id": "n10",
+        "x": 64,
+        "y": 196,
+        "width": 972,
+        "height": 480
+      },
+      {
+        "id": "n8",
+        "x": 76,
+        "y": 244,
+        "width": 948,
+        "height": 175
+      },
+      {
+        "id": "n5",
+        "x": 465,
+        "y": 292,
+        "width": 170,
+        "height": 71
+      },
+      {
+        "id": "n0",
+        "x": 465,
+        "y": 379,
+        "width": 170,
+        "height": 28
+      },
+      {
+        "id": "n7",
+        "x": 76,
+        "y": 431,
+        "width": 948,
+        "height": 145
+      },
+      {
+        "id": "n1",
+        "x": 465,
+        "y": 479,
+        "width": 170,
+        "height": 85
+      },
+      {
+        "id": "n2",
+        "x": 428,
+        "y": 592,
+        "width": 76,
+        "height": 72
+      },
+      {
+        "id": "n6",
+        "x": 512,
+        "y": 592,
+        "width": 76,
+        "height": 68
+      },
+      {
+        "id": "n9",
+        "x": 596,
+        "y": 592,
+        "width": 76,
+        "height": 72
+      }
+    ],
+    "routes": [
+      {
+        "id": "e14",
+        "points": [
+          {
+            "x": 550,
+            "y": 379
+          },
+          {
+            "x": 550,
+            "y": 363
+          }
+        ]
+      },
+      {
+        "id": "e15",
+        "points": [
+          {
+            "x": 550,
+            "y": 407
+          },
+          {
+            "x": 550,
+            "y": 479
+          }
+        ]
+      }
+    ],
+    "version": 2,
+    "scene_signature": "9797c4bcd899b2d6c146adede60c3a57aa86f6e12d713435a835fd8985909b0e",
+    "provider": "codex",
+    "model": "local Codex configuration",
+    "attempts": 1
+  }
+}

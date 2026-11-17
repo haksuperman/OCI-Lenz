@@ -1,0 +1,90 @@
+[
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "backend_set",
+    "count": 1,
+    "status": "ok",
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "compute",
+    "count": 24,
+    "status": "ok",
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "internet",
+    "count": 1,
+    "status": "ok",
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "lb",
+    "count": 1,
+    "status": "ok",
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "nat",
+    "count": 1,
+    "status": "ok",
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "nsg",
+    "count": 1,
+    "status": "ok",
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "route",
+    "count": 2,
+    "status": "ok",
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "service",
+    "count": 1,
+    "status": "ok",
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "subnet",
+    "count": 6,
+    "status": "ok",
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "vcn",
+    "count": 1,
+    "status": "ok",
+    "source": "synthetic"
+  },
+  {
+    "region": "sample-region",
+    "compartment": "synthetic-compartment-1",
+    "service": "vnic",
+    "count": 24,
+    "status": "ok",
+    "source": "synthetic"
+  }
+]

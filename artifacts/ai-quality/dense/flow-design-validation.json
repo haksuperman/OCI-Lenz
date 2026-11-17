@@ -1,0 +1,28 @@
+{
+  "resources": 63,
+  "graph_nodes": 63,
+  "evidence_edges": 139,
+  "core_names_preserved": 36,
+  "index_names_preserved": 63,
+  "index_details_preserved": 72,
+  "backend_name_tags": 1,
+  "lb_symbols": 1,
+  "missing_physical_symbols": 0,
+  "visible_edges": 25,
+  "invalid_anchors": 0,
+  "nonorthogonal_segments": 0,
+  "unrelated_content_intersections": 0,
+  "title_intersections": 0,
+  "replay_equal": true,
+  "visual_review_status": "accepted",
+  "png_dimensions": {
+    "architecture.png": [
+      1630,
+      1045
+    ],
+    "information-index.png": [
+      1154,
+      4778
+    ]
+  }
+}

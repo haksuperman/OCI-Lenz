@@ -1,0 +1,30 @@
+{
+  "date": "2026-11-17",
+  "synthetic_only": true,
+  "cases": {
+    "basic": {
+      "architecture_png_inspected": true,
+      "missing_icons_observed": false,
+      "clipped_resource_labels_observed": false,
+      "notes": "No missing icons or clipped labels; generous horizontal whitespace remains."
+    },
+    "overview": {
+      "architecture_png_inspected": true,
+      "missing_icons_observed": false,
+      "clipped_resource_labels_observed": false,
+      "notes": "Compartment/VCN hierarchy is clear; some single-target connectors take longer bends."
+    },
+    "fanout": {
+      "architecture_png_inspected": true,
+      "missing_icons_observed": false,
+      "clipped_resource_labels_observed": false,
+      "notes": "Three Backend Sets and their targets stay adjacent; no clipped labels or missing icons."
+    },
+    "dense": {
+      "architecture_png_inspected": true,
+      "missing_icons_observed": false,
+      "clipped_resource_labels_observed": false,
+      "notes": "24 servers occupy three rows; empty subnet boundaries stay visible; broad upper whitespace remains."
+    }
+  }
+}

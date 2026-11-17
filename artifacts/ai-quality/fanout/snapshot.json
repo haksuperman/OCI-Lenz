@@ -1,0 +1,422 @@
+{
+  "version": 1,
+  "scope": {
+    "region": "sample-region",
+    "compartments": [
+      "synthetic-compartment-1"
+    ],
+    "tenancy_name": "Synthetic Tenancy",
+    "compartment_names": {
+      "synthetic-compartment-1": "Synthetic Compartment 1"
+    }
+  },
+  "coverage": [
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "backend_set",
+      "count": 3,
+      "status": "ok",
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "compute",
+      "count": 8,
+      "status": "ok",
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "internet",
+      "count": 1,
+      "status": "ok",
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "lb",
+      "count": 1,
+      "status": "ok",
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "nat",
+      "count": 1,
+      "status": "ok",
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "nsg",
+      "count": 1,
+      "status": "ok",
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "route",
+      "count": 2,
+      "status": "ok",
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "service",
+      "count": 1,
+      "status": "ok",
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "subnet",
+      "count": 2,
+      "status": "ok",
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "vcn",
+      "count": 1,
+      "status": "ok",
+      "source": "synthetic"
+    },
+    {
+      "region": "sample-region",
+      "compartment": "synthetic-compartment-1",
+      "service": "vnic",
+      "count": 8,
+      "status": "ok",
+      "source": "synthetic"
+    }
+  ],
+  "resources": [
+    {
+      "id": "vcn",
+      "kind": "vcn",
+      "name": "Vcn",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "public",
+      "kind": "subnet",
+      "name": "Public",
+      "vcn_id": "vcn",
+      "public": true,
+      "route_table_id": "public-rt",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "private",
+      "kind": "subnet",
+      "name": "Private",
+      "vcn_id": "vcn",
+      "public": false,
+      "route_table_id": "private-rt",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "nat",
+      "kind": "nat",
+      "name": "Nat",
+      "vcn_id": "vcn",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "internet",
+      "kind": "internet",
+      "name": "Internet",
+      "vcn_id": "vcn",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "service",
+      "kind": "service",
+      "name": "Service",
+      "vcn_id": "vcn",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "app-nsg",
+      "kind": "nsg",
+      "name": "App Nsg",
+      "vcn_id": "vcn",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "private-rt",
+      "kind": "route",
+      "name": "Private Rt",
+      "vcn_id": "vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "nat"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "public-rt",
+      "kind": "route",
+      "name": "Public Rt",
+      "vcn_id": "vcn",
+      "rules": [
+        {
+          "destination": "0.0.0.0/0",
+          "network_entity_id": "internet"
+        }
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "lb",
+      "kind": "lb",
+      "name": "Lb",
+      "subnet_ids": [
+        "public"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "backend-set",
+      "kind": "backend_set",
+      "name": "Backend Set",
+      "lb_id": "lb",
+      "backends": [
+        {
+          "ip_address": "10.0.1.10",
+          "port": 8080
+        },
+        {
+          "ip_address": "10.0.1.13",
+          "port": 8080
+        },
+        {
+          "ip_address": "10.0.1.16",
+          "port": 8080
+        }
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "compute",
+      "kind": "compute",
+      "name": "Compute",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "vnic",
+      "kind": "vnic",
+      "name": "Vnic",
+      "instance_id": "compute",
+      "subnet_id": "private",
+      "vcn_id": "vcn",
+      "private_ips": [
+        "10.0.1.10"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-vm-01",
+      "kind": "compute",
+      "name": "Synthetic application node 01",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-nic-01",
+      "kind": "vnic",
+      "name": "Synthetic NIC 01",
+      "instance_id": "qa-vm-01",
+      "subnet_id": "private",
+      "vcn_id": "vcn",
+      "private_ips": [
+        "10.0.1.11"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-vm-02",
+      "kind": "compute",
+      "name": "Synthetic application node 02",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-nic-02",
+      "kind": "vnic",
+      "name": "Synthetic NIC 02",
+      "instance_id": "qa-vm-02",
+      "subnet_id": "private",
+      "vcn_id": "vcn",
+      "private_ips": [
+        "10.0.1.12"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-vm-03",
+      "kind": "compute",
+      "name": "Synthetic application node 03",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-nic-03",
+      "kind": "vnic",
+      "name": "Synthetic NIC 03",
+      "instance_id": "qa-vm-03",
+      "subnet_id": "private",
+      "vcn_id": "vcn",
+      "private_ips": [
+        "10.0.1.13"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-vm-04",
+      "kind": "compute",
+      "name": "Synthetic application node 04",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-nic-04",
+      "kind": "vnic",
+      "name": "Synthetic NIC 04",
+      "instance_id": "qa-vm-04",
+      "subnet_id": "private",
+      "vcn_id": "vcn",
+      "private_ips": [
+        "10.0.1.14"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-vm-05",
+      "kind": "compute",
+      "name": "Synthetic application node 05",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-nic-05",
+      "kind": "vnic",
+      "name": "Synthetic NIC 05",
+      "instance_id": "qa-vm-05",
+      "subnet_id": "private",
+      "vcn_id": "vcn",
+      "private_ips": [
+        "10.0.1.15"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-vm-06",
+      "kind": "compute",
+      "name": "Synthetic application node 06",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-nic-06",
+      "kind": "vnic",
+      "name": "Synthetic NIC 06",
+      "instance_id": "qa-vm-06",
+      "subnet_id": "private",
+      "vcn_id": "vcn",
+      "private_ips": [
+        "10.0.1.16"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-vm-07",
+      "kind": "compute",
+      "name": "Synthetic application node 07",
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-nic-07",
+      "kind": "vnic",
+      "name": "Synthetic NIC 07",
+      "instance_id": "qa-vm-07",
+      "subnet_id": "private",
+      "vcn_id": "vcn",
+      "private_ips": [
+        "10.0.1.17"
+      ],
+      "nsg_ids": [
+        "app-nsg"
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-set-1",
+      "kind": "backend_set",
+      "name": "Synthetic backend set 1",
+      "lb_id": "lb",
+      "backends": [
+        {
+          "ip_address": "10.0.1.11",
+          "port": 8080
+        },
+        {
+          "ip_address": "10.0.1.14",
+          "port": 8080
+        },
+        {
+          "ip_address": "10.0.1.17",
+          "port": 8080
+        }
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    },
+    {
+      "id": "qa-set-2",
+      "kind": "backend_set",
+      "name": "Synthetic backend set 2",
+      "lb_id": "lb",
+      "backends": [
+        {
+          "ip_address": "10.0.1.12",
+          "port": 8080
+        },
+        {
+          "ip_address": "10.0.1.15",
+          "port": 8080
+        }
+      ],
+      "compartment_id": "synthetic-compartment-1"
+    }
+  ]
+}
