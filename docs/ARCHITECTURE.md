@@ -66,3 +66,9 @@ a user decision; names, connectivity and customer reference diagrams are never
 classification inputs. Explicit user groups are optional presentation overrides.
 Editable reference files are inspected locally for typography/spacing/connector
 conventions only and remain outside the repository and model requests.
+
+Name wrapping prefers natural separators and avoids one-character trailing
+identifier fragments. The native router handles LB ownership fanout in display
+direction while retaining BackendSet.lb_id source/target and separate evidence
+edges. Model prompts request content-sized containers; helpers never resize or
+repack model placements to reduce whitespace.
