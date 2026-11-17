@@ -55,7 +55,7 @@ Same-Backend-Set fanout can share a clear trunk without merging evidence edges.
 
 `presentation.service_frames` applies explicit cross-VCN service panels to the
 overview without changing source membership or evidence. `typography` measures
-Unicode labels and creates native name/detail children. `visual_review` renders
+Unicode labels and stores rich text on the resource cell itself. `visual_review` renders
 a masked overview in an ephemeral directory, rejects PNG textual metadata,
 requests a bounded visual critique/revision through the selected provider, and
 revalidates revisions before use. It records accepted/needs_review explicitly;
@@ -85,3 +85,24 @@ login status is bounded and its output is discarded; the direct API check only
 records runtime key/model presence. Shared `find_drawio` discovery supports PATH,
 explicit DRAWIO_BIN and system/per-user macOS app locations. Standalone wheels
 include runtime assets and user documentation; CI smoke runs outside checkout.
+
+The native router treats each visible container title line as an obstacle, using
+the same Unicode width estimate as wrapping plus a small clearance. Container
+borders remain traversable. Single links and shared backend trunks avoid titles
+without moving AI rectangles or changing evidence endpoints; saved geometry can
+be replayed to apply connector fixes without another model request.
+
+Collection stores only the tenancy name and selected compartment-name mapping
+in scope metadata. Identity lookup failures remain in coverage and do not drop
+resources. Architecture headings apply these names locally above the region;
+legacy snapshots show an explicit unknown name. Sharing and model previews hide
+the names. Long headings grow upward without moving AI placements. The first
+page exports as architecture.png; information-index and optional VCN pages retain
+their filenames.
+
+Resource names and details use one native editable Draw.io label on the resource
+group. No separate name/detail text vertices are created. Official vector symbols
+exclude the cleared toolkit caption bounds, while keeping their painted scale.
+The label starts three pixels below the symbol; HTML text is escaped and masked
+as text nodes for model previews. Conservative card reservations remain unchanged
+so existing saved AI placements can be replayed without a signature bypass.

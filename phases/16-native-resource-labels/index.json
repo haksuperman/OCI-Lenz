@@ -1,0 +1,5 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "16-native-resource-labels",
+  "steps": [{"step": 0, "name": "resource-owned-labels", "status": "pending", "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]}]
+}

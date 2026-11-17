@@ -4,7 +4,7 @@ import math
 import hashlib
 import xml.etree.ElementTree as E
 from .model import graph
-from .display import resource_label
+from .display import resource_label,scope_title
 from .typography import card_metrics,style_card,header_metrics,wrap_text
 
 
@@ -153,7 +153,8 @@ def apply_plan(snapshot,scene,plan,region_only=False):
             if key in nodes and nodes[key]['kind'] not in ('vcn','subnet'):
                 style_card(page.find('mxGraphModel/root'),c,compact_nodes[key],p['width'])
                 icon=cells.get(key+'-icon')
-                if icon is not None:icon.find('mxGeometry').set('x',str((p['width']-54)/2))
+                if icon is not None:
+                    ig=icon.find('mxGeometry');ig.set('x',str((p['width']-float(ig.get('width')))/2))
         if page.get('id')!='region':
             # Detail pages renumber compartment frames. Preserve the model's
             # internal VCN layout and crop only the surrounding page frames.
@@ -226,6 +227,7 @@ def apply_design(snapshot,plan=None,detail_pages=False):
         if not detail_pages:
             for page in list(doc.findall('diagram'))[1:-1]:doc.remove(page)
         doc.set('pageMode','split' if detail_pages else 'single')
+        apply_scope_heading(doc,snapshot)
         return E.tostring(doc,encoding='unicode')
     overview=make_scene(snapshot,view='overview')
     if plan is None:
@@ -239,10 +241,22 @@ def apply_design(snapshot,plan=None,detail_pages=False):
         doc=E.Element('mxfile',host='OCI-Lenz',style='architecture');doc.append(summary)
         append_information_index(doc,snapshot,graph(snapshot)[0])
     doc.set('pageMode','split' if detail_pages else 'single')
-    notice=doc.find("diagram/mxGraphModel/root/mxCell[@id='notice']")
-    if notice is not None:
-        notice.set('value','OCI-Lenz | Whole-environment architecture\nActual resource names and observed addresses | LB/backend configuration links | Complete network/address data: Resource information')
+    apply_scope_heading(doc,snapshot)
     return E.tostring(doc,encoding='unicode')
+
+
+def apply_scope_heading(doc,snapshot):
+    for page in doc.findall('diagram'):
+        notice=page.find("mxGraphModel/root/mxCell[@id='notice']")
+        region=page.find("mxGraphModel/root/mxCell[@id='layout-region']/mxGeometry")
+        if notice is None or region is None:continue
+        width=float(region.get('width'));text=wrap_text(scope_title(snapshot),max(1,width),14)
+        height=18*len(text.split('\n'))+8
+        notice.set('value',text)
+        notice.set('style','text;whiteSpace=wrap;html=0;fontSize=14;align=left;verticalAlign=top;spacing=0;')
+        g=notice.find('mxGeometry');g.set('x',region.get('x','20'));g.set('width',str(width));g.set('height',str(height))
+        # Long/multi-compartment titles grow upward; AI geometry is unchanged.
+        g.set('y',str(min(10,float(region.get('y'))-height-16)))
 
 
 def validate_architecture(xml,snapshot):

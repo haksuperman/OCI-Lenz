@@ -77,7 +77,7 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 - Public/Private Subnet, Compute와 VNIC, Load Balancer와 Backend Set
 - Internet/NAT/Service Gateway, Route 목적지·다음 홉, NSG 연결
 - 범위 밖·모호한 관계의 `대상 미확인` 표시
-- `architecture.drawio`, `region.png`, `information-index.png`, `coverage.json`, `validation.json` (선택 시 `vcn-N.png` 추가)
+- `architecture.drawio`, `architecture.png`, `information-index.png`, `coverage.json`, `validation.json` (선택 시 `vcn-N.png` 추가)
 
 예시 사진은 시각적 기준입니다. 리소스나 연결의 존재는 OCI 응답을 기준으로 판단하며 실제 트래픽 도달성을 보장하지 않습니다. DB·OKE·DRG·피어링은 후속 범위입니다.
 

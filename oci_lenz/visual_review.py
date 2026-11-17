@@ -6,6 +6,8 @@ from pathlib import Path
 import tempfile
 import unicodedata
 import xml.etree.ElementTree as E
+from html import escape
+from html.parser import HTMLParser
 from .ai import request_json,SCHEMA
 from .architecture import make_scene,apply_design,check_plan
 from .model import graph
@@ -33,7 +35,19 @@ def masked_preview(xml,snapshot,scene):
         if key=='notice':cell.set('value','Alias-only geometry preview | labels masked for visual review');continue
         base=key.removesuffix('-label-name').removesuffix('-label-details')
         alias=scene['aliases'].get(base,scene['aliases'].get(key))
-        value=mask(text)
+        if 'html=1;' in cell.get('style',''):
+            class MaskHTML(HTMLParser):
+                def __init__(self):super().__init__(convert_charrefs=True);self.parts=[];self.identified=False
+                def handle_starttag(self,tag,attrs):self.parts.append(self.get_starttag_text())
+                def handle_endtag(self,tag):self.parts.append('</'+tag+'>')
+                def handle_startendtag(self,tag,attrs):self.parts.append(self.get_starttag_text())
+                def handle_data(self,data):
+                    masked=mask(data)
+                    if alias and 'ociNativeLabel=1;' in cell.get('style','') and data.strip() and not self.identified:
+                        masked=alias+' '+masked[len(alias)+1:];self.identified=True
+                    self.parts.append(escape(masked))
+            parser=MaskHTML();parser.feed(text);parser.close();value=''.join(parser.parts)
+        else:value=mask(text)
         if alias and (key.endswith('-label-name') or (key in nodes and nodes[key]['kind'] in ('vcn','subnet')) or key.startswith('layout-service-')):
             lines=value.split('\n');lines[0]=alias+' '+lines[0][len(alias)+1:];value='\n'.join(lines)
         cell.set('value',value)

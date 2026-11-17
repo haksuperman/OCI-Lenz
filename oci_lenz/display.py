@@ -4,6 +4,15 @@ import textwrap
 from .model import graph
 
 
+def scope_title(snapshot):
+    scope=snapshot['scope'];redacted=snapshot.get('presentation',{}).get('redacted')
+    tenancy='Hidden' if redacted else scope.get('tenancy_name') or '이름 미확인'
+    names=scope.get('compartment_names',{})
+    compartments=[('Compartment '+str(i+1)) if redacted else names.get(key) or ('이름 미확인 ('+str(i+1)+')')
+                  for i,key in enumerate(scope.get('compartments',[]))]
+    return 'Tenancy: '+tenancy+'\nCompartment: '+(', '.join(compartments) or '이름 미확인')+' | Region: '+scope['region']
+
+
 def resource_label(resource,width=22):
     lines=[resource['name'],*resource.get('display_details',[])]
     return '\n'.join(part for line in lines for part in (textwrap.wrap(line,width=width,break_long_words=True,break_on_hyphens=False) or ['']))

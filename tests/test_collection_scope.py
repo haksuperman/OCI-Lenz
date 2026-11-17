@@ -35,6 +35,10 @@ class CollectionScopeTests(unittest.TestCase):
         second['resources']=[r for r in resources if r['id'].startswith('demo-3-')]
         first['coverage']=[{'status':'ok','compartment':'compartment-a'}]
         second['coverage']=[{'status':'ok','compartment':'compartment-b'}]
+        first['scope']['compartment_names']={'compartment-a':'Synthetic A'}
+        first['scope'].pop('tenancy_name',None)
+        second['scope']['compartment_names']={'compartment-b':'Synthetic B'}
+        second['scope']['tenancy_name']='Synthetic Tenant'
         # An instance in one compartment can have network objects in the other.
         moved=next(r for r in second['resources'] if r['kind']=='compute')
         second['resources'].remove(moved);first['resources'].append(moved)
@@ -49,5 +53,7 @@ class CollectionScopeTests(unittest.TestCase):
         self.assertEqual({r['id'] for r in result['resources']},{r['id'] for r in resources})
         self.assertEqual(sum(r['kind']=='vcn' for r in result['resources']),3)
         self.assertEqual(result['scope']['compartments'],['compartment-a','compartment-b'])
+        self.assertEqual(result['scope']['compartment_names'],{'compartment-a':'Synthetic A','compartment-b':'Synthetic B'})
+        self.assertEqual(result['scope']['tenancy_name'],'Synthetic Tenant')
         self.assertTrue(any(e['kind']=='instance_id' and e['target']==moved['id'] for e in result['relationships']))
         self.assertEqual(len(result['coverage']),2)
