@@ -47,6 +47,10 @@
     {
       "dir": "11-flow-readability",
       "status": "pending"
+    },
+    {
+      "dir": "12-topology-matrix",
+      "status": "pending"
     }
   ]
 }

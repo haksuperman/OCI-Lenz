@@ -70,7 +70,7 @@ canvas; no separate VCN architecture pages are created unless --detail-pages is
 specified. Version-3 plans use a dedicated AI overview scene, excluding technical
 VNIC/NSG/route cards from layout so they do not leave empty lanes. Native hidden
 cells and all evidence are retained. Optional VCN detail pages use an independent
-AI scene with the complete network inventory. Old version-2 plans remain replayable.
+AI scene with the complete network inventory. Version-2 plans remain supported when their scene signatures match current footprints.
 Local orthogonal routing avoids resource cards without changing model
 placements. This checks geometry, not actual traffic reachability or universal
 visual optimality. Sparse/dense, multiple compartments, unresolved targets, long
@@ -235,3 +235,30 @@ Label wrapping prefers spaces and name separators before breaking identifiers.
 LB ownership branches share a corridor when their evidenced Backend Sets sit
 below the LB, while native API edge endpoints remain unchanged. Layout prompts
 request compact containers, but new model outputs still require visual review.
+
+## Synthetic topology regression matrix
+
+`sample --scenario` also accepts long-names, dense, fanout, cross-compartment,
+unresolved and empty. These are independent synthetic inventories, with no
+inferred service groups. Run all diagnostic renders and PNG exports serially:
+
+```sh
+python scripts/validate_scenarios.py --output /tmp/oci-lenz-topology-matrix
+python scripts/validate_scenarios.py --case long-names --ai --output /tmp/oci-lenz-topology-ai
+```
+
+The default matrix uses the deterministic diagnostic seed, not AI design.
+`--ai` explicitly invokes the configured Codex model and visual review.
+`matrix-report.json` records resource counts, validation, exact XML replay,
+PNG dimensions and visual-review status. Inspect PNGs separately for quality.
+Long container titles contribute an alias-only `header_height` footprint so
+children cannot occupy the title area. Information-index rows wrap and grow;
+clipped/overlapping rows are rejected. Changed footprints require a new layout.
+
+Diagnostic matrix success certifies structure, bounds and replay, not aesthetic
+quality. Dense or mixed-direction fanout may still have crowded/crossing lines
+and requires AI and human visual review. Empty snapshots display a coverage
+reminder rather than claiming that collection succeeded with zero resources.
+
+Plans generated before container header footprint metadata was introduced must
+be regenerated. Reuse never silently changes an incompatible saved placement.

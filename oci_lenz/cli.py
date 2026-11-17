@@ -1,6 +1,7 @@
 import argparse,hashlib,json,shutil,subprocess,tempfile,sys,os
 from pathlib import Path
 from .model import sample,graph
+from .synthetic import SCENARIOS
 from .draw import render,validate,export,ROOT
 from .display import prepare_display
 from .ai import AIConfigurationError
@@ -67,7 +68,7 @@ def skill_layout(snapshot,output,references,style='inventory',timeout=600,provid
 
 def main():
     p=argparse.ArgumentParser(prog='oci-lenz');sub=p.add_subparsers(dest='command',required=True)
-    a=sub.add_parser('sample');a.add_argument('--output',type=Path,required=True);a.add_argument('--scenario',choices=('basic','overview','service-map'),default='basic')
+    a=sub.add_parser('sample');a.add_argument('--output',type=Path,required=True);a.add_argument('--scenario',choices=('basic','overview','service-map',*SCENARIOS),default='basic')
     a=sub.add_parser('collect');a.add_argument('--profile',required=True);a.add_argument('--region',required=True);a.add_argument('--compartment-id',required=True,action='append');a.add_argument('--config-file');a.add_argument('--output',type=Path,required=True)
     a=sub.add_parser('draw');a.add_argument('--snapshot',type=Path,required=True);a.add_argument('--references',type=Path);a.add_argument('--output',type=Path,required=True);a.add_argument('--reuse-layout',type=Path);a.add_argument('--style',choices=('architecture','inventory','service-map'),default='architecture');a.add_argument('--no-ai',action='store_true',help='Deterministic helper only; does not call the skill');a.add_argument('--no-png',action='store_true');a.add_argument('--skill-timeout',type=positive_seconds,default=600,help='AI timeout per attempt in seconds (default: 600)');a.add_argument('--redact',action='store_true',help='Sharing only: hide resource names and IPs in visible labels');a.add_argument('--ai-provider',choices=('codex','openai'),default=os.environ.get('OCI_LENZ_AI_PROVIDER','codex'));a.add_argument('--model',default=os.environ.get('OCI_LENZ_AI_MODEL'))
     a.add_argument('--detail-pages',action='store_true',help='Optional separate VCN network-detail pages (architecture style)')

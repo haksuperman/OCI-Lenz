@@ -28,6 +28,11 @@ def wrap_text(text,width,font_size):
     return '\n'.join(result)
 
 
+def header_metrics(text,width,font_size=12):
+    value=wrap_text(text,max(1,width-24),font_size)
+    return {'text':value,'header_height':max(48,12+(font_size+4)*len(value.split('\n')))}
+
+
 def card_metrics(resource,width):
     name=wrap_text(resource['name'],width-16,12)
     details=wrap_text('\n'.join(resource.get('display_details',[])),width-16,10)

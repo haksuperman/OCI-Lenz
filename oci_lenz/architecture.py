@@ -5,7 +5,7 @@ import hashlib
 import xml.etree.ElementTree as E
 from .model import graph
 from .display import resource_label
-from .typography import card_metrics,style_card
+from .typography import card_metrics,style_card,header_metrics,wrap_text
 
 
 def compact_snapshot(snapshot):
@@ -52,6 +52,10 @@ def make_scene(snapshot,view='detail'):
                   'min_width':220 if container else 170,
                   'min_height':64 if container else card_metrics(compact_nodes[key],170)['height'],
                   'container':container}
+        if container:
+            header=header_metrics(c.get('value',''),220,15 if kind=='service_group' else 12)
+            items[a]['header_height']=header['header_height']
+            items[a]['min_height']=max(64,header['header_height']+12)
         if kind=='subnet':items[a]['public']=bool(nodes[key].get('public'))
         if kind=='service_group':items[a]['shared']=snapshot['presentation']['groups'][int(key.rsplit('-',1)[1])].get('role')=='shared'
         # The seed is only used by explicit --no-ai and test fixtures.
@@ -71,7 +75,7 @@ def seed_plan(scene):
         item=scene['items'][k];w=item['min_width'];h=item['min_height']
         if children[k]:
             columns=3 if item['kind']=='subnet' else 2
-            y=64
+            y=max(64,item.get('header_height',48)+16)
             for start in range(0,len(children[k]),columns):
                 x=24;rowh=0
                 for child in children[k][start:start+columns]:
@@ -105,7 +109,7 @@ def check_plan(scene,plan):
         parent=scene['items'][k]['parent']
         if parent in boxes:
             q=boxes[parent]
-            if p['x']<q['x']+12 or p['y']<q['y']+48 or p['x']+p['width']>q['x']+q['width']-12 or p['y']+p['height']>q['y']+q['height']-12:
+            if p['x']<q['x']+12 or p['y']<q['y']+scene['items'][parent].get('header_height',48) or p['x']+p['width']>q['x']+q['width']-12 or p['y']+p['height']>q['y']+q['height']-12:
                 issues.append('outside parent '+k+' '+parent)
         for other in siblings.setdefault(parent,[]):
             q=boxes[other]
@@ -143,6 +147,9 @@ def apply_plan(snapshot,scene,plan,region_only=False):
                 original_parent=scene['items'][scene['aliases'][key]]['parent']
                 parent=boxes.get(scene['keys'].get(original_parent),{'x':0,'y':0})
             for f,value in zip(('x','y','width','height'),(p['x']-parent['x'],p['y']-parent['y'],p['width'],p['height'])):g.set(f,str(value))
+            item=scene['items'][scene['aliases'][key]]
+            if item['container']:
+                c.set('value',header_metrics(c.get('value',''),p['width'],15 if item['kind']=='service_group' else 12)['text'])
             if key in nodes and nodes[key]['kind'] not in ('vcn','subnet'):
                 style_card(page.find('mxGraphModel/root'),c,compact_nodes[key],p['width'])
                 icon=cells.get(key+'-icon')
@@ -198,6 +205,9 @@ def append_information_index(doc,snapshot,nodes):
     page=E.SubElement(doc,'diagram',id='information-index',name='Resource information')
     root=E.SubElement(E.SubElement(page,'mxGraphModel',page='0',background='#ffffff'),'root')
     E.SubElement(root,'mxCell',id='0');E.SubElement(root,'mxCell',id='1',parent='0')
+    if not snapshot['resources']:
+        c=E.SubElement(root,'mxCell',id='index-notice',value='No resources in this snapshot. Check coverage.json for collection status.',vertex='1',parent='1',style='text;whiteSpace=wrap;html=0;fontSize=12;align=left;verticalAlign=top;spacing=10;')
+        E.SubElement(c,'mxGeometry',x='30',y='30',width='1100',height='54',**{'as':'geometry'})
     y=30
     for i,r in enumerate(sorted(snapshot['resources'],key=lambda r:(r['kind'],r['id']))):
         lines=[r['name']+' / '+r['kind'],*r.get('display_details',[])]
@@ -205,7 +215,7 @@ def append_information_index(doc,snapshot,nodes):
             lines.append('Compartment: '+r['compartment_id'])
         for rule in r.get('rules',[]):lines.append(rule.get('destination','')+' → '+nodes.get(rule.get('network_entity_id'),{}).get('name','대상 미확인'))
         for key in r.get('nsg_ids',[]):lines.append('NSG: '+nodes.get(key,{}).get('name','대상 미확인'))
-        value='\n'.join(lines);height=max(54,20+16*len(lines))
+        value=wrap_text('\n'.join(lines),1080,12);height=max(54,20+16*len(value.split('\n')))
         c=E.SubElement(root,'mxCell',id='information-'+str(i),value=value,vertex='1',parent='1',style='text;whiteSpace=wrap;html=0;fontSize=12;align=left;verticalAlign=top;spacing=10;strokeColor=#D6C9BF;fillColor=#FAF9F6;')
         E.SubElement(c,'mxGeometry',x='30',y=str(y),width='1100',height=str(height),**{'as':'geometry'});y+=height+10
 
@@ -241,5 +251,15 @@ def validate_architecture(xml,snapshot):
     if index is None:raise ValueError('missing information index')
     doc.remove(index);doc.attrib.pop('style',None)
     validate(E.tostring(doc,encoding='unicode'),compact_snapshot(snapshot))
-    if len(index.findall('.//mxCell[@vertex="1"]'))!=len(snapshot['resources']):raise ValueError('information index mismatch')
+    rows=index.findall('.//mxCell[@vertex="1"]')
+    expected={'information-'+str(i) for i in range(len(snapshot['resources']))} if snapshot['resources'] else {'index-notice'}
+    if len(rows)!=len(expected) or {c.get('id') for c in rows}!=expected:raise ValueError('information index mismatch')
+    bottom=0
+    for cell in index.findall('.//mxCell[@vertex="1"]'):
+        g=cell.find('mxGeometry');x,y,w,h=(float(g.get(k,0)) for k in ('x','y','width','height'))
+        required=20+16*len(wrap_text(cell.get('value',''),max(1,w-20),12).split('\n'))
+        if not all(math.isfinite(v) for v in (x,y,w,h)) or min(x,y,w,h)<0 or w<=20 or h<required or y<bottom:
+            raise ValueError('information index clipping or overlap')
+        bottom=y+h
+
     return True
