@@ -51,6 +51,10 @@
     {
       "dir": "12-topology-matrix",
       "status": "pending"
+    },
+    {
+      "dir": "13-user-onboarding",
+      "status": "pending"
     }
   ]
 }

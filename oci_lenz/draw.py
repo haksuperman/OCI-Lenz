@@ -220,9 +220,22 @@ def validate(xml,snapshot):
         if actual!=expected:raise ValueError('relationship mismatch')
     return True
 
+def find_drawio(binary=None):
+    configured=binary or os.environ.get('DRAWIO_BIN')
+    if configured:
+        candidate=Path(configured).expanduser()
+        if candidate.is_file() and os.access(candidate,os.X_OK):return str(candidate)
+        return shutil.which(str(configured))
+    located=shutil.which('drawio')
+    if located:return located
+    if sys.platform=='darwin':
+        for candidate in (Path('/Applications/draw.io.app/Contents/MacOS/draw.io'),Path.home()/'Applications/draw.io.app/Contents/MacOS/draw.io'):
+            if candidate.is_file() and os.access(candidate,os.X_OK):return str(candidate)
+    return None
+
+
 def export(path, binary=None):
-    binary=binary or os.environ.get('DRAWIO_BIN') or shutil.which('drawio')
-    if not binary and Path('/Applications/draw.io.app/Contents/MacOS/draw.io').exists(): binary='/Applications/draw.io.app/Contents/MacOS/draw.io'
+    binary=find_drawio(binary)
     if not binary:raise RuntimeError('Install Draw.io Desktop and set DRAWIO_BIN; Linux: use xvfb-run')
     outputs=[]
     for i,page in enumerate(E.parse(path).getroot().findall('diagram'),1):

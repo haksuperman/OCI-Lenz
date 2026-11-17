@@ -78,3 +78,10 @@ fanout, cross-compartment networks, unresolved scope and empty inventories.
 `scripts/validate_scenarios.py` serially exercises native PNG exports and replay.
 Scene container footprints reserve measured title heights. Index text is wrapped
 before measuring rows, and validation rejects clipping and row overlap.
+
+`diagnostics.environment_report` checks package assets, SDK availability, local
+AI configuration and renderer discovery without reading OCI profiles. Codex
+login status is bounded and its output is discarded; the direct API check only
+records runtime key/model presence. Shared `find_drawio` discovery supports PATH,
+explicit DRAWIO_BIN and system/per-user macOS app locations. Standalone wheels
+include runtime assets and user documentation; CI smoke runs outside checkout.

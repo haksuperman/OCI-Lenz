@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "13-user-onboarding",
+  "steps": [
+    {
+      "step": 0,
+      "name": "standalone-installation-and-onboarding",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}
