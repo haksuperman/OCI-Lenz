@@ -1,0 +1,5 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "17-live-integration",
+  "steps": [{"step": 0, "name": "fresh-scoped-collection-and-ai-diagram", "status": "pending", "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]}]
+}

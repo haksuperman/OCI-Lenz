@@ -5,7 +5,13 @@ import hashlib
 import xml.etree.ElementTree as E
 from .model import graph
 from .display import resource_label,scope_title
-from .typography import card_metrics,style_card,header_metrics,wrap_text
+from .typography import card_metrics,style_card,header_metrics,wrap_text,text_width
+
+GATEWAY_KINDS=('internet','nat','service')
+
+
+def container_font(kind):
+    return {'region':14,'compartment':13,'service_group':15}.get(kind,12)
 
 
 def compact_snapshot(snapshot):
@@ -13,8 +19,9 @@ def compact_snapshot(snapshot):
     for r in result['resources']:
         details=r.get('display_details',[])
         selected=r.get('summary_details') or details[:3]
+        if r['kind'] not in ('vcn','subnet'):
+            selected=[value for value in selected if value.startswith(('Private: ','Public: ','IP: '))]
         r['display_details']=list(selected)
-        if len(details)>len(selected):r['display_details'].append('More: information index')
     return result
 
 
@@ -31,6 +38,9 @@ def make_scene(snapshot,view='detail'):
     nodes,edges=graph(snapshot)
     compact_nodes,_=graph(compact)
     hidden={k for k,r in nodes.items() if view=='overview' and r['kind'] in ('vnic','route','nsg')}
+    if view=='overview':
+        flow_nodes={key for e in edges if e['kind'] in ('backend','lb_id') and e['source'] not in hidden and e['target'] not in hidden for key in (e['source'],e['target'])}
+        hidden|={k for k,r in nodes.items() if r['kind']=='unknown' and k not in flow_nodes}
     for k in hidden:
         if k in cells:
             cells[k].set('visible','0')
@@ -48,12 +58,18 @@ def make_scene(snapshot,view='detail'):
         c=cells[key];g=c.find('mxGeometry');a=aliases[key]
         kind=nodes[key]['kind'] if key in nodes else ('region' if key=='layout-region' else ('service_group' if key.startswith('layout-service-') else 'compartment'))
         container=kind in ('vcn','subnet','region','compartment','service_group')
+        width=170
+        if kind in GATEWAY_KINDS:
+            resource=compact_nodes[key]
+            measured=[text_width(resource['name'],12),*[text_width(value,10) for value in resource.get('display_details',[])]]
+            width=math.ceil(min(152,max(76,max(measured)+16)))
         items[a]={'kind':kind,'parent':aliases.get(c.get('parent'),''),
-                  'min_width':220 if container else 170,
-                  'min_height':64 if container else card_metrics(compact_nodes[key],170)['height'],
+                  'min_width':220 if container else width,
+                  'min_height':64 if container else card_metrics(compact_nodes[key],width)['height'],
                   'container':container}
+        if not container:items[a]['representation']='name_tag' if kind=='backend_set' else 'icon_label'
         if container:
-            header=header_metrics(c.get('value',''),220,15 if kind=='service_group' else 12)
+            header=header_metrics(c.get('value',''),220,container_font(kind))
             items[a]['header_height']=header['header_height']
             items[a]['min_height']=max(64,header['header_height']+12)
         if kind=='subnet':items[a]['public']=bool(nodes[key].get('public'))
@@ -61,8 +77,13 @@ def make_scene(snapshot,view='detail'):
         # The seed is only used by explicit --no-ai and test fixtures.
         x,y=absolute(key)
         boxes[a]={'id':a,'x':int(x),'y':int(y),'width':int(float(g.get('width'))),'height':int(float(g.get('height')))}
-    request={'view':view,'items':items,'edges':[{'id':'e'+str(i),'source':aliases[e['source']],'target':aliases[e['target']],'kind':e['kind']} for i,e in enumerate(edges) if e['source'] in aliases and e['target'] in aliases],'target_aspect_ratio':1.7}
-    signature=hashlib.sha256(repr((keys,items,request['edges'])).encode()).hexdigest()
+    gateway_groups=[]
+    for vcn in (k for k in keys if nodes.get(k,{}).get('kind')=='vcn'):
+        members=[k for k in keys if nodes.get(k,{}).get('kind') in GATEWAY_KINDS and nodes[k].get('vcn_id')==vcn and items[aliases[k]]['parent']==aliases[vcn]]
+        members.sort(key=lambda k:(GATEWAY_KINDS.index(nodes[k]['kind']),k))
+        if members:gateway_groups.append({'vcn':aliases[vcn],'members':[aliases[k] for k in members],'max_gap':12,'edge_inset':40})
+    request={'view':view,'items':items,'edges':[{'id':'e'+str(i),'source':aliases[e['source']],'target':aliases[e['target']],'kind':e['kind']} for i,e in enumerate(edges) if e['source'] in aliases and e['target'] in aliases],'gateway_groups':gateway_groups,'target_aspect_ratio':1.7}
+    signature=hashlib.sha256(repr((keys,items,request['edges'],gateway_groups)).encode()).hexdigest()
     return {'view':view,'items':items,'region':aliases['layout-region'],'aliases':aliases,'keys':{v:k for k,v in aliases.items()},'boxes':boxes,'request':request,'signature':signature,'xml':E.tostring(doc,encoding='unicode')}
 
 
@@ -70,17 +91,25 @@ def seed_plan(scene):
     children={k:[] for k in scene['items']}
     for k,item in scene['items'].items():
         if item['parent'] in children:children[item['parent']].append(k)
+    gateway_rows={group['vcn']:group['members'] for group in scene['request'].get('gateway_groups',[])}
     sizes={};relative={}
     def measure(k):
         item=scene['items'][k];w=item['min_width'];h=item['min_height']
         if children[k]:
             columns=3 if item['kind']=='subnet' else 2
             y=max(64,item.get('header_height',48)+16)
-            for start in range(0,len(children[k]),columns):
+            gateways=gateway_rows.get(k,[])
+            ordinary=[child for child in children[k] if child not in gateways]
+            for start in range(0,len(ordinary),columns):
                 x=24;rowh=0
-                for child in children[k][start:start+columns]:
+                for child in ordinary[start:start+columns]:
                     cw,ch=measure(child);relative[child]=(x,y);x+=cw+24;rowh=max(rowh,ch)
                 w=max(w,x);y+=rowh+24
+            if gateways:
+                x=24;rowh=0
+                for child in gateways:
+                    cw,ch=measure(child);relative[child]=(x,y);x+=cw+8;rowh=max(rowh,ch)
+                w=max(w,x+16);y+=rowh+24
             h=max(h,y)
         sizes[k]=(w,h);return w,h
     measure(scene['region']);placements=[]
@@ -116,6 +145,27 @@ def check_plan(scene,plan):
             if p['x']<q['x']+q['width'] and q['x']<p['x']+p['width'] and p['y']<q['y']+q['height'] and q['y']<p['y']+p['height']:
                 issues.append('overlap '+k+' '+other)
         siblings[parent].append(k)
+    for group in scene['request'].get('gateway_groups',[]):
+        if group['vcn'] not in boxes or any(key not in boxes for key in group['members']):continue
+        members=group['members'];parent=boxes[group['vcn']];near={key:set() for key in members}
+        for key in members:
+            p=boxes[key];item=scene['items'][key]
+            if p['width']>item['min_width']+16 or p['height']>item['min_height']+8:issues.append('gateway footprint '+key)
+            for other in members:
+                if other==key:continue
+                q=boxes[other]
+                horizontal=abs(p['y']-q['y'])<=8 and 0<=q['x']-p['x']-p['width']<=group['max_gap']
+                vertical=abs(p['x']+p['width']/2-q['x']-q['width']/2)<=8 and 0<=q['y']-p['y']-p['height']<=group['max_gap']
+                if horizontal or vertical:near[key].add(other);near[other].add(key)
+        reached={members[0]};pending=[members[0]]
+        while pending:
+            for key in near[pending.pop()]-reached:reached.add(key);pending.append(key)
+        left=min(boxes[k]['x'] for k in members);top=min(boxes[k]['y'] for k in members)
+        right=max(boxes[k]['x']+boxes[k]['width'] for k in members);bottom=max(boxes[k]['y']+boxes[k]['height'] for k in members)
+        insets=(left-parent['x'],parent['x']+parent['width']-right,top-parent['y']-scene['items'][group['vcn']].get('header_height',48),parent['y']+parent['height']-bottom)
+        area=sum(boxes[k]['width']*boxes[k]['height'] for k in members)
+        if len(reached)!=len(members) or min(insets)>group['edge_inset'] or (right-left)*(bottom-top)>3*area:
+            issues.append('gateway cluster '+group['vcn'])
     edge_ids={e['id'] for e in scene['request']['edges']}
     seen=set()
     for route in plan.get('routes',[]):
@@ -149,7 +199,11 @@ def apply_plan(snapshot,scene,plan,region_only=False):
             for f,value in zip(('x','y','width','height'),(p['x']-parent['x'],p['y']-parent['y'],p['width'],p['height'])):g.set(f,str(value))
             item=scene['items'][scene['aliases'][key]]
             if item['container']:
-                c.set('value',header_metrics(c.get('value',''),p['width'],15 if item['kind']=='service_group' else 12)['text'])
+                kind=item['kind'];font=container_font(kind)
+                c.set('value',header_metrics(c.get('value',''),p['width'],font)['text'])
+                c.set('style',c.get('style')+f'fontSize={11 if kind=="subnet" else font};')
+                if kind in ('vcn','subnet'):
+                    c.set('style',c.get('style')+('strokeWidth=1.3;dashPattern=4 3;' if kind=='vcn' else 'strokeWidth=0.7;strokeColor=#C6977D;dashPattern=2 3;'))
             if key in nodes and nodes[key]['kind'] not in ('vcn','subnet'):
                 style_card(page.find('mxGraphModel/root'),c,compact_nodes[key],p['width'])
                 icon=cells.get(key+'-icon')

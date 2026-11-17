@@ -52,7 +52,7 @@ class ArchitectureTests(unittest.TestCase):
         doc=E.fromstring(xml)
         card=doc.find("diagram/mxGraphModel/root/mxCell[@id='compute']")
         self.assertLess(float(card.find('mxGeometry').get('height')),250)
-        self.assertIn('information index',card.get('value'))
+        self.assertNotIn('information index',card.get('value'))
         information='\n'.join(c.get('value','') for c in doc.find("diagram[@id='information-index']").iter('mxCell'))
         self.assertTrue(all(address in information for address in addresses))
 
