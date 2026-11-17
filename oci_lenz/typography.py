@@ -4,15 +4,27 @@ import xml.etree.ElementTree as E
 
 
 def wrap_text(text,width,font_size):
+    def advance(char):
+        return font_size*(1 if unicodedata.east_asian_width(char) in ('W','F') else (0.33 if char.isspace() else 0.6))
+    def measured(value):return sum(advance(c) for c in value)
     result=[]
     for logical in str(text).split('\n'):
-        line='';used=0
-        for char in logical:
-            units=1 if unicodedata.east_asian_width(char) in ('W','F') else (0.33 if char.isspace() else 0.6)
-            advance=units*font_size
-            if line and used+advance>width:result.append(line);line='';used=0
-            line+=char;used+=advance
-        result.append(line)
+        chunks=[];remaining=logical
+        while measured(remaining)>width and len(remaining)>1:
+            used=0;limit=0
+            for char in remaining:
+                if limit and used+advance(char)>width:break
+                used+=advance(char);limit+=1
+            # Prefer natural name boundaries; retain every original character.
+            boundaries=[i+1 for i,c in enumerate(remaining[:limit]) if c.isspace() or c in '-_/.:']
+            split=next((i for i in reversed(boundaries) if i>=max(1,limit//2)),limit)
+            chunks.append(remaining[:split]);remaining=remaining[split:]
+        if chunks and chunks[-1][-1].isalnum() and 0<len(remaining)<3 and remaining.isascii() and remaining.isalnum():
+            # A long opaque identifier still needs hard wrapping, but a final
+            # one-letter line is unnecessary when the preceding line can share.
+            while len(remaining)<3 and len(chunks[-1])>3 and measured(chunks[-1][-1]+remaining)<=width:
+                remaining=chunks[-1][-1]+remaining;chunks[-1]=chunks[-1][:-1]
+        result.extend([*chunks,remaining])
     return '\n'.join(result)
 
 

@@ -43,6 +43,10 @@
     {
       "dir": "10-compartment-scope",
       "status": "pending"
+    },
+    {
+      "dir": "11-flow-readability",
+      "status": "pending"
     }
   ]
 }

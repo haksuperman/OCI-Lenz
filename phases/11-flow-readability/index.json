@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "11-flow-readability",
+  "steps": [
+    {
+      "step": 0,
+      "name": "labels-and-ownership-flow",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

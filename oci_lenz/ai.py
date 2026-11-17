@@ -56,6 +56,8 @@ def design(scene,references,provider='codex',model=None,timeout=600):
           'Prefer balanced landscape overview, VCNs alongside one another, public LB → backend set → compute reading top to bottom. '
           'Use kind=lb to find entry subnets; public/private status alone does not establish application role. '
           'Place many unrelated compute in compact rows; related backend targets adjacent; technical VNIC/NSG/route resources in subordinate lanes. '
+          'Fit container sizes to their contents; avoid large blank bands under sparse VCNs and empty subnets. '
+          'Allocate narrow sibling subnets only enough room for their titles; preserve clear connector corridors near populated subnets. '
           'Keep minimum card sizes, at least 24px between siblings, at least 12px inner side/bottom margin and 48px below container titles. '
           'All rectangles are absolute page coordinates; parent IDs are immutable. Root region must start below y=90. '
           'Plan orthogonal edge bend points for backend/lb edges when useful. Retain clear corridors; do not route through unrelated cards. '

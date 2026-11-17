@@ -61,18 +61,26 @@ def route_native_edges(root,nodes):
         dx=tx+tw/2-x-w/2;dy=ty+th/2-y-h/2
         if abs(dx)/max(w,1)>abs(dy)/max(h,1):return ((x+w if dx>=0 else x),y+h/2),(1 if dx>=0 else 0,0.5)
         return (x+w/2,(y+h if dy>=0 else y)),(0.5,1 if dy>=0 else 0)
-    # Share only the visible backend relationships of one Backend Set. Native
-    # edges, targets and their evidence remain separate and editable.
-    fanouts={}
+    # Route in display direction while retaining native API source/target.
+    # BackendSet.lb_id points toward the LB; its start arrow displays ownership
+    # from the LB down to the set. Both that fanout and backend fanout can share
+    # a corridor, but only within the same evidenced owner.
+    fanouts={};connections={}
     for edge in root:
+        if edge.get('edge')!='1' or edge.get('visible')=='0' or 'opacity=0;' in edge.get('style',''):continue
         source,target=edge.get('source'),edge.get('target')
-        if edge.get('edge')=='1' and edge.get('visible')!='0' and nodes.get(source,{}).get('kind')=='backend_set' and nodes.get(target,{}).get('kind') in ('compute','vnic','unknown'):
+        reverse=(nodes.get(source,{}).get('kind')=='backend_set' and
+                 nodes.get(target,{}).get('kind')=='lb' and 'startArrow=block;' in edge.get('style',''))
+        if reverse:source,target=target,source
+        connections[edge.get('id')]=(source,target,reverse)
+        sk=nodes.get(source,{}).get('kind');tk=nodes.get(target,{}).get('kind')
+        if (sk=='lb' and tk=='backend_set') or (sk=='backend_set' and tk in ('compute','vnic','unknown')):
             fanouts.setdefault(source,[]).append(edge)
     trunks={}
     for source,group in fanouts.items():
         if len(group)<2:continue
-        x,y,w,h=rectangle(source);targets=[rectangle(e.get('target')) for e in group]
-        if not all(ty>y+h+24 for tx,ty,tw,th in targets):continue
+        x,y,w,h=rectangle(source);targets=[rectangle(connections[e.get('id')][1]) for e in group]
+        if not all(ty>=y+h+24 for tx,ty,tw,th in targets):continue
         start=(x+w/2,y+h);branch=(start[0],(start[1]+min(t[1] for t in targets))/2)
         if any(rx<branch[0]<rx+rw and ry<branch[1]<ry+rh for rx,ry,rw,rh in rectangles.values()):continue
         trunks[source]=(route(start,branch,list(rectangles.values())),branch)
@@ -80,13 +88,15 @@ def route_native_edges(root,nodes):
     for c in root:
         style=c.get('style','')
         if c.get('edge')!='1' or c.get('visible')=='0' or 'opacity=0;' in style:continue
-        source,target=c.get('source'),c.get('target')
+        source,target,reverse=connections[c.get('id')]
         a,b=rectangle(source),rectangle(target)
         start,exit_port=port(a,b);end,entry_port=port(b,a)
         obstacles=list(rectangles.values())
         g=c.find('mxGeometry');parent=rectangle(c.get('parent')) if c.get('parent') in cells and cells[c.get('parent')].find('mxGeometry') is not None else (0,0,0,0)
         existing=g.find("Array[@as='points']")
-        points=[start]+([(float(p.get('x'))+parent[0],float(p.get('y'))+parent[1]) for p in existing] if existing is not None else [])+[end]
+        bends=[(float(p.get('x'))+parent[0],float(p.get('y'))+parent[1]) for p in existing] if existing is not None else []
+        if reverse:bends.reverse()
+        points=[start]+bends+[end]
         if source in trunks and c in fanouts[source]:
             trunk,branch=trunks[source];start=trunk[0];exit_port=(0.5,1)
             end=(b[0]+b[2]/2,b[1]);entry_port=(0.5,0)
@@ -96,6 +106,8 @@ def route_native_edges(root,nodes):
             else:
                 points=trunk+route(branch,approach,obstacles)[1:]+[end]
         elif existing is None or any(p[0]!=q[0] and p[1]!=q[1] for p,q in zip(points,points[1:])) or any(intersects(p,q,r) for p,q in zip(points,points[1:]) for r in obstacles):points=route(start,end,obstacles)
+        if reverse:
+            points.reverse();exit_port,entry_port=entry_port,exit_port
         if existing is not None:g.remove(existing)
         array=E.SubElement(g,'Array',**{'as':'points'})
         for x,y in points[1:-1]:E.SubElement(array,'mxPoint',x=str(x-parent[0]),y=str(y-parent[1]))

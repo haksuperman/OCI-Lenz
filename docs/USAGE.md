@@ -230,3 +230,8 @@ represent configured targets, not proven traffic. Dense detail edges can still
 share segments and may require editing. No DB or WAF resources are added from a
 picture. Unknown targets remain visible. The fixture is independently synthetic;
 no customer image is sent to the child Codex process.
+
+Label wrapping prefers spaces and name separators before breaking identifiers.
+LB ownership branches share a corridor when their evidenced Backend Sets sit
+below the LB, while native API edge endpoints remain unchanged. Layout prompts
+request compact containers, but new model outputs still require visual review.
