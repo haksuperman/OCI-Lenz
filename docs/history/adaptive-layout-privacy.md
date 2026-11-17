@@ -1,5 +1,8 @@
 # Adaptive layout publication review
 
+> 과거 검수 시점의 기록입니다. 현재 기능·테스트 수·실행 방법을 설명하는 문서가 아닙니다.
+> 당시 예시 산출물은 Git 이력에서 확인하고, 현재 예시는 `artifacts/ai-quality/`를 사용합니다.
+
 Reviewed on 2026-11-12 before creating `feat/adaptive-service-layout`.
 Proposed PR: `feat: adapt OCI architecture layout to inventory size`.
 Base: `feat/oci-drawio` (existing application PR is still open).

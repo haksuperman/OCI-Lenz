@@ -61,19 +61,14 @@ def prepare_display(snapshot,redact=False):
         cidrs=sorted(set(r.get('cidr_blocks',[]) or ([r['cidr_block']] if r.get('cidr_block') else [])))
         details.extend(cidrs)
         summary.extend(cidrs)
-        listeners={}
         for listener in r.get('listeners',[]):
             protocol=listener.get('protocol') or 'UNKNOWN'
             if listener.get('port') is None:continue
-            listeners.setdefault(protocol,set()).add(listener['port'])
             label='Listener '+listener.get('name','')+' '+protocol+':'+str(listener['port'])
             if listener.get('default_backend_set_name'):label+=' → '+listener['default_backend_set_name']+' (default)'
             details.append(label)
-        for protocol,ports in sorted(listeners.items()):summary.append('Listen '+protocol+': '+','.join(str(p) for p in sorted(ports)))
         if r['kind']=='backend_set':
             details.extend(sorted({str(b['ip_address'])+':'+str(b['port']) for b in r.get('backends',[])}))
-            ports=sorted({b['port'] for b in r.get('backends',[])})
-            if ports:summary.insert(0,'Backend ports: '+','.join(str(p) for p in ports))
         r['display_details']=details
         r['summary_details']=summary
     if redact:

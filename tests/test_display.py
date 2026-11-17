@@ -43,28 +43,27 @@ class DisplayTests(unittest.TestCase):
         private=prepare_display(s)
         self.assertEqual(s,original)
         self.assertEqual(graph(s)[1],graph(private)[1])
-        for style in ('inventory','service-map'):
-            xml=render(private,style=style);validate(xml,private)
-            cells={c.get('id'):c for c in E.fromstring(xml).find('diagram').iter('mxCell')}
-            label=cells['compute'].get('value')
-            self.assertIn('synthetic-operational-web-server-name-with-long-suffix',label.replace('\n',''))
-            for ip in ('10.0.1.10','10.0.1.11','192.0.2.10'):self.assertIn(ip,label)
-            self.assertIn('192.0.2.20',cells['lb'].get('value'))
-            self.assertIn('10.0.1.0/24',cells['private'].get('value'))
-            if style=='service-map':
-                h=float(cells['compute'].find('mxGeometry').get('height'))
-                self.assertGreater(h,100)
+        xml=render(private);validate(xml,private)
+        cells={c.get('id'):c for c in E.fromstring(xml).find('diagram').iter('mxCell')}
+        import html
+        label=html.unescape(cells['compute'].get('value')).replace('<br>','')
+        self.assertIn('synthetic-operational-web-server-name-with-long-suffix',label)
+        for ip in ('10.0.1.10','192.0.2.10'):self.assertIn(ip,label)
+        index=E.fromstring(xml).find("diagram[@id='information-index']")
+        self.assertIn('10.0.1.11',E.tostring(index,encoding='unicode'))
+        self.assertIn('192.0.2.20',cells['lb'].get('value'))
+        self.assertIn('10.0.1.0/24',cells['private'].get('value'))
 
     def test_redacted_output_hides_labels_ips_and_route_destinations(self):
         s=self.snapshot()
         next(r for r in s['resources'] if r['kind']=='route')['rules'][0]['destination']='198.51.100.0/24'
         safe=prepare_display(s,redact=True)
-        xml=render(safe,style='service-map')
+        xml=render(safe)
         validate(xml,safe)
         for text in ('synthetic-operational','10.0.1.10','10.0.1.11','192.0.2.10','192.0.2.20','10.0.1.0/24','198.51.100.0/24'):
             self.assertNotIn(text,xml)
-        self.assertIn('IPs and OCIDs hidden',xml)
+        self.assertIn('Tenancy: Hidden',xml)
 
     def test_legacy_snapshot_without_new_address_fields_still_renders(self):
         s=prepare_display(sample())
-        validate(render(s,style='service-map'),s)
+        validate(render(s),s)

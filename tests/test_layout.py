@@ -66,7 +66,7 @@ class ReferenceLayoutTests(unittest.TestCase):
 
     def test_detail_page_cannot_drop_relationships(self):
         snapshot = sample()
-        doc = E.fromstring(render(snapshot))
+        doc = E.fromstring(render(snapshot,detail_pages=True))
         root = doc.findall('diagram')[1].find('mxGraphModel/root')
         edge = next(c for c in root if c.get('edge') == '1')
         root.remove(edge)

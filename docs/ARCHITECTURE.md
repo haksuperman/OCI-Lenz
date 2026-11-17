@@ -7,7 +7,7 @@
 - `docs/`: 요구사항, 설계, 결정, 실행 절차
 - `phases/`: 독립 작업 지시와 실행 가능한 AC
 
-향후 앱 경로: OCI collector / synthetic fixture → 공통 snapshot → 관계 모델 →
+앱 실행 경로: OCI collector / synthetic fixture → 공통 snapshot → 관계 모델 →
 Draw.io generator → 같은 파일의 PNG export. 수집과 렌더링은 분리한다.
 연결에는 근거 API 필드를 보존하며 범위 밖·불명확한 대상은 미확인으로 표시한다.
 
@@ -36,12 +36,13 @@ applied locally; membership comes from the VCN compartment ID. Reference composi
 are recorded without customer content. The overview synthetic fixture exercises
 multiple VCNs and compartments without reproducing any supplied customer topology.
 
-Legacy `service-map` rendering uses an adaptive service map (`service_map.py`). Optional
-presentation groups are explicit; unassigned VCNs use API compartment grouping.
-Grid and shelf dimensions derive from resource counts, and backend cluster order
-derives from evidence edges. Summary pages retain hidden technical cells/edges;
-detail pages expose them. All share the same model and validator. Canvas size is
-an output of layout, never copied from reference imagery.
+Only `architecture` is a public rendering mode. The former inventory/service-map
+renderers and separate ordering-hint model adapter have been retired.
+`draw.build_document` is the shared internal native XML scaffold; it builds just
+the overview unless a detail scene explicitly requests VCN pages. The public
+library renderer defaults to the same architecture flow as the CLI.
+`presentation.validate_groups` validates explicit VCN assignments independently
+of any legacy renderer. User groups remain optional and never inferred.
 
 `display.prepare_display` copies the inventory for local operational labels,
 including observed secondary VNIC addresses on their Compute. Names and address
@@ -137,3 +138,13 @@ extra group box is drawn and no API membership changes. Diagnostic seed layouts
 pack the gateway row separately; actual AI rectangles are never repacked locally.
 Gateway name captions use 11px text within reservations measured at 12px to leave
 clearance for bold suffixes and avoid extra wrapping in the narrow cards.
+
+Current scenes contain topology, item footprints, aliases and the native XML
+scaffold; unused precomputed coordinate boxes are not retained. Display summaries
+contain observed addresses/CIDRs only; full listener/backend details stay in the
+information appendix. Only native resource-owned labels are supported. Old
+separate-label vertices and pre-version-3 top-level plans are rejected, not
+silently interpreted as current geometry. Nested per-scene version-2 metadata
+inside current version-3 plans is still part of the active model protocol.
+Published examples live in artifacts/ai-quality; obsolete generated examples are
+available in Git history. Dated publication reviews live under docs/history.

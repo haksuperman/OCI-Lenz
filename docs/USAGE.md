@@ -10,8 +10,8 @@ cd OCI-Lenz
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -e .
-oci-lenz sample --output artifacts/sample
-oci-lenz draw --snapshot artifacts/sample/snapshot.json --output artifacts/diagram
+oci-lenz sample --output /tmp/oci-lenz-sample
+oci-lenz draw --snapshot /tmp/oci-lenz-sample/snapshot.json --output /tmp/oci-lenz-diagram
 ```
 
 Project skills are available on the next Codex turn. The CLI also loads their pinned instructions explicitly. Default architecture design includes a bundled, independently synthetic composition image. To replace it add `--references /local/sanitized-reference-images`; supplied PNG/JPEGs become AI input. No customer reference pictures are bundled.
@@ -37,7 +37,7 @@ oci-lenz draw --snapshot /local/private-output/snapshot.json \
 ```
 
 Omit --model to use the local Codex model. Architecture uses high reasoning
-effort; legacy service-map uses low effort ordering hints. Each user signs in
+effort. Each user signs in
 independently; the app does not copy OAuth tokens or register accounts. Codex CLI
 is needed only for the Codex provider.
 
@@ -66,7 +66,8 @@ their name alone. Network boundaries retain CIDRs. Listener/backend port summari
 and information-index reminders are omitted from the architecture captions.
 PNG output includes information-index.png. Replay requires matching inventory
 IDs and label footprints; mismatched plans are rejected. Old hint-only layouts
-must be replayed with --style service-map.
+from the retired inventory/service-map modes must be regenerated with the default
+architecture renderer. Their original Draw.io files remain editable in Desktop.
 
 The top heading shows tenancy name, selected compartment names and region from
 snapshot scope metadata. New collection stores `scope.tenancy_name` and
@@ -86,7 +87,8 @@ VNIC/NSG/route cards and unknown endpoints belonging only to hidden technical
 relations from layout so they do not leave empty lanes or floating labels.
 Unresolved LB/backend endpoints remain visible. Native hidden cells and all
 evidence are retained. Optional VCN detail pages use an independent
-AI scene with the complete network inventory. Version-2 plans remain supported when their scene signatures match current footprints.
+AI scene with the complete network inventory. Only top-level version-3 layouts
+are accepted; older layouts require regeneration.
 Local orthogonal routing avoids visible resource content without changing model
 placements, and keeps connectors clear of measured container title lines.
 Connectors attach to the symbol or caption rather than an oversized invisible
@@ -130,7 +132,7 @@ evidence are preserved; duplicate/unknown VCN assignments are rejected. Supply
 the same group file on replay. Resource names and details are stored in the
 resource shape's own editable text, not separate text boxes. Select the resource
 and edit its label in Draw.io; dragging the resource carries the symbol and text
-together. Names are bold; address/port labels
+together. Names are bold; observed IP labels
 are smaller and muted. Unicode-aware measurement computes card heights.
 
 Fresh architecture generations with PNG output run model visual review by
@@ -149,8 +151,8 @@ and requires Draw.io Desktop for the masked preview. Original customer images
 and unmasked customer output PNGs are not automatically uploaded.
 
 ```sh
-oci-lenz draw --snapshot artifacts/sample/snapshot.json --output artifacts/repeat \
-  --reuse-layout artifacts/diagram/skill-layout.json
+oci-lenz draw --snapshot /tmp/oci-lenz-sample/snapshot.json --output /tmp/oci-lenz-repeat \
+  --reuse-layout /tmp/oci-lenz-diagram/skill-layout.json
 oci-lenz collect --profile READONLY --region REGION \
   --compartment-id COMPARTMENT_OCID --output /local/private-output
 oci-lenz draw --snapshot /local/private-output/snapshot.json \
@@ -198,14 +200,14 @@ Current limitations: real OCI access and user reference-image style acceptance r
 ## Synthetic architecture overview
 
 ```sh
-python3 -m oci_lenz sample --scenario overview --output artifacts/reference-layout
-python3 -m oci_lenz draw --snapshot artifacts/reference-layout/snapshot.json --output artifacts/reference-layout
-python3 -m oci_lenz draw --snapshot artifacts/reference-layout/snapshot.json \
-  --reuse-layout artifacts/reference-layout/skill-layout.json --output /tmp/oci-lenz-replay
+python3 -m oci_lenz sample --scenario overview --output /tmp/oci-lenz-overview
+python3 -m oci_lenz draw --snapshot /tmp/oci-lenz-overview/snapshot.json --output /tmp/oci-lenz-overview
+python3 -m oci_lenz draw --snapshot /tmp/oci-lenz-overview/snapshot.json \
+  --reuse-layout /tmp/oci-lenz-overview/skill-layout.json --output /tmp/oci-lenz-replay
 ```
 
 This independently synthetic scenario contains two compartments and three VCNs.
-Region and VCN pages use neutral region/compartment frames and orange dashed
+The architecture canvas uses neutral region/compartment frames and orange dashed
 network boundaries, with container sizes calculated from their contents. API
 compartment membership controls VCN grouping; application service groups are not
 guessed. A VCN without compartment metadata is grouped in an unspecified alias
@@ -216,23 +218,18 @@ fonts. No customer images or identifying text are bundled or required by this ex
 Reference images passed with `--references` go to Codex, so sanitize them first;
 the customer originals supplied in chat have not been passed to a child model.
 
-## Legacy adaptive service architecture layout
+## Explicit presentation groups
+
+All diagrams use the architecture renderer. The former inventory/service-map
+rendering styles and their ordering-hint AI adapter have been removed. The
+`sample --scenario service-map` fixture remains as independently synthetic input
+for explicit cross-VCN presentation groups; it uses the current renderer:
 
 ```sh
-python3 -m oci_lenz sample --scenario service-map --output artifacts/main-reference
-python3 -m oci_lenz draw --snapshot artifacts/main-reference/snapshot.json \
-  --style service-map --output artifacts/main-reference
-python3 -m oci_lenz draw --snapshot artifacts/main-reference/snapshot.json \
-  --style service-map --reuse-layout artifacts/main-reference/skill-layout.json \
-  --output /tmp/oci-lenz-service-replay
+oci-lenz sample --scenario service-map --output /tmp/oci-lenz-explicit-groups
+oci-lenz draw --snapshot /tmp/oci-lenz-explicit-groups/snapshot.json \
+  --output /tmp/oci-lenz-group-diagram
 ```
-
-The main reference guides resource spacing, backend flow and visual hierarchy;
-its canvas dimensions, customer topology and number of panels are not templates.
-Subnet grids grow with the number of cards, related backends stay adjacent, VCNs
-wrap into shelves and region size follows the resulting content. Small and large
-inventories use the same renderer. Codex supplies stable ordering hints; the
-helper fits them to a compact grid and preserves the evidence graph.
 
 Optional snapshot presentation metadata declares user-controlled service groups:
 
@@ -247,11 +244,12 @@ Groups are presentation metadata, not OCI resources or discovered application
 semantics. The collector does not infer service membership. Without groups,
 VCNs are automatically grouped by their API compartment IDs; unmatched VCNs in a
 partial mapping also fall back to compartment groups. Explicit `--redact` outputs
-alias group names as well as resource names. Use `--style inventory` for the
-previous compartment inventory renderer.
+alias group names as well as resource names. Normal diagrams group by API
+compartment, VCN and subnet; services are never inferred.
 
 The overview keeps editable technical cells and every relationship in XML but
-hides VNIC/NSG/route-table shapes and technical edges. VCN detail pages show them.
+hides VNIC/NSG/route-table shapes and technical edges. `--detail-pages` requests
+additional VCN network pages. They are constructed only when requested.
 The LB-to-Backend-Set display arrow expresses ownership while the XML source and
 target retain the API evidence direction (`BackendSet.lb_id`). Backend arrows
 represent configured targets, not proven traffic. Dense detail edges can still

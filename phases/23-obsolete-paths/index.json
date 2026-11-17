@@ -1,0 +1,5 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "23-obsolete-paths",
+  "steps": [{"step": 0, "name": "remove-obsolete-state-and-examples", "status": "pending", "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]}]
+}

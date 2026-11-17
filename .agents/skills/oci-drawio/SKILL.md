@@ -7,8 +7,8 @@ Read the project Draw.io skill at ../drawio/SKILL.md. OCI uses native editable X
 
 Accept region, one or more explicit compartments and local SDK profile through `oci-lenz collect`. Collect all supported resources in those compartments without a VCN filter. Never inspect or transmit credentials. Use `oci-lenz draw --snapshot PATH --references DIRECTORY --output DIRECTORY` to apply the skill. For deterministic rerenders use `--reuse-layout PREVIOUS/skill-layout.json`.
 
-Operational outputs must show actual resource names and observed IP/CIDR/backend
-information from the snapshot. Apply labels locally after the alias-only model
+Operational captions show actual resource names and observed representative IPs;
+network boundaries retain CIDRs. Complete backend details stay in the appendix. Apply labels locally after the alias-only model
 layout. Never replace customer operational names with aliases by default.
 `--redact` is an explicit option for separate sharing PNGs; GitHub examples must
 use synthetic data. Keep every customer-derived artifact outside the repository.
@@ -45,9 +45,9 @@ plan directly; it must not discard it or replace it with a grid. Label footprint
 and the evidence graph are provided under aliases. Return invalid geometry to
 the model for bounded repair; never silently fall back after AI failure. Use the
 bundled synthetic reference image or explicitly supplied sanitized references.
-Compact card details may refer to a complete editable information-index page.
-Keep actual names and all collected data in local output. Legacy service-map
-mode retains ordering hints and a compact helper grid. Backend evidence direction
+The editable information-index page retains complete data without caption reminders.
+Keep actual names and all collected data in local output. Use the architecture
+renderer; inventory/service-map rendering modes are retired. Backend evidence direction
 stays in XML even where its display arrow expresses LB ownership.
 
 The default is one whole-environment architecture canvas. VCNs/subnets remain
@@ -61,7 +61,7 @@ evidenced Backend Set and retain separate editable source/target edges.
 
 Explicit service groups can span VCNs; these are visual panels, not inferred
 business ownership. Preserve API membership in source data. Use bold editable
-names with quieter address/port labels. During visual review, X/0 labels are
+names with quieter observed IP labels. During visual review, X/0 labels are
 privacy placeholders preserving real footprints: evaluate geometry/hierarchy,
 not literal words. Revise only known rectangles/routes. Never add resources or
 change immutable parent memberships. Report remaining issues as needs_review.

@@ -33,8 +33,7 @@ def masked_preview(xml,snapshot,scene):
         key=cell.get('id','');text=cell.get('value','')
         if not text:continue
         if key=='notice':cell.set('value','Alias-only geometry preview | labels masked for visual review');continue
-        base=key.removesuffix('-label-name').removesuffix('-label-details')
-        alias=scene['aliases'].get(base,scene['aliases'].get(key))
+        alias=scene['aliases'].get(key)
         if 'html=1;' in cell.get('style',''):
             class MaskHTML(HTMLParser):
                 def __init__(self):super().__init__(convert_charrefs=True);self.parts=[];self.identified=False
@@ -48,7 +47,7 @@ def masked_preview(xml,snapshot,scene):
                     self.parts.append(escape(masked))
             parser=MaskHTML();parser.feed(text);parser.close();value=''.join(parser.parts)
         else:value=mask(text)
-        if alias and (key.endswith('-label-name') or (key in nodes and nodes[key]['kind'] in ('vcn','subnet')) or key.startswith('layout-service-')):
+        if alias and ((key in nodes and nodes[key]['kind'] in ('vcn','subnet')) or key.startswith('layout-service-')):
             lines=value.split('\n');lines[0]=alias+' '+lines[0][len(alias)+1:];value='\n'.join(lines)
         cell.set('value',value)
     return E.tostring(doc,encoding='unicode')
