@@ -1,6 +1,7 @@
 """Deterministic orthogonal routing around resource cards, without moving them."""
 import heapq
 import xml.etree.ElementTree as E
+from .typography import text_width
 
 
 def intersects(a,b,rect):
@@ -56,11 +57,30 @@ def route_native_edges(root,nodes):
             px,py,_,_=rectangle(p);x+=px;y+=py
         return x,y,float(g.get('width',0)),float(g.get('height',0))
     rectangles={k:rectangle(k) for k in nodes if k in cells and nodes[k]['kind'] not in ('vcn','subnet') and cells[k].get('visible')!='0'}
+    # Container borders remain traversable, but their visible title lines do
+    # not. Use the same width estimate as local typography, with a small gap.
+    titles=[]
+    for key,c in cells.items():
+        style=c.get('style','')
+        if c.get('visible')=='0' or 'verticalAlign=top;' not in style or 'align=left;' not in style:continue
+        if nodes.get(key,{}).get('kind') not in ('vcn','subnet') and not key.startswith('layout-'):continue
+        options=dict(p.split('=',1) for p in style.split(';') if '=' in p)
+        size=float(options.get('fontSize',12));spacing=float(options.get('spacing',12))
+        x,y,w,h=rectangle(key)
+        for i,line in enumerate(c.get('value','').split('\n')):
+            if line:titles.append((x+spacing-2,y+spacing+i*(size+4)-2,min(max(0,w-2*spacing),text_width(line,size))+4,size+8))
+    obstacles=list(rectangles.values())+titles
+    def inside(point,rect):
+        x,y,w,h=rect;return x<point[0]<x+w and y<point[1]<y+h
     def port(rect,other):
         x,y,w,h=rect;tx,ty,tw,th=other
         dx=tx+tw/2-x-w/2;dy=ty+th/2-y-h/2
-        if abs(dx)/max(w,1)>abs(dy)/max(h,1):return ((x+w if dx>=0 else x),y+h/2),(1 if dx>=0 else 0,0.5)
-        return (x+w/2,(y+h if dy>=0 else y)),(0.5,1 if dy>=0 else 0)
+        preferred=(1 if dx>=0 else 0,0.5) if abs(dx)/max(w,1)>abs(dy)/max(h,1) else (0.5,1 if dy>=0 else 0)
+        alternatives=sorted(((0.5,1),(1,0.5),(0,0.5),(0.5,0)),key=lambda p:abs(x+w*p[0]-tx-tw/2)+abs(y+h*p[1]-ty-th/2))
+        for anchor in (preferred,*alternatives):
+            point=(x+w*anchor[0],y+h*anchor[1])
+            if not any(inside(point,r) for r in titles):return point,anchor
+        raise ValueError('no clear endpoint outside container title')
     # Route in display direction while retaining native API source/target.
     # BackendSet.lb_id points toward the LB; its start arrow displays ownership
     # from the LB down to the set. Both that fanout and backend fanout can share
@@ -82,8 +102,8 @@ def route_native_edges(root,nodes):
         x,y,w,h=rectangle(source);targets=[rectangle(connections[e.get('id')][1]) for e in group]
         if not all(ty>=y+h+24 for tx,ty,tw,th in targets):continue
         start=(x+w/2,y+h);branch=(start[0],(start[1]+min(t[1] for t in targets))/2)
-        if any(rx<branch[0]<rx+rw and ry<branch[1]<ry+rh for rx,ry,rw,rh in rectangles.values()):continue
-        trunks[source]=(route(start,branch,list(rectangles.values())),branch)
+        if any(inside(branch,r) for r in obstacles):continue
+        trunks[source]=(route(start,branch,obstacles),branch)
     routed=0
     for c in root:
         style=c.get('style','')
@@ -91,7 +111,6 @@ def route_native_edges(root,nodes):
         source,target,reverse=connections[c.get('id')]
         a,b=rectangle(source),rectangle(target)
         start,exit_port=port(a,b);end,entry_port=port(b,a)
-        obstacles=list(rectangles.values())
         g=c.find('mxGeometry');parent=rectangle(c.get('parent')) if c.get('parent') in cells and cells[c.get('parent')].find('mxGeometry') is not None else (0,0,0,0)
         existing=g.find("Array[@as='points']")
         bends=[(float(p.get('x'))+parent[0],float(p.get('y'))+parent[1]) for p in existing] if existing is not None else []

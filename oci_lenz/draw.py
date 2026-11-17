@@ -18,14 +18,26 @@ def icon(root, rid, kind, x,y):
     xml=urllib.parse.unquote(zlib.decompress(base64.b64decode(item['xml']),-15).decode())
     src=E.fromstring(xml)
     cells=[c for c in src.iter('mxCell') if c.get('id') not in ('0','1')]
-    group=E.SubElement(root,'mxCell',id=rid+'-icon',value='',style='group',vertex='1',parent=rid)
-    E.SubElement(group,'mxGeometry',x=str(x),y=str(y),width='54',height='54',**{'as':'geometry'})
     scale=54/max(item['w'],item['h'])
-    # Toolkit library cells may carry a common origin on the top layer.
-    top=[c for c in cells if c.get('parent')=='1']
-    ox=min((float(c.find('mxGeometry').get('x',0)) for c in top if c.find('mxGeometry') is not None),default=0)
-    oy=min((float(c.find('mxGeometry').get('y',0)) for c in top if c.find('mxGeometry') is not None),default=0)
+    originals={c.get('id'):c for c in cells}
+    def rectangle(key):
+        c=originals[key];g=c.find('mxGeometry');xx,yy,w,h=(float(g.get(f,0)) for f in ('x','y','width','height'))
+        if c.get('parent') in originals:
+            px,py,_,_=rectangle(c.get('parent'));xx+=px;yy+=py
+        return xx,yy,w,h
+    painted={}
     for c in cells:
+        styles=dict(p.split('=',1) for p in c.get('style','').split(';') if '=' in p)
+        if styles.get('fillColor','none')!='none' or styles.get('strokeColor','none')!='none':painted[c.get('id')]=rectangle(c.get('id'))
+    if not painted:raise ValueError('official icon contains no painted geometry')
+    ox=min(r[0] for r in painted.values());oy=min(r[1] for r in painted.values())
+    right=max(r[0]+r[2] for r in painted.values());bottom=max(r[1]+r[3] for r in painted.values())
+    group=E.SubElement(root,'mxCell',id=rid+'-icon',value='',style='group',vertex='1',parent=rid)
+    E.SubElement(group,'mxGeometry',x=str(x),y=str(y),width=str((right-ox)*scale),height=str((bottom-oy)*scale),**{'as':'geometry'})
+    for c in cells:
+        # The toolkit's built-in caption is cleared, so its rectangle must not
+        # leave an invisible band between the symbol and our native label.
+        if c.get('value') and c.get('id') not in painted and not any(v.get('parent')==c.get('id') for v in cells):continue
         c=copy.deepcopy(c); c.set('value',''); old=c.get('id'); parent=c.get('parent','1')
         c.set('id',rid+'-i-'+old); c.set('parent',rid+'-icon' if parent=='1' else rid+'-i-'+parent)
         for g in c.iter('mxGeometry'):
@@ -192,6 +204,15 @@ def validate(xml,snapshot):
         if not resource_cells<=set(nodes): raise ValueError('invented resource')
         cellmap={c.get('id'):c for c in cells}
         for rid in nodes:
+            native=cellmap.get(rid)
+            if native is not None and 'ociNativeLabel=1;' in native.get('style',''):
+                from .typography import card_metrics
+                options=dict(p.split('=',1) for p in native.get('style','').split(';') if '=' in p)
+                g=native.find('mxGeometry');w,h=float(g.get('width')),float(g.get('height'))
+                metrics=card_metrics(nodes[rid],w)
+                height=metrics['name_height']+(2+metrics['detail_height'] if metrics['details'] else 0)
+                top=float(options.get('spacingTop',0))
+                if top<0 or top+height>h:raise ValueError('native label exceeds card')
             for suffix in ('name','details'):
                 label=cellmap.get(rid+'-label-'+suffix)
                 if label is None:continue
@@ -239,7 +260,7 @@ def export(path, binary=None):
     if not binary:raise RuntimeError('Install Draw.io Desktop and set DRAWIO_BIN; Linux: use xvfb-run')
     outputs=[]
     for i,page in enumerate(E.parse(path).getroot().findall('diagram'),1):
-        output=path.parent/('information-index.png' if page.get('id')=='information-index' else ('region.png' if i==1 else f'vcn-{i-1}.png'))
+        output=path.parent/('information-index.png' if page.get('id')=='information-index' else ('architecture.png' if i==1 else f'vcn-{i-1}.png'))
         cmd=[binary,'-x','-f','png','-b','25','-p',str(i),'-o',str(output),str(path)]
         if os.name=='posix' and not os.environ.get('DISPLAY') and shutil.which('xvfb-run'): cmd=['xvfb-run','-a',*cmd]
         subprocess.run(cmd,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=120)

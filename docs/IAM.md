@@ -5,7 +5,9 @@ The app never creates policies. The operator provides an existing API-signing pr
 | API | Resource type / verb |
 | --- | --- |
 | ListRegionSubscriptions | tenancy subscription visibility; see Identity policy reference |
+| GetTenancy | TENANCY_INSPECT for the tenancy name only |
 | ListCompartments | inspect compartments at tenancy scope, subject to ACCESSIBLE filtering |
+| GetCompartment | inspect compartments (COMPARTMENT_INSPECT); selected name fallback when absent from ListCompartments |
 | ListVcns | inspect vcns |
 | ListSubnets | inspect subnets |
 | ListRouteTables | inspect route-tables |
@@ -28,4 +30,5 @@ Authoritative references (verify against tenancy policies before use):
 - https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/corepolicyreference.htm
 - https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/lbpolicyreference.htm
 - https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/iampolicyreference.htm
+- https://docs.oracle.com/en-us/iaas/Content/Identity/policyreference/iampolicyreference.htm
 - https://docs.oracle.com/en-us/iaas/Content/Search/Concepts/queryoverview.htm

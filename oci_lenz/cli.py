@@ -101,6 +101,9 @@ def main():
             s['scope']['compartments']=args.compartment_id
             for other in snapshots[1:]:
                 s['resources'].extend(other['resources']);s['coverage'].extend(other['coverage'])
+                s['scope'].setdefault('compartment_names',{}).update(other['scope'].get('compartment_names',{}))
+                if not s['scope'].get('tenancy_name') and other['scope'].get('tenancy_name'):
+                    s['scope']['tenancy_name']=other['scope']['tenancy_name']
             s['resources']=list({r['id']:r for r in s['resources']}.values())
             s['relationships']=graph(s)[1]
             save(args.output/'snapshot.json',s);save(args.output/'coverage.json',s['coverage']);return

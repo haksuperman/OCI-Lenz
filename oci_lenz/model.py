@@ -1,6 +1,13 @@
 """Minimal snapshots and evidence-based relationships. Never stores SDK objects."""
 
 def sample(scenario='basic'):
+    result=_sample(scenario)
+    result['scope']['tenancy_name']='Synthetic Tenancy'
+    result['scope']['compartment_names']={key:'Synthetic Compartment '+str(i+1) for i,key in enumerate(result['scope']['compartments'])}
+    return result
+
+
+def _sample(scenario):
     from .synthetic import SCENARIOS,build_scenario
     if scenario in SCENARIOS:return build_scenario(scenario)
     if scenario == 'service-map':

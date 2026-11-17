@@ -66,6 +66,16 @@ PNG output includes information-index.png. Replay requires matching inventory
 IDs and label footprints; mismatched plans are rejected. Old hint-only layouts
 must be replayed with --style service-map.
 
+The top heading shows tenancy name, selected compartment names and region from
+snapshot scope metadata. New collection stores `scope.tenancy_name` and
+`scope.compartment_names` using read-only identity APIs. Missing names in older
+snapshots or denied lookups display `이름 미확인`, never an OCID or a guessed name.
+Recollect to obtain names; draw/replay itself never reads OCI credentials or
+requests identity metadata. `--redact` also hides these scope names, and AI
+layout requests and masked previews never receive them. The overview PNG is
+`architecture.png`; older output folders may still contain a previous
+`region.png`, which is not updated by subsequent exports.
+
 Default output is one whole-environment architecture canvas, with an editable
 Resource information appendix. VCNs and subnets are boundaries inside the same
 canvas; no separate VCN architecture pages are created unless --detail-pages is
@@ -74,7 +84,9 @@ VNIC/NSG/route cards from layout so they do not leave empty lanes. Native hidden
 cells and all evidence are retained. Optional VCN detail pages use an independent
 AI scene with the complete network inventory. Version-2 plans remain supported when their scene signatures match current footprints.
 Local orthogonal routing avoids resource cards without changing model
-placements. This checks geometry, not actual traffic reachability or universal
+placements, and keeps connectors clear of measured container title lines.
+Container borders remain traversable; rerender a saved layout to apply routing
+fixes without another AI request. This checks geometry, not actual traffic reachability or universal
 visual optimality. Sparse/dense, multiple compartments, unresolved targets, long
 names and many secondary IPs are regression cases; new layouts still need visual
 review before delivery.
@@ -104,7 +116,10 @@ files outside the repository. Example local JSON:
 
 Pass --groups /local/service-groups.json to draw. Resource membership and API
 evidence are preserved; duplicate/unknown VCN assignments are rejected. Supply
-the same group file on replay. Native name labels are bold; address/port labels
+the same group file on replay. Resource names and details are stored in the
+resource shape's own editable text, not separate text boxes. Select the resource
+and edit its label in Draw.io; dragging the resource carries the symbol and text
+together. Names are bold; address/port labels
 are smaller and muted. Unicode-aware measurement computes card heights.
 
 Fresh architecture generations with PNG output run model visual review by
@@ -147,7 +162,7 @@ anonymizer for Draw.io XML: cell IDs still contain internal identifiers. PNGs
 never embed XML. GitHub examples must use synthetic data and undergo publication
 review; do not publish customer-derived files merely because --redact was used.
 
-Outputs: architecture.drawio, region.png, vcn-N.png, coverage.json, validation.json and (with AI) skill-layout.json. VCN PNG ordering follows VCN IDs. PNGs are exported from the same XML and the XML is retained. Region page currently shows the full scoped inventory; large inventories may need future pagination. Reference count and input image size should be kept modest for Codex.
+Outputs: architecture.drawio, architecture.png, vcn-N.png, coverage.json, validation.json and (with AI) skill-layout.json. VCN PNG ordering follows VCN IDs. PNGs are exported from the same XML and the XML is retained. Region page currently shows the full scoped inventory; large inventories may need future pagination. Reference count and input image size should be kept modest for Codex.
 
 ## Draw.io on servers
 

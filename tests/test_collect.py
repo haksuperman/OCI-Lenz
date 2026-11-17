@@ -11,6 +11,9 @@ class CollectorTests(unittest.TestCase):
     def run_collect(self,fail=None,primary_ip='10.0.0.2'):
         def obj(id,**kw):return N(id=id,display_name=id,**kw)
         responses={
+            'get_tenancy':N(name='Synthetic Tenant',description='not-needed',freeform_tags={'private':'not-needed'}),
+            'list_compartments':[N(id='c',name='Synthetic Project',description='not-needed'),N(id='other',name='Unselected Identity')],
+            'get_compartment':N(id='c',name='Synthetic Project',description='not-needed'),
             'list_vcns':[oci.core.models.Vcn(id='v',compartment_id='c',cidr_blocks=['10.0.0.0/16'])], 'list_subnets':[oci.core.models.Subnet(id='s',vcn_id='v',prohibit_public_ip_on_vnic=True,route_table_id='rt',cidr_block='10.0.0.0/24')],
             'list_route_tables':[obj('rt',vcn_id='v',route_rules=[N(destination='0.0.0.0/0',network_entity_id='nat')])],
             'list_nat_gateways':[obj('nat',vcn_id='v')], 'list_instances':[obj('instance')],
@@ -45,6 +48,20 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(len([r for r in s['resources'] if r['kind']=='vnic']),2)
         self.assertTrue(any(c['status']=='ok' and c['count']==0 for c in s['coverage']))
         self.assertTrue(all(n.startswith(('get_','list_','search_')) for n in calls))
+    def test_scope_names_are_allowlisted_without_identity_payload(self):
+        s,calls=self.run_collect()
+        self.assertEqual(s['scope']['tenancy_name'],'Synthetic Tenant')
+        self.assertEqual(s['scope']['compartment_names'],{'c':'Synthetic Project'})
+        self.assertNotIn('not-needed',str(s));self.assertNotIn('Unselected Identity',str(s));self.assertIn('get_tenancy',calls)
+    def test_scoped_get_compartment_is_fallback_when_listing_is_denied(self):
+        s,calls=self.run_collect('list_compartments')
+        self.assertEqual(s['scope']['compartment_names'],{'c':'Synthetic Project'})
+        self.assertIn('get_compartment',calls)
+    def test_denied_tenancy_name_does_not_discard_inventory(self):
+        s,_=self.run_collect('get_tenancy')
+        self.assertFalse(s['scope'].get('tenancy_name'))
+        self.assertTrue(s['resources'])
+        self.assertEqual(next(c for c in s['coverage'] if c.get('api')=='get_tenancy')['status'],'permission_denied')
     def test_permission_failure_is_not_empty_success(self):
         s,_=self.run_collect('list_instances')
         result=next(c for c in s['coverage'] if c['api']=='list_instances')

@@ -1,12 +1,16 @@
 """Deterministic Unicode-aware label sizing and native editable label cells."""
 import unicodedata
-import xml.etree.ElementTree as E
+from html import escape
+
+
+def text_width(text,font_size):
+    return sum(font_size*(1 if unicodedata.east_asian_width(c) in ('W','F') else (0.33 if c.isspace() else 0.6)) for c in text)
 
 
 def wrap_text(text,width,font_size):
     def advance(char):
-        return font_size*(1 if unicodedata.east_asian_width(char) in ('W','F') else (0.33 if char.isspace() else 0.6))
-    def measured(value):return sum(advance(c) for c in value)
+        return text_width(char,font_size)
+    def measured(value):return text_width(value,font_size)
     result=[]
     for logical in str(text).split('\n'):
         chunks=[];remaining=logical
@@ -44,10 +48,11 @@ def card_metrics(resource,width):
 
 def style_card(root,cell,resource,width):
     metrics=card_metrics(resource,width);key=cell.get('id')
-    cell.set('style','text;whiteSpace=wrap;html=0;textOpacity=0;fillColor=none;strokeColor=none;')
-    for suffix,value,y,height,style in (
-        ('name',metrics['name'],66,metrics['name_height'],'fontSize=12;fontStyle=1;fontColor=#213A44;'),
-        ('details',metrics['details'],72+metrics['name_height'],metrics['detail_height'],'fontSize=10;fontColor=#52646C;')):
-        c=E.SubElement(root,'mxCell',id=key+'-label-'+suffix,value=value,vertex='1',parent=key,
-                       style='text;whiteSpace=wrap;html=0;align=center;verticalAlign=top;spacing=0;textOpacity=100;'+style)
-        E.SubElement(c,'mxGeometry',x='8',y=str(y),width=str(width-16),height=str(max(height,1)),**{'as':'geometry'})
+    icon=root.find("mxCell[@id='"+key+"-icon']")
+    g=icon.find('mxGeometry') if icon is not None else None
+    top=float(g.get('y',0))+float(g.get('height'))+3 if g is not None else 8
+    def value(text):return escape(text).replace('\n','<br>')
+    label='<div style="font-size:12px;line-height:16px;color:#213A44"><b>'+value(metrics['name'])+'</b></div>'
+    if metrics['details']:label+='<div style="font-size:10px;line-height:13px;color:#52646C;margin-top:2px">'+value(metrics['details'])+'</div>'
+    cell.set('value',label)
+    cell.set('style',f'group;ociNativeLabel=1;html=1;whiteSpace=wrap;align=center;verticalAlign=top;spacing=0;spacingTop={top};spacingLeft=8;spacingRight=8;fillColor=none;strokeColor=none;')

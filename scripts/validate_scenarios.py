@@ -36,7 +36,7 @@ def main():
         cells=list(E.fromstring(xml).find('diagram').iter('mxCell'))
         if not set(graph(s)[0])<={c.get('id') for c in cells}:raise ValueError('missing synthetic resource')
         pngs={}
-        for name in ('region.png','information-index.png'):
+        for name in ('architecture.png','information-index.png'):
             data=(out/name).read_bytes()
             if data[:8]!=b'\x89PNG\r\n\x1a\n':raise ValueError('invalid synthetic PNG')
             pngs[name]=list(struct.unpack('>II',data[16:24]))

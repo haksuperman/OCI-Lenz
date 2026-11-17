@@ -20,7 +20,8 @@ from oci_lenz.cli import main
 class PresentationReviewTests(unittest.TestCase):
     def test_native_label_overflow_is_rejected(self):
         s=prepare_display(sample());doc=E.fromstring(apply_design(s))
-        doc.find("diagram/mxGraphModel/root/mxCell[@id='compute-label-name']/mxGeometry").set('height','5000')
+        cell=doc.find("diagram/mxGraphModel/root/mxCell[@id='compute']")
+        cell.set('style',cell.get('style')+'spacingTop=5000;')
         with self.assertRaises(ValueError):validate(E.tostring(doc,encoding='unicode'),s)
 
     def test_redundant_ownership_edge_labels_are_hidden_but_evidence_remains(self):
@@ -84,15 +85,16 @@ class PresentationReviewTests(unittest.TestCase):
             with patch('oci_lenz.visual_review.export',return_value=[png]):
                 with self.assertRaises(ValueError):export_preview(s,plan,scene,tmp)
 
-    def test_unicode_and_long_labels_get_measured_editable_children(self):
+    def test_unicode_and_long_labels_get_measured_native_resource_text(self):
         s=sample();r=next(r for r in s['resources'] if r['kind']=='compute')
         r['name']='운영 웹 애플리케이션 & <데이터> 서버 이름이 아주 긴 가상 예시'
         s=prepare_display(s);xml=apply_design(s);validate(xml,s)
         cells={c.get('id'):c for c in E.fromstring(xml).find('diagram').iter('mxCell')}
-        name=cells['compute-label-name'];details=cells['compute-label-details']
-        self.assertIn('fontStyle=1',name.get('style'))
-        self.assertIn('<데이터>',name.get('value').replace('\n',''))
-        self.assertNotEqual(name.get('style'),details.get('style'))
+        import html
+        label=cells['compute'].get('value')
+        self.assertIn('<b>',label)
+        self.assertIn('<데이터>',html.unescape(label).replace('<br>',''))
+        self.assertIn('font-size:10px',label)
         metrics=card_metrics(next(r for r in s['resources'] if r['kind']=='compute'),170)
         self.assertGreater(metrics['height'],110)
         self.assertEqual(wrap_text('가나다라마바사아자차카타파하',60,12).replace('\n',''),'가나다라마바사아자차카타파하')

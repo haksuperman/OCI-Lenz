@@ -55,6 +55,18 @@
     {
       "dir": "13-user-onboarding",
       "status": "pending"
+    },
+    {
+      "dir": "14-title-routing",
+      "status": "pending"
+    },
+    {
+      "dir": "15-scope-heading",
+      "status": "pending"
+    },
+    {
+      "dir": "16-native-resource-labels",
+      "status": "pending"
     }
   ]
 }

@@ -1,0 +1,5 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "15-scope-heading",
+  "steps": [{"step": 0, "name": "scope-names-and-architecture-png", "status": "pending", "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]}]
+}

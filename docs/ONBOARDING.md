@@ -32,7 +32,7 @@ oci-lenz draw --snapshot "$HOME/oci-lenz-work/sample/snapshot.json" \
   --output "$HOME/oci-lenz-work/diagnostic" --no-ai
 ```
 
-이 명령은 가상 데이터로 편집 가능한 `architecture.drawio`, `region.png`,
+이 명령은 가상 데이터로 편집 가능한 `architecture.drawio`, `architecture.png`,
 `information-index.png` 등을 만듭니다. `--no-ai`는 설치 진단용 배치이며
 일반적인 AI 생성 결과의 품질을 뜻하지 않습니다. Draw.io가 없는 장비에서는
 `--no-png`를 추가해 XML 생성만 확인할 수 있습니다.

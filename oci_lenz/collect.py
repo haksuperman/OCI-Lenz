@@ -25,7 +25,14 @@ def collect(profile,region,compartment,config_file=None):
             if getattr(obj,'compartment_id',None):fields.setdefault('compartment_id',obj.compartment_id)
             s['resources'].append(dict(id=obj.id,kind=kind,name=getattr(obj,'display_name',None) or kind,**fields))
     call('identity','list_region_subscriptions',cfg['tenancy'])
-    call('identity','list_compartments',cfg['tenancy'],compartment_id_in_subtree=True,access_level='ACCESSIBLE')
+    tenancy=call('identity','get_tenancy',cfg['tenancy'])
+    if getattr(tenancy,'name',None):s['scope']['tenancy_name']=tenancy.name
+    compartments=call('identity','list_compartments',cfg['tenancy'],compartment_id_in_subtree=True,access_level='ACCESSIBLE') or []
+    # Persist only the selected scope's name, never all accessible identity data.
+    selected=next((c for c in compartments if c.id==compartment),None)
+    if compartment==cfg['tenancy'] and getattr(tenancy,'name',None):selected=tenancy
+    if selected is None:selected=call('identity','get_compartment',compartment)
+    if getattr(selected,'name',None):s['scope']['compartment_names']={compartment:selected.name}
     vcns=call('network','list_vcns',compartment) or []
     for v in vcns:
         add(v,'vcn',cidr_blocks=getattr(v,'cidr_blocks',None) or ([v.cidr_block] if getattr(v,'cidr_block',None) else []))
