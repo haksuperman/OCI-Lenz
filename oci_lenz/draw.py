@@ -2,11 +2,12 @@
 import base64,copy,json,os,shutil,subprocess,sys,urllib.parse,zlib
 from pathlib import Path
 import xml.etree.ElementTree as E
+from functools import lru_cache
 from .model import graph
 from .display import resource_label,network_label
 ROOT=Path(__file__).resolve().parents[1]
 if not (ROOT/'assets/oci/library.xml').exists(): ROOT=Path(sys.prefix)/'share/oci-lenz'
-ICONS={'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'backend_set':18,'route':29,'service':31,'internet':32,'nat':33,'nsg':114}
+ICONS={'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'route':29,'service':31,'internet':32,'nat':33,'nsg':114}
 
 def edge_label(edge):
     return edge['label'] or {'nsg_ids':'NSG','route_table_id':'Route table','lb_id':'Backend set'}.get(edge['kind'],edge['kind'])
@@ -47,6 +48,14 @@ def icon(root, rid, kind, x,y):
                     if parent=='1' and key in ('x','y'): value-=ox if key=='x' else oy
                     g.set(key,str(value*scale))
         root.append(c)
+
+
+@lru_cache(maxsize=32)
+def icon_extent(kind):
+    if kind not in ICONS:return 0,0
+    root=E.Element('root');icon(root,'measure',kind,0,0)
+    g=root.find("mxCell[@id='measure-icon']/mxGeometry")
+    return float(g.get('width')),float(g.get('height'))
 
 def render(snapshot, layout=None, style='inventory',detail_pages=False):
     if style=='architecture':
@@ -136,7 +145,10 @@ def render(snapshot, layout=None, style='inventory',detail_pages=False):
             sizes[ck]=(max(width,700),max(bottom,150))
         region='layout-region';width,bottom=700,65
         for ck,x,y in pack(compkeys,2):
-            w,h=sizes[ck];setbox(ck,'Compartment '+str(compkeys.index(ck)+1),x,y,w,h,region,'compartment')
+            comp=sorted(compartments)[compkeys.index(ck)]
+            known=snapshot['scope'].get('compartment_names',{}).get(comp)
+            label=('Compartment / '+known) if known and not snapshot.get('presentation',{}).get('redacted') else 'Compartment '+str(compkeys.index(ck)+1)
+            w,h=sizes[ck];setbox(ck,label,x,y,w,h,region,'compartment')
             width=max(width,x+w+25);bottom=max(bottom,y+h+25)
         for j,k in enumerate(unplaced):
             x,y=25+(j%5)*190,bottom+45+(j//5)*rowstep

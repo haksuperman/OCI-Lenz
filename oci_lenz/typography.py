@@ -1,5 +1,6 @@
 """Deterministic Unicode-aware label sizing and native editable label cells."""
 import unicodedata
+import math
 from html import escape
 
 
@@ -38,21 +39,36 @@ def header_metrics(text,width,font_size=12):
 
 
 def card_metrics(resource,width):
+    from .draw import icon_extent
     name=wrap_text(resource['name'],width-16,12)
     details=wrap_text('\n'.join(resource.get('display_details',[])),width-16,10)
     name_height=max(16,16*len(name.splitlines()))
     detail_height=0 if not details else 13*len(details.splitlines())
+    iw,ih=icon_extent(resource['kind'])
+    top=8+ih+3 if ih else 6
+    label_height=name_height+(2+detail_height if details else 0)
     return {'name':name,'details':details,'name_height':name_height,'detail_height':detail_height,
-            'height':max(110,66+name_height+6+detail_height+10)}
+            'label_top':top,'label_height':label_height,'icon_width':iw,'icon_height':ih,
+            'height':math.ceil(top+label_height+(8 if ih else 6))}
 
 
 def style_card(root,cell,resource,width):
     metrics=card_metrics(resource,width);key=cell.get('id')
     icon=root.find("mxCell[@id='"+key+"-icon']")
     g=icon.find('mxGeometry') if icon is not None else None
-    top=float(g.get('y',0))+float(g.get('height'))+3 if g is not None else 8
+    if g is not None:
+        g.set('x',str((width-float(g.get('width')))/2));g.set('y','8')
+    logical=resource['kind']=='backend_set'
+    height=float(cell.find('mxGeometry').get('height'))
+    top=(height-metrics['label_height'])/2 if logical else metrics['label_top']
     def value(text):return escape(text).replace('\n','<br>')
-    label='<div style="font-size:12px;line-height:16px;color:#213A44"><b>'+value(metrics['name'])+'</b></div>'
+    name_size=11 if resource['kind'] in ('internet','nat','service') else 12
+    label=f'<div style="font-size:{name_size}px;line-height:16px;color:#213A44"><b>'+value(metrics['name'])+'</b></div>'
     if metrics['details']:label+='<div style="font-size:10px;line-height:13px;color:#52646C;margin-top:2px">'+value(metrics['details'])+'</div>'
     cell.set('value',label)
-    cell.set('style',f'group;ociNativeLabel=1;html=1;whiteSpace=wrap;align=center;verticalAlign=top;spacing=0;spacingTop={top};spacingLeft=8;spacingRight=8;fillColor=none;strokeColor=none;')
+    text_widths=[text_width(line,12) for line in metrics['name'].split('\n')]
+    text_widths.extend(text_width(line,10) for line in metrics['details'].split('\n'))
+    content_width=min(width,max(metrics['icon_width'],*text_widths)+4)
+    x,y,w,h=(0,0,width,height) if logical else ((width-content_width)/2,8 if g is not None else top,content_width,top+metrics['label_height']-(8 if g is not None else top))
+    shape='rounded=1;arcSize=12;fillColor=#F1F5F5;strokeColor=#B5C5C9;' if logical else 'group;fillColor=none;strokeColor=none;'
+    cell.set('style',shape+f'ociNativeLabel=1;ociContentX={x};ociContentY={y};ociContentW={w};ociContentH={h};html=1;whiteSpace=wrap;align=center;verticalAlign=top;spacing=0;spacingTop={top};spacingLeft=8;spacingRight=8;')

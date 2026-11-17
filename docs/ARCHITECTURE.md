@@ -24,8 +24,8 @@ plans are bound to inventory IDs/label footprints. CLI remains the interface;
 no credential registration service is added.
 
 The renderer computes growing region/compartment/VCN/subnet containers and keeps
-orthogonal edges in the nearest common ancestor. Compartment labels are aliases;
-membership comes from the VCN compartment ID. Reference composition conventions
+orthogonal edges in the nearest common ancestor. Known compartment names are
+applied locally; membership comes from the VCN compartment ID. Reference composition conventions
 are recorded without customer content. The overview synthetic fixture exercises
 multiple VCNs and compartments without reproducing any supplied customer topology.
 
@@ -104,5 +104,29 @@ Resource names and details use one native editable Draw.io label on the resource
 group. No separate name/detail text vertices are created. Official vector symbols
 exclude the cleared toolkit caption bounds, while keeping their painted scale.
 The label starts three pixels below the symbol; HTML text is escaped and masked
-as text nodes for model previews. Conservative card reservations remain unchanged
-so existing saved AI placements can be replayed without a signature bypass.
+as text nodes for model previews. Architecture captions include only names and
+observed representative IPs, with CIDRs on network boundaries; listener/backend
+details remain in the information appendix. No index reminder is appended.
+Card reservations derive from current captions; changed footprints require a
+new validated layout and never bypass the saved-plan signature check.
+
+Card heights use the measured painted symbol, native caption and small padding.
+Backend Sets are logical editable name tags with no duplicate LB symbol. Their
+scene representation guides the model to keep them compact between the actual
+LB and its API-linked targets. Connector ports attach to visible symbol sides,
+symbol tops or caption bottoms with perimeter projection disabled. Small lateral
+stubs lead to a clear corridor above the caption; obstacle avoidance uses visible
+content bounds and title lines. API source/target direction remains unchanged.
+VCN/subnet boundaries use distinct weights and heading sizes. The overview omits
+unknown targets that participate only in hidden technical relations, while
+unresolved LB/backend endpoints remain visible. All unknown cells and evidence
+remain editable in XML and available in the complete network-detail scene.
+
+Internet/NAT/Service Gateway cards use narrow measured captions and alias-only
+groups derived from their actual VCN parent. Geometry validation keeps each group
+connected by short aligned gaps near one VCN edge, rejects inflated gateway cards
+and large sparse group bounds, and returns invalid proposals to the model. No
+extra group box is drawn and no API membership changes. Diagnostic seed layouts
+pack the gateway row separately; actual AI rectangles are never repacked locally.
+Gateway name captions use 11px text within reservations measured at 12px to leave
+clearance for bold suffixes and avoid extra wrapping in the narrow cards.

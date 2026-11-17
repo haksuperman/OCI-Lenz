@@ -1,0 +1,5 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "18-simple-resource-captions",
+  "steps": [{"step": 0, "name": "names-and-ips-without-index-comments", "status": "pending", "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]}]
+}

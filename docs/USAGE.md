@@ -60,8 +60,10 @@ API failures never print response bodies. API live execution requires a user key
 and model; the transport adapter is tested with mocks.
 
 The editable information-index page retains all collected addresses and network
-configuration. Architecture cards show up to three detail lines and refer to
-the index for additional addresses, so many secondary IPs do not inflate one VM.
+configuration. Architecture resource labels show the actual name and observed
+representative private/public IPs only. Resources without an observed IP show
+their name alone. Network boundaries retain CIDRs. Listener/backend port summaries
+and information-index reminders are omitted from the architecture captions.
 PNG output includes information-index.png. Replay requires matching inventory
 IDs and label footprints; mismatched plans are rejected. Old hint-only layouts
 must be replayed with --style service-map.
@@ -80,11 +82,20 @@ Default output is one whole-environment architecture canvas, with an editable
 Resource information appendix. VCNs and subnets are boundaries inside the same
 canvas; no separate VCN architecture pages are created unless --detail-pages is
 specified. Version-3 plans use a dedicated AI overview scene, excluding technical
-VNIC/NSG/route cards from layout so they do not leave empty lanes. Native hidden
-cells and all evidence are retained. Optional VCN detail pages use an independent
+VNIC/NSG/route cards and unknown endpoints belonging only to hidden technical
+relations from layout so they do not leave empty lanes or floating labels.
+Unresolved LB/backend endpoints remain visible. Native hidden cells and all
+evidence are retained. Optional VCN detail pages use an independent
 AI scene with the complete network inventory. Version-2 plans remain supported when their scene signatures match current footprints.
-Local orthogonal routing avoids resource cards without changing model
+Local orthogonal routing avoids visible resource content without changing model
 placements, and keeps connectors clear of measured container title lines.
+Connectors attach to the symbol or caption rather than an oversized invisible
+card border. Backend Sets appear as compact editable name tags, preserving
+their separate ownership/backend evidence without duplicating the LB icon.
+IGW/NAT/Service gateways belonging to the same known VCN are placed together
+along one edge with small gaps and content-sized cards. Larger groups can use a
+compact grid. This is presentation based on VCN ownership, without a new service
+group or a visible grouping frame. Scattered gateway proposals require repair.
 Container borders remain traversable; rerender a saved layout to apply routing
 fixes without another AI request. This checks geometry, not actual traffic reachability or universal
 visual optimality. Sparse/dense, multiple compartments, unresolved targets, long
@@ -94,7 +105,7 @@ review before delivery.
 Operational cards prioritize an observed primary-VNIC private address and public
 address, when recorded; legacy snapshots use an observed representative address
 without claiming it is primary. All addresses remain in the information index.
-Listener protocol/ports and backend ports are labeled separately. New collection
+Listener protocol/ports and backend targets remain in the information appendix. New collection
 uses GetLoadBalancer for allowlisted listener details and GetVnic primary fields.
 Existing snapshots must be recollected for fields not previously stored.
 Backend fanout shares a clear trunk only within one Backend Set; native evidence
@@ -182,7 +193,7 @@ without another model call. PNG export still has a 120-second limit per page.
 
 Run `python3 -m unittest discover -s tests -v`, `codex login status`, and `"$DRAWIO_BIN" --help` locally. Child output is suppressed to avoid persisting sensitive data; errors report only their class. SDK API failures are summarized in coverage by service/API/status, not raw exception text. A partial snapshot is still usable; coverage must be checked. Reuse a saved layout to avoid another model call. `--no-png` retains XML without requiring Desktop.
 
-Current limitations: real OCI access and user reference-image style acceptance require their respective inputs; complex and large graph layouts need further visual evaluation. Backend Sets use the LB icon as a conceptual grouping. Public/private subnet containers use VCN visual grouping. The model preserves all subnet associations even though a multi-subnet LB is placed once, in its first subnet.
+Current limitations: real OCI access and user reference-image style acceptance require their respective inputs; complex and large graph layouts need further visual evaluation. Backend Sets are logical name tags. Public/private subnet containers use VCN visual grouping. The model preserves all subnet associations even though a multi-subnet LB is placed once, in its first subnet.
 
 ## Synthetic architecture overview
 

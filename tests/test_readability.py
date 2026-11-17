@@ -40,13 +40,28 @@ class ReadabilityTests(unittest.TestCase):
         full=next(r for r in s['resources'] if r['kind']=='compute')
         self.assertTrue(all(any(ip in d for d in full['display_details']) for ip in v['private_ips']))
 
-    def test_listener_and_backend_ports_have_separate_labels(self):
+    def test_cards_show_names_and_observed_ips_without_detail_comments(self):
         s=sample();lb=next(r for r in s['resources'] if r['kind']=='lb')
         lb['listeners']=[{'name':'https','protocol':'TCP','port':443,'default_backend_set_name':'backend-set'}]
+        lb['ip_addresses']=[{'ip_address':'192.0.2.10','is_public':True}]
         s=prepare_display(s);compact=compact_snapshot(s)
         labels={r['kind']:r['display_details'] for r in compact['resources']}
-        self.assertIn('Listen TCP: 443',labels['lb'])
-        self.assertIn('Backend ports: 8080',labels['backend_set'])
+        self.assertEqual(labels['lb'],['Public: 192.0.2.10'])
+        self.assertEqual(labels['backend_set'],[])
+        xml=apply_design(s);validate(xml,s)
+        doc=E.fromstring(xml)
+        overview_values='\n'.join(c.get('value','') for c in doc.find('diagram').iter('mxCell'))
+        for comment in ('More: information index','Listen TCP','Backend ports:'):
+            self.assertNotIn(comment,overview_values)
+        index_values='\n'.join(c.get('value','') for c in doc.find("diagram[@id='information-index']").iter('mxCell'))
+        self.assertIn('TCP:443',index_values);self.assertIn('10.0.1.10:8080',index_values)
+
+    def test_network_cidrs_remain_and_no_ip_resource_has_no_extra_text(self):
+        s=sample();next(r for r in s['resources'] if r['kind']=='vcn')['cidr_blocks']=['10.0.0.0/16']
+        s=prepare_display(s);compact=compact_snapshot(s)
+        resources={r['id']:r for r in compact['resources']}
+        self.assertEqual(resources['vcn']['display_details'],['10.0.0.0/16'])
+        self.assertEqual(resources['nat']['display_details'],[])
 
     def test_redacted_cards_do_not_leak_prior_summary_fields(self):
         s=prepare_display(sample())

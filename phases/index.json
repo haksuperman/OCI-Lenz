@@ -67,6 +67,22 @@
     {
       "dir": "16-native-resource-labels",
       "status": "pending"
+    },
+    {
+      "dir": "17-live-integration",
+      "status": "pending"
+    },
+    {
+      "dir": "18-simple-resource-captions",
+      "status": "pending"
+    },
+    {
+      "dir": "19-flow-design",
+      "status": "pending"
+    },
+    {
+      "dir": "20-compact-gateways",
+      "status": "pending"
     }
   ]
 }
