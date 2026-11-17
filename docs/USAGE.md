@@ -273,12 +273,27 @@ inferred service groups. Run all diagnostic renders and PNG exports serially:
 ```sh
 python scripts/validate_scenarios.py --output /tmp/oci-lenz-topology-matrix
 python scripts/validate_scenarios.py --case long-names --ai --output /tmp/oci-lenz-topology-ai
+# Actual AI designs at several scales; consumes the current user's model quota.
+python scripts/validate_scenarios.py --ai --case basic --case overview --case fanout --case dense --output /tmp/oci-lenz-quality
+# Revalidate unchanged passing cases without another model call.
+python scripts/validate_scenarios.py --ai --resume --case basic --case overview --case fanout --case dense --output /tmp/oci-lenz-quality
 ```
 
 The default matrix uses the deterministic diagnostic seed, not AI design.
 `--ai` explicitly invokes the configured Codex model and visual review.
 `matrix-report.json` records resource counts, validation, exact XML replay,
-PNG dimensions and visual-review status. Inspect PNGs separately for quality.
+PNG dimensions and visual-review status. It also saves each snapshot's
+`coverage.json`, artifact SHA-256 hashes and native label/vector counts. PNG
+checks include complete chunks/CRC, decompressed scanlines and absence of textual
+or embedded diagram metadata. Inspect PNGs separately for quality.
+The runner continues after a failed case and saves each completed result.
+Exit code 1 means at least one case failed or still needs visual review; diagnostic
+passes are explicitly `diagnostic_pass`, never AI acceptance. `--skill-timeout 900`
+sets each model-attempt timeout. Failed reports contain only error type/exit code,
+not raw model responses; rerun the individual `draw` command for local guidance.
+`--resume` revalidates replay and hashes against the same synthetic snapshot and
+AI/diagnostic mode before reuse. Changed or failed cases run again. It does not
+silently adopt a diagnostic layout as an AI-generated result.
 Long container titles contribute an alias-only `header_height` footprint so
 children cannot occupy the title area. Information-index rows wrap and grow;
 clipped/overlapping rows are rejected. Changed footprints require a new layout.
@@ -290,3 +305,7 @@ reminder rather than claiming that collection succeeded with zero resources.
 
 Plans generated before container header footprint metadata was introduced must
 be regenerated. Reuse never silently changes an incompatible saved placement.
+
+Saved real-AI synthetic examples and their inspection notes are in
+[`artifacts/ai-quality`](../artifacts/ai-quality/README.md). `accepted` records a
+model's judgment of that particular preview, not a guarantee for every inventory.

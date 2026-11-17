@@ -1,0 +1,20 @@
+{
+  "status": "accepted",
+  "revision_budget": 1,
+  "reviews": [
+    {
+      "iteration": 0,
+      "acceptable": false,
+      "issues": [
+        "poor_grouping",
+        "excessive_whitespace",
+        "unclear_flow"
+      ]
+    },
+    {
+      "iteration": 1,
+      "acceptable": true,
+      "issues": []
+    }
+  ]
+}

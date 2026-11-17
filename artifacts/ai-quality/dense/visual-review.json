@@ -1,0 +1,11 @@
+{
+  "status": "accepted",
+  "revision_budget": 1,
+  "reviews": [
+    {
+      "iteration": 0,
+      "acceptable": true,
+      "issues": []
+    }
+  ]
+}

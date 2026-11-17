@@ -83,6 +83,10 @@
     {
       "dir": "20-compact-gateways",
       "status": "pending"
+    },
+    {
+      "dir": "21-ai-quality-matrix",
+      "status": "pending"
     }
   ]
 }

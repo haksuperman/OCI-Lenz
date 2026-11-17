@@ -1,0 +1,16 @@
+{
+  "graph_valid": true,
+  "style": "architecture",
+  "redacted": false,
+  "visual_review_status": "accepted",
+  "ai_provider": "codex",
+  "model": "local Codex configuration",
+  "skill_invoked": true,
+  "reused_layout": false,
+  "references": [
+    {
+      "name": "layout-guide.png",
+      "sha256": "254d3cb79266926e99b202e0f3b517483247965f2db5285572ef33ebf2a1d53f"
+    }
+  ]
+}

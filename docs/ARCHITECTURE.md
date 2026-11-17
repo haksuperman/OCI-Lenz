@@ -23,6 +23,13 @@ receives up to two model repairs, without silent deterministic fallback. Saved
 plans are bound to inventory IDs/label footprints. CLI remains the interface;
 no credential registration service is added.
 
+`scripts/validate_scenarios.py` exercises the same public CLI serially against
+independent synthetic inventories. Diagnostic structure/replay passes and actual
+AI visual acceptance are separate results. Per-case failures persist without raw
+process output, remaining cases continue, and resume requires revalidated XML,
+complete PNG payloads, matching snapshot/mode and unchanged artifact hashes.
+No collection API is called by this validation path.
+
 The renderer computes growing region/compartment/VCN/subnet containers and keeps
 orthogonal edges in the nearest common ancestor. Known compartment names are
 applied locally; membership comes from the VCN compartment ID. Reference composition conventions

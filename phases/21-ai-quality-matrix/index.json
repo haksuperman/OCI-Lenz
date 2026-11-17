@@ -1,0 +1,5 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "21-ai-quality-matrix",
+  "steps": [{"step": 0, "name": "validate-actual-ai-across-topologies", "status": "pending", "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]}]
+}
