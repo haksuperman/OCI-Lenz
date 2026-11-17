@@ -58,6 +58,7 @@ def skill_layout(snapshot,output,references,style='inventory',timeout=600,provid
         cmd+=['-']
         try:
             proc=subprocess.run(cmd,input=prompt,text=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=timeout,cwd=tmp)
+        except OSError:raise AIConfigurationError('Codex CLI could not be started. Check PATH and codex login status. See docs/ONBOARDING.md.') from None
         except subprocess.TimeoutExpired:
             raise SkillLayoutTimeout('Codex layout timed out') from None
         if proc.returncode or not result.exists():raise RuntimeError('Codex skill failed; check local Codex login')
@@ -74,8 +75,23 @@ def main():
     a.add_argument('--detail-pages',action='store_true',help='Optional separate VCN network-detail pages (architecture style)')
     a.add_argument('--groups',type=Path,help='Local explicit service-group JSON; never inferred from names')
     a.add_argument('--review-rounds',type=int,choices=(0,1,2),default=1,help='Visual revision budget for fresh AI/PNG generation (default: 1)')
-    args=p.parse_args();args.output.mkdir(parents=True,exist_ok=True,mode=0o700)
+    a=sub.add_parser('doctor',help='Check local prerequisites without OCI calls or model requests')
+    a.add_argument('--ai-provider',choices=('codex','openai'),default=os.environ.get('OCI_LENZ_AI_PROVIDER','codex'))
+    a.add_argument('--model',default=os.environ.get('OCI_LENZ_AI_MODEL'))
+    a.add_argument('--no-png',action='store_true',help='Check XML-only prerequisites')
+    a.add_argument('--json',action='store_true',help='Print credential-free structured results')
+    args=p.parse_args()
     try:
+        if args.command=='doctor':
+            from .diagnostics import environment_report
+            report=environment_report(args.ai_provider,args.model,require_png=not args.no_png)
+            if args.json:print(json.dumps(report,indent=2))
+            else:
+                for check in report['checks']:print(check['name']+': '+check['status']+(' — '+check['hint'] if check.get('hint') else ''))
+                print(report.get('scope',''))
+            if not report['ready']:raise SystemExit(2)
+            return
+        args.output.mkdir(parents=True,exist_ok=True,mode=0o700)
         if args.command=='sample':
             s=sample(args.scenario);s['relationships']=graph(s)[1];save(args.output/'snapshot.json',s);return
         if args.command=='collect':

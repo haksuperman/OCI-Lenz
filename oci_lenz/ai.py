@@ -30,8 +30,9 @@ def request_json(prompt,schema,references,provider='codex',model=None,timeout=60
             if model:cmd+=['--model',model]
             for ref in references:cmd+=['-i',str(ref.resolve())]
             cmd+=['-']
-            run=subprocess.run(cmd,input=prompt,text=True,cwd=tmp,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=timeout)
-            if run.returncode or not result.exists():raise RuntimeError('Codex design failed')
+            try:run=subprocess.run(cmd,input=prompt,text=True,cwd=tmp,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=timeout)
+            except OSError:raise AIConfigurationError('Codex CLI could not be started. Install Codex CLI, check PATH, then run codex login status. See docs/ONBOARDING.md.') from None
+            if run.returncode or not result.exists():raise AIConfigurationError('Codex design failed. Check codex login status, model access and usage limits locally. See docs/ONBOARDING.md.')
             return json.loads(result.read_text())
     if provider!='openai':raise ValueError('unsupported AI provider')
     key=os.environ.get('OPENAI_API_KEY')

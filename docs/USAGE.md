@@ -1,5 +1,7 @@
 # Install and run
 
+For first-time setup and Codex/Hermes project workflows, read [ONBOARDING.md](ONBOARDING.md). Use `oci-lenz doctor --json` to check prerequisites without OCI/model requests.
+
 Python 3.10+, Git, authenticated Codex CLI, and Draw.io Desktop are required for the full flow. OCI API credentials are only required by collect. Codex authentication is separate from OCI API signing; the app does not manage OAuth or customer accounts.
 
 ```sh

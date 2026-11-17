@@ -19,10 +19,12 @@ git clone https://github.com/haksuperman/OCI-Lenz.git
 cd OCI-Lenz
 python3 -m venv .venv
 . .venv/bin/activate
-pip install -e .
+python -m pip install -e .
 ```
 
 서버의 Draw.io 실행 경로는 `DRAWIO_BIN`으로 지정합니다. Linux의 화면 없는 환경에서는 Draw.io Desktop과 Xvfb가 필요합니다. 자세한 설치·의존성·진단 방법은 [사용 문서](docs/USAGE.md)를 참고하세요.
+
+처음 사용하는 경우 [설치·AI 연결·Agent 사용 안내](docs/ONBOARDING.md)를 따라 가상 데이터부터 확인하세요. `oci-lenz doctor`는 설치 자산·AI 연결 준비·Draw.io 상태를 확인하며 OCI를 조회하지 않습니다.
 
 ## 가상 환경으로 실행
 
