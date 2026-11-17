@@ -95,6 +95,10 @@
     {
       "dir": "23-obsolete-paths",
       "status": "pending"
+    },
+    {
+      "dir": "24-post-cleanup-validation",
+      "status": "pending"
     }
   ]
 }
