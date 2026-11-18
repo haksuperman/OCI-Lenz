@@ -173,3 +173,35 @@ connector rule version and reject invalid geometry during generation/revision.
 Use aligned body ports below headers and straight-first native routing. Preserve
 legacy replay with explicit objective warnings; do not repair resource placement
 locally or replace evidence endpoints with an assumed child connection.
+
+## 022 — Scoped MySQL, Autonomous and Exadata service infrastructure
+Extend database infrastructure collection in MySQL → Autonomous DB → ExaCC →
+ExaCI → Exascale order. This supersedes 010's deferred-platform restriction;
+Base DB labels and unknown-shape protection remain. Keep legacy Exadata DbSystems
+separate from VM/BM Base DB. Use allowlisted SDK fields and exact reference IDs,
+with ListDbNodes request scope as VM Cluster ownership evidence. Retain failed
+children as unresolved references rather than losing their parent resources.
+Do not connect to SQL or collect passwords, wallets, connection strings, tags,
+SSH keys, contacts or raw responses. Keep catalog/PDB/Data Guard, replication,
+HeatWave nodes and physical Exadata servers outside this infrastructure increment.
+
+ExaCC physical client/backup networks are never OCI VCN/Subnet membership. List
+networks in the selected compartment even if their observed infrastructure ID is
+outside, without fetching that parent. Resolve cross-compartment relationships
+only after merging selected scopes. Show DB client Node IPs at their owning
+System/Cluster and retain validated physical backend targets in native XML.
+A configured backend may resolve to an observed DB endpoint only if unique in
+the LB VCN. Use official database artwork; absent dedicated Exascale/Vault art,
+use Exadata for the cluster and a logical name tag for the vault. Synthetic XML
+and denied/empty/allowlist SDK tests are independent from live API/PNG validation.
+
+
+## 023 — Apply conflict routing to database ownership edges
+Include DB-involved relationships in occupied-corridor routing and bounded
+refinement without adding DB types to network layout groups. Dedicated ADB's
+same-face incoming/outgoing ownership chain may choose alternate normal ports,
+while retaining the AI rectangles, resource parents and original API endpoints.
+Keep existing conflict metrics strict: no new shared-chain exemption or threshold
+relaxation. Verify the synthetic failing layout, deterministic replay, unchanged
+placements and regressions for other DBs and network branches. No new OCI fields
+or live calls are required for this renderer correction.

@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "41-exaci",
+  "steps": [
+    {
+      "step": 0,
+      "name": "scoped-inventory-and-diagrams",
+      "status": "pending",
+      "ac": [
+        [
+          ".venv/bin/python",
+          "-m",
+          "unittest",
+          "tests.test_database_services.ExaciTests",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

@@ -2,14 +2,19 @@
 import copy
 from collections import Counter
 
-SCENARIOS=('long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect')
+from .database_synthetic import CASES as DATABASE_CASES
+
+SCENARIOS=('long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
 
 
 def build_scenario(case):
     from .model import sample
     if case not in SCENARIOS:raise ValueError('unknown synthetic matrix case')
     s=sample('overview' if case in ('cross-compartment','network-peering') else 'basic')
-    if case=='empty':s['resources']=[]
+    if case in DATABASE_CASES:
+        from .database_synthetic import add_database_scenario
+        add_database_scenario(s,case)
+    elif case=='empty':s['resources']=[]
     elif case=='long-names':
         for r in s['resources']:
             r['name']='가상검증용 긴 이름 - Synthetic-Architecture-Validation-'+r['kind']+'-'+r['id']

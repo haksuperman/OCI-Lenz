@@ -8,7 +8,7 @@ from oci_lenz.collect import collect
 
 @unittest.skipIf(oci is None,'install project OCI dependency to test SDK adapter')
 class CollectorTests(unittest.TestCase):
-    def run_collect(self,fail=None,primary_ip='10.0.0.2',extra=None):
+    def run_collect(self,fail=None,primary_ip='10.0.0.2',extra=None,request_log=None):
         def obj(id,**kw):return N(id=id,display_name=id,**kw)
         responses={
             'get_tenancy':N(name='Synthetic Tenant',description='not-needed',freeform_tags={'private':'not-needed'}),
@@ -36,9 +36,10 @@ class CollectorTests(unittest.TestCase):
                 assert kwargs.get('attachment_type')=='ALL'
                 return self.__getattr__('list_drg_attachments')(*args,**kwargs)
             def __getattr__(self,name):
-                assert name.startswith(('get_','list_','search_'))
+                assert name.removeprefix('mysql_').startswith(('get_','list_','search_'))
                 def call(*a,**kw):
-                    calls.append(name)
+                    calls.append(name.removeprefix('mysql_'))
+                    if request_log is not None:request_log.append((name,a,kw))
                     if name==fail: raise oci.exceptions.ServiceError(403,'NotAuthorized',{},'sensitive error')
                     value=responses.get(name,[])
                     if name=='get_vnic':
@@ -46,7 +47,10 @@ class CollectorTests(unittest.TestCase):
                         if extra and callable(extra.get('get_vnic')):value=extra['get_vnic'](a[0])
                     return N(data=value)
                 return call
-        with patch.object(oci.config,'from_file',return_value={'tenancy':'t','region':'r'}),patch.object(oci.identity,'IdentityClient',Client),patch.object(oci.core,'ComputeClient',Client),patch.object(oci.database,'DatabaseClient',Client),patch.object(oci.core,'VirtualNetworkClient',Client),patch.object(oci.load_balancer,'LoadBalancerClient',Client),patch.object(oci.resource_search,'ResourceSearchClient',Client),patch.object(oci.database,'DatabaseClient',Client),patch.object(oci.pagination,'list_call_get_all_results',side_effect=lambda fn,*a,**kw:fn(*a,**kw)):
+        class MysqlClient(Client):
+            def __getattr__(self,name):
+                return super().__getattr__('mysql_'+name)
+        with patch.object(oci.mysql,'DbSystemClient',MysqlClient),patch.object(oci.config,'from_file',return_value={'tenancy':'t','region':'r'}),patch.object(oci.identity,'IdentityClient',Client),patch.object(oci.core,'ComputeClient',Client),patch.object(oci.database,'DatabaseClient',Client),patch.object(oci.core,'VirtualNetworkClient',Client),patch.object(oci.load_balancer,'LoadBalancerClient',Client),patch.object(oci.resource_search,'ResourceSearchClient',Client),patch.object(oci.pagination,'list_call_get_all_results',side_effect=lambda fn,*a,**kw:fn(*a,**kw)):
             return collect('P','r','c'),calls
     def test_allowlist_secondary_vnics_and_zero_results(self):
         s,calls=self.run_collect()

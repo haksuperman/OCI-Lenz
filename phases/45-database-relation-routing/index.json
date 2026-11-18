@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "45-database-relation-routing",
+  "steps": [
+    {
+      "step": 0,
+      "name": "database-relations-use-common-conflict-routing",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_database_routing",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

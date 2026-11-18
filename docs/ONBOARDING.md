@@ -93,8 +93,10 @@ oci-lenz draw --snapshot "$HOME/oci-lenz-work/customer/inventory/snapshot.json" 
 
 여러 컴파트먼트는 `--compartment-id`를 반복합니다. 하위 컴파트먼트를 자동으로
 탐색·수집하지 않습니다. 필요한 조회 권한은 [IAM 문서](IAM.md)를 확인합니다.
-`coverage.json`의 성공·실패·미지원 상태를 먼저 확인합니다. DB·OKE·DRG·Peering은
-현재 수집 범위에 없습니다. 구성도 연결은 설정된 관계이며 도달성 검증이 아닙니다.
+`coverage.json`의 성공·실패·미지원 상태를 먼저 확인합니다. Base DB·MySQL·
+Autonomous DB·ExaCC·ExaCI·Exascale과 DRG·Peering·VPN·FastConnect를 지원합니다.
+OKE·DB 카탈로그·DRG 라우팅 정책은 후속 범위입니다. 구성도 연결은 설정된
+관계이며 도달성 검증이 아닙니다.
 운영 결과는 실제 이름·IP를 표시하므로 공개 예시로 올리지 않습니다.
 
 ## 5. Codex 또는 Hermes에서 대화로 프로젝트 개선

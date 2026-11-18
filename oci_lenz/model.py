@@ -74,6 +74,7 @@ def _sample(scenario):
 
 
 def graph(snapshot):
+    from .database_services import MODELS,REFERENCES
     resources = snapshot['resources']
     nodes={r['id']:dict(r) for r in resources}
     if len(nodes)!=len(resources): raise ValueError('duplicate resource IDs')
@@ -87,13 +88,20 @@ def graph(snapshot):
     for r in resources:
         rid=r['id']; kind=r['kind']
         for field in ('vcn_id','subnet_id','route_table_id','instance_id','lb_id'):
-            if r.get(field): edge(rid,r[field],field,field)
+            if r.get(field): edge(rid,r[field],field,(MODELS[kind]+'.'+field) if kind in MODELS else field)
         for field in ('subnet_ids','nsg_ids'):
-            for target in r.get(field,[]): edge(rid,target,field,field)
+            for target in r.get(field,[]): edge(rid,target,field,(MODELS[kind]+'.'+field+'[]') if kind in MODELS else field)
+        if kind in MODELS:
+            model=MODELS[kind]
+            for field in REFERENCES:
+                if r.get(field):edge(rid,r[field],field,model+'.'+field)
+            if r.get('backup_subnet_id'):edge(rid,r['backup_subnet_id'],'backup_subnet_id',model+'.backup_subnet_id')
+            for target in r.get('backup_nsg_ids',[]):edge(rid,target,'backup_nsg_ids',model+'.backup_network_nsg_ids[]')
         if kind=='db_system':
             if r.get('backup_subnet_id'):edge(rid,r['backup_subnet_id'],'backup_subnet_id','DbSystem.backup_subnet_id')
             for target in r.get('backup_nsg_ids',[]):edge(rid,target,'backup_nsg_ids','DbSystem.backup_network_nsg_ids[]')
         if kind=='db_node':
+            if r.get('vm_cluster_id'):edge(rid,r['vm_cluster_id'],'vm_cluster_id',r.get('db_system_evidence') or 'ListDbNodes.vm_cluster_id request filter')
             if r.get('db_system_id'):edge(rid,r['db_system_id'],'db_system_id',r.get('db_system_evidence') or 'DbNode.db_system_id')
             for field in ('vnic_id','vnic2_id','backup_vnic_id','backup_vnic2_id'):
                 if r.get(field):edge(rid,r[field],field,'DbNode.'+field)
@@ -128,6 +136,10 @@ def graph(snapshot):
             vcns={nodes.get(s,{}).get('vcn_id') for s in lb.get('subnet_ids',[])}-{None}
             for backend in r.get('backends',[]):
                 matches=[n for n in resources if n['kind']=='vnic' and (n.get('vcn_id') or nodes.get(n.get('subnet_id'),{}).get('vcn_id')) in vcns and backend['ip_address'] in n.get('private_ips',[])]
-                target=(matches[0].get('instance_id') or matches[0].get('db_node_id') or matches[0]['id']) if len(matches)==1 else 'backend:'+rid+':'+str(len(edges))
-                edge(rid,target,'backend','BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN',f"Backend :{backend['port']}")
+                endpoints=[n for n in resources if n['kind'] in ('mysql_db_system','autonomous_database','cloud_vm_cluster','exadb_vm_cluster') and nodes.get(n.get('subnet_id'),{}).get('vcn_id') in vcns and backend['ip_address'] in n.get('private_ips',[])]
+                candidates=matches+endpoints
+                target=(candidates[0].get('instance_id') or candidates[0].get('db_node_id') or candidates[0]['id']) if len(candidates)==1 else 'backend:'+rid+':'+str(len(edges))
+                evidence='BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN'
+                if endpoints:evidence='BackendSet.backends[].ip_address → unique observed VNIC or database endpoint in LB VCN'
+                edge(rid,target,'backend',evidence,f"Backend :{backend['port']}")
     return nodes,edges

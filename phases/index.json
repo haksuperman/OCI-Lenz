@@ -5,11 +5,11 @@
       "status": "pending"
     },
     {
-      "dir": "2-reference-layout",
+      "dir": "1-oci-diagrams",
       "status": "pending"
     },
     {
-      "dir": "1-oci-diagrams",
+      "dir": "2-reference-layout",
       "status": "pending"
     },
     {
@@ -153,7 +153,35 @@
       "status": "pending"
     },
     {
+      "dir": "38-mysql",
+      "status": "pending"
+    },
+    {
+      "dir": "39-autonomous-db",
+      "status": "pending"
+    },
+    {
+      "dir": "40-exacc",
+      "status": "pending"
+    },
+    {
+      "dir": "41-exaci",
+      "status": "pending"
+    },
+    {
+      "dir": "42-exascale",
+      "status": "pending"
+    },
+    {
       "dir": "43-quality-dependency-isolation",
+      "status": "pending"
+    },
+    {
+      "dir": "44-database-service-validation",
+      "status": "pending"
+    },
+    {
+      "dir": "45-database-relation-routing",
       "status": "pending"
     }
   ]

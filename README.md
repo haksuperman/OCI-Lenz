@@ -81,10 +81,11 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 - FastConnect Virtual Circuit·물리 Cross-Connect·그룹과 DRG 연결 (Oracle 공식 FastConnect 심볼 사용)
 - IPSec VPN 컨테이너 안에 소속 터널을 표시하고 DRG·CPE는 바깥에 연결 (공유 비밀·장비 설정은 조회하지 않음)
 - Oracle Base DB System: Display Name과 관측된 Node IP만 표시
+- MySQL·Autonomous DB, ExaCC·ExaCI의 인프라/VM Cluster, Exascale VM Cluster·Storage Vault와 관측된 네트워크 관계
 - 범위 밖·모호한 관계의 `대상 미확인` 표시
 - `architecture.drawio`, `architecture.png`, `information-index.png`, `coverage.json`, `validation.json` (선택 시 `vcn-N.png` 추가)
 
-예시 사진은 시각적 기준입니다. 리소스나 연결의 존재는 OCI 응답을 기준으로 판단하며 실제 트래픽 도달성을 보장하지 않습니다. Exadata·Exascale·다른 DB 서비스와 OKE, DRG 내부 라우팅 정책은 후속 범위입니다. 피어가 지정 범위 밖이면 자동 조회하지 않고 `대상 미확인`으로 표시합니다.
+예시 사진은 시각적 기준입니다. 리소스나 연결의 존재는 OCI 응답을 기준으로 판단하며 실제 트래픽 도달성을 보장하지 않습니다. DB Home·일반 Database/PDB 카탈로그·Data Guard, OKE, DRG 내부 라우팅 정책은 후속 범위입니다. DB 서비스별 범위와 가상 예제는 [사용 문서](docs/USAGE.md#확장-db-서비스)를 참고하세요. 피어가 지정 범위 밖이면 자동 조회하지 않고 `대상 미확인`으로 표시합니다.
 
 기본 구성도는 운영용으로 실제 리소스 이름과 수집된 IP·CIDR·백엔드 주소를 표시합니다. 고객사 PNG·Draw.io 파일·스냅샷은 모두 저장소 밖에 보관하세요. GitHub 예시는 가상 데이터로 생성합니다. 별도 공유용 PNG가 필요하면 `draw --redact`로 이름과 IP를 숨길 수 있지만, XML에는 내부 식별자가 남으므로 익명화된 공개 파일로 취급하면 안 됩니다. PNG에는 원본 XML을 포함하지 않습니다. 표시 모드와 관계없이 AI에는 별칭과 리소스 유형·관계만 전달하며, 참고 사진은 사용자가 명시적으로 지정한 경우 전달합니다.
 

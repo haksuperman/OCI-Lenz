@@ -173,8 +173,8 @@ details retain them. A backend whose physical target is a hidden Node displays
 against its known System; ociEvidenceTarget stores the original Node ID and the
 validator checks both API evidence and the Node-to-System membership. Original
 graph endpoints are never mutated. Prior scene signatures/outputs are unchanged
-for snapshots without Base DB resources. DB catalog/PDB/Data Guard and other
-database platforms remain separate follow-up scope.
+for snapshots without Base DB resources. DB catalog/PDB/Data Guard remain separate follow-up scope. Additional database
+platforms are implemented by database_services as described below.
 
 `vpn.collect_vpn` uses the same scoped, paginated, bounded-retry wrapper for
 ListCpes, ListIPSecConnections and per-connection ListIPSecConnectionTunnels.
@@ -400,3 +400,39 @@ it emits a straight connection even if an older/model route supplied doglegs.
 Headers, unrelated cards, occupied routes and real branching still justify
 orthogonal turns. Actual icons/labels/parents/API endpoints remain unchanged.
 This rule applies during every render, not as a patch to a particular PNG.
+
+`database_services` extends the same collector in MySQL, Autonomous, ExaCC,
+ExaCI and Exascale order. A separate MySQL client performs ListDbSystems and
+GetDbSystem; every other service uses DatabaseClient List APIs. Scoped failures
+retain parents and references. Coverage adds allowlisted request filters for
+per-system/per-cluster calls. The minimum SDK is 2.191 to cover Exascale models.
+No raw objects, connection payloads, tags, keys or contacts enter snapshots.
+
+Shared DB Node collection accepts db_system_id or vm_cluster_id request scope.
+Canonical vm_cluster_id edges explicitly cite the ListDbNodes request because
+DbNodeSummary has no VM cluster field. SCAN PrivateIp IDs are resolved with
+GetPrivateIp and retained alongside their observed addresses. ExaCC networks
+retain only network roles, node IP/VIP and SCAN IP lists. Networks are listed
+under both observed infrastructure and cluster parent IDs, always filtered to
+the selected compartment; a parent outside the scope is never fetched.
+
+The graph uses exact SDK reference fields for DB/container/VM/infrastructure/
+network/vault relationships. Cross-compartment references resolve after merging.
+Overview aggregates client Node IPs into their owning System or VM Cluster;
+physical backend evidence survives under ociEvidenceTarget. Unique observed
+DB endpoint IPs can resolve configured LB backends only inside the LB VCN;
+ambiguity stays unknown. Non-OCI networks and vaults are logical editable tags,
+not invented OCI subnet containers. Exascale clusters reuse official Exadata
+art because the pinned toolkit has no dedicated Exascale stencil. Existing
+snapshots without new database kinds keep their original scene contracts.
+
+
+## DB relationship routing
+Network and database endpoints participate in the same bounded orthogonal
+conflict avoidance. DB participation does not classify a database as network
+topology. When an ownership chain enters and leaves the same icon face, the
+router may choose another normal source/target face to avoid retracing a wire.
+It preserves AI rectangles, API endpoints, parents, names and observed addresses.
+The historical `network_edge_crossings`/`network_overlap_length` router keys now
+also include DB-involved pairs; the final overview evaluator still checks all
+visible relationships. Equal or worse refinement is discarded as before.

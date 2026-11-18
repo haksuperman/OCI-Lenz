@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "44-database-service-validation",
+  "steps": [
+    {
+      "step": 0,
+      "name": "sdk-contract-pagination-and-render-validation",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_database_sdk_contracts",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

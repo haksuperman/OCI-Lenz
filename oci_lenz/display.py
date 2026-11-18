@@ -27,8 +27,10 @@ def network_label(resource,prefix):
 def prepare_display(snapshot,redact=False):
     result=copy.deepcopy(snapshot)
     result.setdefault('presentation',{})['redacted']=redact
+    from .database_services import DB_SYSTEMS,node_owner,MODELS
     nodes,_=graph(result)
     aliases={'compute':'VM','lb':'LB','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','drg':'DRG','lpg':'LPG','rpc':'RPC','virtual_circuit':'FastConnect','cross_connect':'CrossConnect','cross_connect_group':'CrossConnect group','cpe':'CPE','ipsec':'IPSec VPN','ipsec_tunnel':'VPN tunnel','db_system':'Base DB','db_node':'DB Node','unknown':'대상 미확인'}
+    aliases.update({kind:kind.replace('_',' ').title() for kind in MODELS})
     alias={k:aliases.get(r['kind'],r['kind'])+' '+str(i+1) for i,(k,r) in enumerate(sorted(nodes.items()))}
     for r in result['resources']:
         r.pop('display_details',None)
@@ -44,9 +46,13 @@ def prepare_display(snapshot,redact=False):
             sources=[v for v in result['resources'] if v.get('instance_id')==r['id'] and v['kind']=='vnic']
         if r['kind']=='db_node':
             sources=[v for v in result['resources'] if v.get('db_node_id')==r['id'] and v['kind']=='vnic']
-        if r['kind']=='db_system':
-            clients={n.get(field) for n in result['resources'] if n['kind']=='db_node' and n.get('db_system_id')==r['id'] for field in ('vnic_id','vnic2_id')}-{None}
+        if r['kind'] in DB_SYSTEMS:
+            clients={n.get(field) for n in result['resources'] if n['kind']=='db_node' and node_owner(n)==r['id'] for field in ('vnic_id','vnic2_id')}-{None}
             sources=[dict(v,private_ips=([v['primary_private_ip']] if v.get('primary_private_ip') else v.get('private_ips',[])[:1])) for v in result['resources'] if v['kind']=='vnic' and v['id'] in clients]
+            sources.append(r)
+            network=nodes.get(r.get('vm_cluster_network_id'),{})
+            client_ips=sorted({n['ip'] for net in network.get('vm_networks',[]) if net.get('network_type')=='CLIENT' for n in net.get('nodes',[]) if n.get('ip')})
+            if client_ips:sources.append({'id':r['id']+'/client-network','private_ips':client_ips})
         sources=sorted(sources,key=lambda v:(v.get('network_role')=='backup',v.get('is_primary') is not True,v['id']))
         private=sorted({ip for src in sources for ip in src.get('private_ips',[]) if ip})
         public=sorted({src['public_ip'] for src in sources if src.get('public_ip')})
@@ -89,8 +95,14 @@ def prepare_display(snapshot,redact=False):
             summary=[values[0] for values in peers.values() if values]
         for field,label in (('circuit_type','Circuit type'),('bandwidth_shape_name','Bandwidth'),('bgp_session_state','BGP IPv4 state'),('bgp_ipv6_session_state','BGP IPv6 state'),('port_speed_shape_name','Port speed'),('minimum_links','Minimum links')):
             if r.get(field) is not None:details.append(label+': '+str(r[field]))
+        for field in ('mysql_version','db_version','db_workload','shape','shape_name','port','port_x','is_highly_available','is_heat_wave_cluster_attached'):
+            if r.get(field) is not None:details.append(field+': '+str(r[field]))
+        if r['kind']=='vm_cluster_network':
+            for net in r.get('vm_networks',[]):
+                details.extend(str(net.get('network_type') or 'UNKNOWN')+': '+n[field] for n in net.get('nodes',[]) for field in ('ip','vip') if n.get(field))
+            details.extend('SCAN: '+ip for scan in r.get('scans',[]) for ip in scan.get('ips',[]))
         r['display_details']=details
-        r['summary_details']=['IP: '+ip for ip in private] if r['kind']=='db_system' else summary
+        r['summary_details']=['IP: '+ip for ip in private] if r['kind'] in DB_SYSTEMS else summary
     if redact:
         for i,g in enumerate(result.get('presentation',{}).get('groups',[])):
             g['label']='Shared services' if g.get('role')=='shared' else 'Service '+str(i+1)
