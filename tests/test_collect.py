@@ -8,7 +8,7 @@ from oci_lenz.collect import collect
 
 @unittest.skipIf(oci is None,'install project OCI dependency to test SDK adapter')
 class CollectorTests(unittest.TestCase):
-    def run_collect(self,fail=None,primary_ip='10.0.0.2'):
+    def run_collect(self,fail=None,primary_ip='10.0.0.2',extra=None):
         def obj(id,**kw):return N(id=id,display_name=id,**kw)
         responses={
             'get_tenancy':N(name='Synthetic Tenant',description='not-needed',freeform_tags={'private':'not-needed'}),
@@ -23,6 +23,7 @@ class CollectorTests(unittest.TestCase):
             'list_load_balancers':[oci.load_balancer.models.LoadBalancer(id='lb',subnet_ids=['s'],network_security_group_ids=[],ip_addresses=[oci.load_balancer.models.IpAddress(ip_address='192.0.2.20',is_public=True)])],
             'get_load_balancer':oci.load_balancer.models.LoadBalancer(id='lb',listeners={'https':oci.load_balancer.models.Listener(name='https',protocol='TCP',port=443,default_backend_set_name='set')}),
             'list_backend_sets':[N(name='set')], 'list_backends':[N(ip_address='10.0.0.2',port=80)]}
+        responses.update(extra or {})
         calls=[]
         class Client:
             def __init__(self,*a,**kw):pass
@@ -31,6 +32,9 @@ class CollectorTests(unittest.TestCase):
                 compartment_scope=kwargs['compartment_id']
                 if compartment_scope!='c':raise ValueError('unexpected synthetic scope')
                 return self.__getattr__('list_network_security_groups')(**kwargs)
+            def list_drg_attachments(self,*args,**kwargs):
+                assert kwargs.get('attachment_type')=='ALL'
+                return self.__getattr__('list_drg_attachments')(*args,**kwargs)
             def __getattr__(self,name):
                 assert name.startswith(('get_','list_','search_'))
                 def call(*a,**kw):
@@ -39,9 +43,10 @@ class CollectorTests(unittest.TestCase):
                     value=responses.get(name,[])
                     if name=='get_vnic':
                         value=oci.core.models.Vnic(id=a[0],subnet_id='s',nsg_ids=[],private_ip=primary_ip,public_ip='192.0.2.10',is_primary=a[0]=='vn')
+                        if extra and callable(extra.get('get_vnic')):value=extra['get_vnic'](a[0])
                     return N(data=value)
                 return call
-        with patch.object(oci.config,'from_file',return_value={'tenancy':'t','region':'r'}),patch.object(oci.identity,'IdentityClient',Client),patch.object(oci.core,'ComputeClient',Client),patch.object(oci.core,'VirtualNetworkClient',Client),patch.object(oci.load_balancer,'LoadBalancerClient',Client),patch.object(oci.resource_search,'ResourceSearchClient',Client),patch.object(oci.pagination,'list_call_get_all_results',side_effect=lambda fn,*a,**kw:fn(*a,**kw)):
+        with patch.object(oci.config,'from_file',return_value={'tenancy':'t','region':'r'}),patch.object(oci.identity,'IdentityClient',Client),patch.object(oci.core,'ComputeClient',Client),patch.object(oci.database,'DatabaseClient',Client),patch.object(oci.core,'VirtualNetworkClient',Client),patch.object(oci.load_balancer,'LoadBalancerClient',Client),patch.object(oci.resource_search,'ResourceSearchClient',Client),patch.object(oci.database,'DatabaseClient',Client),patch.object(oci.pagination,'list_call_get_all_results',side_effect=lambda fn,*a,**kw:fn(*a,**kw)):
             return collect('P','r','c'),calls
     def test_allowlist_secondary_vnics_and_zero_results(self):
         s,calls=self.run_collect()

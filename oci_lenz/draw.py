@@ -3,11 +3,11 @@ import base64,copy,json,os,shutil,subprocess,sys,urllib.parse,zlib
 from pathlib import Path
 import xml.etree.ElementTree as E
 from functools import lru_cache
-from .model import graph
+from .diagram_model import diagram_graph as graph
 from .display import resource_label,network_label
 ROOT=Path(__file__).resolve().parents[1]
 if not (ROOT/'assets/oci/library.xml').exists(): ROOT=Path(sys.prefix)/'share/oci-lenz'
-ICONS={'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'route':29,'service':31,'internet':32,'nat':33,'nsg':114}
+ICONS={'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'route':29,'service':31,'internet':32,'nat':33,'nsg':114,'cpe':21,'drg':30,'rpc':34,'db_system':36,'db_node':35,'virtual_circuit':210,'cross_connect':210}
 
 def edge_label(edge):
     return edge['label'] or {'nsg_ids':'NSG','route_table_id':'Route table','lb_id':'Backend set'}.get(edge['kind'],edge['kind'])
@@ -26,14 +26,22 @@ def icon(root, rid, kind, x,y):
         if c.get('parent') in originals:
             px,py,_,_=rectangle(c.get('parent'));xx+=px;yy+=py
         return xx,yy,w,h
+    if kind in ('virtual_circuit','cross_connect'):
+        # The official entry is a decorated connector: import only its SVG
+        # symbol, never its decorative edge as an invented API relationship.
+        glyph=copy.deepcopy(next(c for c in cells if 'shape=image;' in c.get('style','') and 'image=data:image/svg+xml,' in c.get('style','')))
+        x,y,w,h=rectangle(glyph.get('id'));glyph.set('parent','1')
+        g=glyph.find('mxGeometry');g.set('x',str(x));g.set('y',str(y))
+        cells=[glyph];originals={glyph.get('id'):glyph};scale=54/max(w,h)
     painted={}
     for c in cells:
         styles=dict(p.split('=',1) for p in c.get('style','').split(';') if '=' in p)
-        if styles.get('fillColor','none')!='none' or styles.get('strokeColor','none')!='none':painted[c.get('id')]=rectangle(c.get('id'))
+        if kind in ('virtual_circuit','cross_connect') or styles.get('fillColor','none')!='none' or styles.get('strokeColor','none')!='none':painted[c.get('id')]=rectangle(c.get('id'))
     if not painted:raise ValueError('official icon contains no painted geometry')
     ox=min(r[0] for r in painted.values());oy=min(r[1] for r in painted.values())
     right=max(r[0]+r[2] for r in painted.values());bottom=max(r[1]+r[3] for r in painted.values())
     group=E.SubElement(root,'mxCell',id=rid+'-icon',value='',style='group',vertex='1',parent=rid)
+    if kind in ('virtual_circuit','cross_connect'):group.set('ociOfficialIcon','Oracle OCI Library.xml:210 FastConnect SVG')
     E.SubElement(group,'mxGeometry',x=str(x),y=str(y),width=str((right-ox)*scale),height=str((bottom-oy)*scale),**{'as':'geometry'})
     for c in cells:
         # The toolkit's built-in caption is cleared, so its rectangle must not
@@ -78,6 +86,18 @@ def build_document(snapshot,detail_pages=False):
             ids|={e['target'] for e in edges if e['source'] in ids}
             pages.append((v['id'],v['name'],ids))
     for page,title,ids in pages:
+        ids=set(ids)
+        # Optional network pages include whole observed VPN families.
+        for _ in range(len(nodes)):
+            before=len(ids)
+            for key,r in nodes.items():
+                owner=r.get('ipsec_id') if r['kind']=='ipsec_tunnel' else r.get('cross_connect_group_id')
+                parent_kind='ipsec' if r['kind']=='ipsec_tunnel' else 'cross_connect_group'
+                if r['kind'] in ('ipsec_tunnel','cross_connect') and nodes.get(owner,{}).get('kind')==parent_kind:
+                    if key in ids:ids.add(owner)
+                    if owner in ids:ids.add(key)
+            ids|={e['target'] for e in edges if e['kind']=='cpe_id' and e['source'] in ids and nodes[e['source']]['kind']=='ipsec'}
+            if len(ids)==before:break
         diagram=E.SubElement(doc,'diagram',id=page,name=title)
         root=E.SubElement(E.SubElement(diagram,'mxGraphModel',page='0',background='#ffffff'),'root')
         E.SubElement(root,'mxCell',id='0');E.SubElement(root,'mxCell',id='1',parent='0')
@@ -92,6 +112,9 @@ def build_document(snapshot,detail_pages=False):
                 sub=next(iter(nodes.get(r.get('lb_id'),{}).get('subnet_ids',[])),None)
             if r['kind']=='compute':
                 sub=next((v.get('subnet_id') for v in sorted(nodes.values(),key=lambda n:(n.get('is_primary') is not True,n['id'])) if v.get('instance_id')==k),None)
+            if r['kind']=='db_node':
+                vnic=nodes.get(r.get('vnic_id'),{})
+                sub=vnic.get('subnet_id') or nodes.get(r.get('db_system_id'),{}).get('subnet_id')
             if sub in children and r['kind'] not in ('vcn','subnet'): children[sub].append(k)
         def setbox(k,label,x,y,w,h,parent,kind):
             parents[k]=parent; sizes[k]=(w,h); specs[k]=(label,x,y,w,h,parent,kind)
@@ -161,6 +184,13 @@ def build_document(snapshot,detail_pages=False):
                 width=max(width,w+50)
         height=bottom+(45+((len(unplaced)+4)//5)*rowstep if unplaced else 0)+25
         setbox(region,'OCI Region / '+snapshot['scope']['region'],20,85,width,height,'1','region')
+        for key in sorted(k for k in ids if nodes[k]['kind'] in ('ipsec','cross_connect_group')):
+            _,x,y,_,_,parent,_=specs[key];kind=nodes[key]['kind']
+            child_kind,field,prefix=('ipsec_tunnel','ipsec_id','IPSec VPN / ') if kind=='ipsec' else ('cross_connect','cross_connect_group_id','FastConnect group / ')
+            members=sorted(k for k in ids if nodes[k]['kind']==child_kind and nodes[k].get(field)==key)
+            for i,child in enumerate(members):
+                setbox(child,resource_label(nodes[child],width=30),24,64+i*rowstep,170,cardheight,key,'card')
+            setbox(key,network_label(nodes[key],prefix),x,y,220,max(64,64+len(members)*rowstep),parent,kind)
         def depth(k):
             d=0
             while k in parents: d+=1;k=parents[k]
@@ -169,10 +199,13 @@ def build_document(snapshot,detail_pages=False):
             label,x,y,w,h,parent,kind=specs[k]
             style='rounded=0;whiteSpace=wrap;html=0;fontSize=12;'
             if kind=='card':style+='fillColor=none;strokeColor=none;verticalAlign=bottom;spacingBottom=8;'
+            elif kind in ('ipsec','cross_connect_group'):style+='rounded=1;arcSize=8;fillColor=#F3F8FA;strokeColor=#8FAEBB;verticalAlign=top;align=left;spacing=12;fontColor=#213A44;fontStyle=1;'
             elif kind in ('vcn','subnet'):style+='fillColor=none;strokeColor=#C66B3D;dashed=1;dashPattern=4 3;verticalAlign=top;align=left;spacing=12;fontColor=#A34E25;fontStyle=1;'
             else:style+='fillColor=#F7F6F3;strokeColor=#C8C5C0;verticalAlign=top;align=left;spacing=12;fontStyle=1;'
             c=E.SubElement(root,'mxCell',id=k,value=label,vertex='1',parent=parent,style=style)
             E.SubElement(c,'mxGeometry',x=str(x),y=str(y),width=str(w),height=str(h),**{'as':'geometry'})
+            if kind=='ipsec':c.set('ociVPNContainer','1')
+            if kind=='cross_connect_group':c.set('ociCrossConnectGroup','1')
             if kind=='card':icon(root,k,nodes[k]['kind'],58,10)
         note=E.SubElement(root,'mxCell',id='notice',value=('OCI-Lenz | Synthetic architecture' if snapshot.get('coverage') and all(c.get('source')=='synthetic' for c in snapshot['coverage']) else 'OCI-Lenz | Architecture')+'\nConfigured relationships only — not traffic reachability. Dashed links: NSG / route table. 대상 미확인 = unresolved target.',vertex='1',parent='1',style='text;whiteSpace=wrap;fontSize=14;align=left;')
         E.SubElement(note,'mxGeometry',x='20',y='10',width='1300',height='60',**{'as':'geometry'})
@@ -185,6 +218,9 @@ def build_document(snapshot,detail_pages=False):
         for i,e in enumerate(edges):
             if e['source'] not in ids or e['target'] not in ids: continue
             c=E.SubElement(root,'mxCell',id='edge-'+str(i),source=e['source'],target=e['target'],value=edge_label(e),edge='1',parent=common_parent(e['source'],e['target']),style='edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;fontSize=10;labelBackgroundColor=#F7F6F3;endArrow=block;strokeColor=#424242;')
+            if e.get('attachment_ids'):
+                c.set('ociAttachmentIds',json.dumps(e['attachment_ids'],separators=(',',':')))
+                c.set('ociEvidence',e['evidence'])
             if e['kind'] in ('vcn_id','subnet_id','instance_id') or (e['kind']=='subnet_ids' and nodes[e['source']].get('subnet_ids',[None])[0]==e['target']):
                 c.set('style',c.get('style')+'opacity=0;textOpacity=0;strokeOpacity=0;')
             elif e['kind'] in ('nsg_ids','route_table_id'):
@@ -214,6 +250,20 @@ def validate(xml,snapshot):
         cellmap={c.get('id'):c for c in cells}
         for rid in nodes:
             native=cellmap.get(rid)
+            if native is not None and nodes[rid]['kind'] in ('drg','cpe') and native.get('parent')!='layout-region':
+                raise ValueError('DRG/CPE must remain outside VPN containers')
+            if native is not None and nodes[rid]['kind']=='cross_connect':
+                owner=nodes[rid].get('cross_connect_group_id')
+                expected=owner if owner in ids and nodes.get(owner,{}).get('kind')=='cross_connect_group' else 'layout-region'
+                if native.get('parent')!=expected:raise ValueError('CrossConnect parent mismatch')
+            if native is not None and nodes[rid]['kind']=='cross_connect_group' and (native.get('ociCrossConnectGroup')!='1' or native.get('parent')!='layout-region'):
+                raise ValueError('CrossConnect group mismatch')
+            if native is not None and nodes[rid]['kind']=='ipsec_tunnel':
+                owner=nodes[rid].get('ipsec_id')
+                expected=owner if owner in ids and nodes.get(owner,{}).get('kind')=='ipsec' else 'layout-region'
+                if native.get('parent')!=expected:raise ValueError('IPSec tunnel parent mismatch')
+            if native is not None and nodes[rid]['kind']=='ipsec' and (native.get('ociVPNContainer')!='1' or native.get('parent')!='layout-region'):
+                raise ValueError('IPSec container mismatch')
             if native is not None and 'ociNativeLabel=1;' in native.get('style',''):
                 from .typography import card_metrics
                 options=dict(p.split('=',1) for p in native.get('style','').split(';') if '=' in p)
@@ -237,7 +287,19 @@ def validate(xml,snapshot):
             for attr in ('source','target','parent'):
                 if c.get(attr) and c.get(attr) not in ids:raise ValueError('dangling cell reference')
         if page.get('id')=='region' and not set(nodes)<=ids:raise ValueError('missing resources')
-        actual={(c.get('source'),c.get('target'),c.get('value')) for c in cells if c.get('edge')=='1'}
+        for c in cells:
+            original=c.get('ociEvidenceTarget')
+            if original is not None and (original not in ids or nodes.get(original,{}).get('kind')!='db_node' or nodes[original].get('db_system_id')!=c.get('target') or nodes.get(c.get('source'),{}).get('kind')!='backend_set'):
+                raise ValueError('invalid DB node display projection')
+        for i,e in enumerate(edges):
+            c=cellmap.get('edge-'+str(i))
+            if c is None:continue
+            if e.get('attachment_ids') or c.get('ociAttachmentIds') is not None:
+                if c.get('source')!=e['source'] or c.get('target')!=e['target'] or c.get('ociAttachmentIds')!=json.dumps(e.get('attachment_ids',[]),separators=(',',':')) or c.get('ociEvidence')!=e['evidence']:
+                    raise ValueError('attachment projection evidence mismatch')
+        expected_ids={'edge-'+str(i) for i,e in enumerate(edges) if e['source'] in ids and e['target'] in ids}
+        if {c.get('id') for c in cells if c.get('edge')=='1'}!=expected_ids:raise ValueError('relationship IDs mismatch')
+        actual={(c.get('source'),c.get('ociEvidenceTarget',c.get('target')),c.get('value')) for c in cells if c.get('edge')=='1'}
         expected={(e['source'],e['target'],edge_label(e)) for e in edges if e['source'] in ids and e['target'] in ids}
         if actual!=expected:raise ValueError('relationship mismatch')
     return True

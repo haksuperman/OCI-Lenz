@@ -65,3 +65,51 @@ names with quieter observed IP labels. During visual review, X/0 labels are
 privacy placeholders preserving real footprints: evaluate geometry/hierarchy,
 not literal words. Revise only known rectangles/routes. Never add resources or
 change immutable parent memberships. Report remaining issues as needs_review.
+
+DRG and peering items use only observed attachment and peer_id relationships.
+DRGs are regional resources, not children of one arbitrarily selected VCN.
+LPG uses a logical name tag; DRG/RPC use official stencils. Attachment records
+are internal evidence only; never draw their cards, names or frames. Leave out-of-scope peers unknown. Do not infer direct or transitive
+VCN connectivity, traverse peer scopes or treat configured peering as verified
+traffic. DRG route-policy evaluation and OKE remain separate.
+
+LPGs belong to their actual VCN. Peer links are dashed configured relations;
+API field names stay hidden on the canvas.
+
+For Base DB, overview items are DB Systems with actual Display Name and observed
+client Node IP captions applied locally. Individual DB Node hostname cards are
+hidden. Use the supplied projected backend endpoint as a display aggregate;
+physical target evidence remains in XML. Do not add database names, ports,
+versions, backup addresses or inferred application-to-DB connections to captions.
+
+IPSec VPN uses observed connection.cpe_id/drg_id, request-scoped tunnel ownership
+and attachment tunnel IDs only. CPE uses official art. Each connection is a native IPSec VPN container;
+its observed tunnels are editable child tags with locally applied names/IPs. Keep them outside
+arbitrary VCN ownership; never invent direct CPE-to-VCN or transitive traffic
+links. Status/routing belong to metadata, not reachability styling. No secrets
+or device configurations are queried or sent to the model.
+
+When network_groups are supplied, place actual VCN endpoints LEFT of each DRG,
+IPSec members RIGHT and RPC/peer endpoints ABOVE with branch_gap clearance.
+LPG pairs face across their existing VCN boundaries. Keep parallel VPN tunnels
+near their supplied connection and CPE. These are API relationships, not inferred
+service membership. Never draw Attachment cards/names/badges/frames, even on
+information or detail pages. Direct DRG links retain verified Attachment field
+provenance locally; never invent VCN-to-VCN transit or actual packet paths.
+
+IPSec connection boxes are actual API-owned containers, not inferred service
+panels. Respect tunnel parent IDs and measured header_height. Arrange tunnels
+as compact parallel rows inside their own VPN box. DRG links enter toward the
+observed child tunnels; the VPN container connects outward to CPE. Keep CPE/DRG
+outside, with no duplicate VPN card or visible tunnel-to-parent ownership arrow.
+Unknown VPN owners do not become invented containers. Empty known VPNs retain
+their named box. Do not group by addresses, name similarity or inferred traffic.
+
+FastConnect uses the official library FastConnect SVG symbol on Virtual Circuit
+and CrossConnect port resources. Keep its branch BELOW the evidenced DRG, leaving
+VPN RIGHT and RPC ABOVE. Arrange virtual circuits and their exact mapped physical
+endpoints nearby. CrossConnectGroup is the actual physical-port parent container,
+not a service panel: only API-owned CrossConnect children go inside; VCs/DRG/CPE
+stay outside. Public/provider-managed circuits never imply a guessed DRG, CPE or
+provider inventory. Preserve unresolved mapping IDs. BGP state is metadata, not
+proof of traffic reachability; no MD5/MACsec credentials enter the model.

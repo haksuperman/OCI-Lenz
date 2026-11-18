@@ -90,6 +90,34 @@ def graph(snapshot):
             if r.get(field): edge(rid,r[field],field,field)
         for field in ('subnet_ids','nsg_ids'):
             for target in r.get(field,[]): edge(rid,target,field,field)
+        if kind=='db_system':
+            if r.get('backup_subnet_id'):edge(rid,r['backup_subnet_id'],'backup_subnet_id','DbSystem.backup_subnet_id')
+            for target in r.get('backup_nsg_ids',[]):edge(rid,target,'backup_nsg_ids','DbSystem.backup_network_nsg_ids[]')
+        if kind=='db_node':
+            if r.get('db_system_id'):edge(rid,r['db_system_id'],'db_system_id',r.get('db_system_evidence') or 'DbNode.db_system_id')
+            for field in ('vnic_id','vnic2_id','backup_vnic_id','backup_vnic2_id'):
+                if r.get(field):edge(rid,r[field],field,'DbNode.'+field)
+        if kind in ('drg_attachment','rpc','ipsec') and r.get('drg_id'):
+            edge(rid,r['drg_id'],'drg_id',{'drg_attachment':'DrgAttachment','rpc':'RemotePeeringConnection','ipsec':'IPSecConnection'}[kind]+'.drg_id')
+        if kind=='virtual_circuit':
+            if r.get('gateway_id'):edge(rid,r['gateway_id'],'gateway_id','VirtualCircuit.gateway_id')
+            targets=set()
+            for i,mapping in enumerate(r.get('cross_connect_mappings',[])):
+                target=mapping.get('cross_connect_or_cross_connect_group_id') or 'missing-cross-connect:'+rid+':'+str(i)
+                if target not in targets:edge(rid,target,'cross_connect_mapping','VirtualCircuit.cross_connect_mappings[].cross_connect_or_cross_connect_group_id')
+                targets.add(target)
+        if kind=='cross_connect' and r.get('cross_connect_group_id'):
+            edge(rid,r['cross_connect_group_id'],'cross_connect_group_id','CrossConnect.cross_connect_group_id')
+        if kind=='ipsec' and r.get('cpe_id'):
+            edge(rid,r['cpe_id'],'cpe_id','IPSecConnection.cpe_id')
+        if kind=='ipsec_tunnel' and r.get('ipsec_id'):
+            edge(rid,r['ipsec_id'],'ipsec_id','ListIPSecConnectionTunnels.ipsc_id (request scope)')
+        if kind=='drg_attachment':
+            edge(rid,r.get('network_id') or 'missing-attachment-network:'+rid,'attachment_network',r.get('network_evidence') or 'DrgAttachment.network_details.id')
+        if kind in ('lpg','rpc'):
+            evidence=('LocalPeeringGateway' if kind=='lpg' else 'RemotePeeringConnection')+'.peer_id'
+            if r.get('peer_id'):edge(rid,r['peer_id'],'peer_id',evidence)
+            elif r.get('peering_status')=='PEERED':edge(rid,'peer:'+rid,'peer_id',evidence+' unavailable; peering_status=PEERED')
         if kind=='subnet':
             rt=nodes.get(r.get('route_table_id'),{})
             for rule in rt.get('rules',[]):
@@ -100,6 +128,6 @@ def graph(snapshot):
             vcns={nodes.get(s,{}).get('vcn_id') for s in lb.get('subnet_ids',[])}-{None}
             for backend in r.get('backends',[]):
                 matches=[n for n in resources if n['kind']=='vnic' and (n.get('vcn_id') or nodes.get(n.get('subnet_id'),{}).get('vcn_id')) in vcns and backend['ip_address'] in n.get('private_ips',[])]
-                target=matches[0].get('instance_id',matches[0]['id']) if len(matches)==1 else 'backend:'+rid+':'+str(len(edges))
+                target=(matches[0].get('instance_id') or matches[0].get('db_node_id') or matches[0]['id']) if len(matches)==1 else 'backend:'+rid+':'+str(len(edges))
                 edge(rid,target,'backend','BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN',f"Backend :{backend['port']}")
     return nodes,edges

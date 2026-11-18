@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "27-ipsec-vpn",
+  "steps": [
+    {
+      "step": 0,
+      "name": "scoped-vpn-metadata-and-evidence",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

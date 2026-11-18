@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "32-vpn-tunnel-containers",
+  "steps": [
+    {
+      "step": 0,
+      "name": "api-owned-vpn-tunnel-containers",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

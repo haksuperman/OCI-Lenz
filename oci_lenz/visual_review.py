@@ -10,7 +10,7 @@ from html import escape
 from html.parser import HTMLParser
 from .ai import request_json,SCHEMA
 from .architecture import make_scene,apply_design,check_plan
-from .model import graph
+from .diagram_model import diagram_graph as graph
 from .draw import export,validate
 
 ISSUES=['text_overlap','excessive_whitespace','edge_crossings','poor_grouping','unclear_flow','inconsistent_spacing','unreadable_labels']
@@ -83,6 +83,9 @@ def review_design(snapshot,plan,references,provider='codex',model=None,timeout=6
                     'If acceptable, return acceptable=true, issues=[], revision=null. Otherwise return issue categories '
                     'and an improved COMPLETE geometry under revision, or null if no safe improvement is possible. '
                     'Never change item IDs, immutable parent memberships or connectivity. Keep minimum dimensions and title margins. '
+                    'Preserve each drg direction contract: vcns LEFT, ipsec_members RIGHT, remote_members ABOVE (branch_gap). No Attachment cards, names, labels or frames may be introduced. Never invent VCN transit. '
+                    'IPSec connections are native containers. Keep each tunnel inside its supplied parent below header_height, with name/IP visible; DRG and CPE must remain outside. Do not turn the connection into a separate card or draw a redundant ownership wire. '
+                    'FastConnect branches stay BELOW their evidenced DRG. Physical cross_connect ports stay inside their API-owned cross_connect_group container; virtual circuits stay outside. Do not infer provider/CPE connections from addresses. '
                     'Do not use tools, read files or spawn agents. Return only schema JSON.\nScene: '+json.dumps(scene['request'])+
                     '\nCurrent: '+json.dumps({k:current['overview'][k] for k in ('placements','routes')}))
             try:result=request_json(prompt,REVIEW_SCHEMA,[*references,preview],provider=provider,model=model,timeout=timeout)

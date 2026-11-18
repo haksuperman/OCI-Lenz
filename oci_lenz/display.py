@@ -28,7 +28,7 @@ def prepare_display(snapshot,redact=False):
     result=copy.deepcopy(snapshot)
     result.setdefault('presentation',{})['redacted']=redact
     nodes,_=graph(result)
-    aliases={'compute':'VM','lb':'LB','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','unknown':'대상 미확인'}
+    aliases={'compute':'VM','lb':'LB','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','drg':'DRG','lpg':'LPG','rpc':'RPC','virtual_circuit':'FastConnect','cross_connect':'CrossConnect','cross_connect_group':'CrossConnect group','cpe':'CPE','ipsec':'IPSec VPN','ipsec_tunnel':'VPN tunnel','db_system':'Base DB','db_node':'DB Node','unknown':'대상 미확인'}
     alias={k:aliases.get(r['kind'],r['kind'])+' '+str(i+1) for i,(k,r) in enumerate(sorted(nodes.items()))}
     for r in result['resources']:
         r.pop('display_details',None)
@@ -42,7 +42,12 @@ def prepare_display(snapshot,redact=False):
         sources=[r]
         if r['kind']=='compute':
             sources=[v for v in result['resources'] if v.get('instance_id')==r['id'] and v['kind']=='vnic']
-        sources=sorted(sources,key=lambda v:(v.get('is_primary') is not True,v['id']))
+        if r['kind']=='db_node':
+            sources=[v for v in result['resources'] if v.get('db_node_id')==r['id'] and v['kind']=='vnic']
+        if r['kind']=='db_system':
+            clients={n.get(field) for n in result['resources'] if n['kind']=='db_node' and n.get('db_system_id')==r['id'] for field in ('vnic_id','vnic2_id')}-{None}
+            sources=[dict(v,private_ips=([v['primary_private_ip']] if v.get('primary_private_ip') else v.get('private_ips',[])[:1])) for v in result['resources'] if v['kind']=='vnic' and v['id'] in clients]
+        sources=sorted(sources,key=lambda v:(v.get('network_role')=='backup',v.get('is_primary') is not True,v['id']))
         private=sorted({ip for src in sources for ip in src.get('private_ips',[]) if ip})
         public=sorted({src['public_ip'] for src in sources if src.get('public_ip')})
         details.extend('Private: '+ip for ip in private)
@@ -69,8 +74,23 @@ def prepare_display(snapshot,redact=False):
             details.append(label)
         if r['kind']=='backend_set':
             details.extend(sorted({str(b['ip_address'])+':'+str(b['port']) for b in r.get('backends',[])}))
+        for field,label in (('peering_status','Peering status'),('peer_region_name','Peer region')):
+            if r.get(field):details.append(label+': '+str(r[field]))
+        for field,label in (('status','Status'),('routing','Routing'),('lifecycle_state','Lifecycle'),('cpe_ip','CPE IP')):
+            if r.get(field):details.append(label+': '+str(r[field]))
+        details.extend('Static route: '+route for route in r.get('static_routes',[]))
+        if r['kind']=='virtual_circuit':
+            peers={'Customer':[],'Oracle':[]}
+            for mapping in r.get('cross_connect_mappings',[]):
+                for label,field in (('Customer','customer_bgp_peering_ip'),('Oracle','oracle_bgp_peering_ip'),('Customer','customer_bgp_peering_ipv6'),('Oracle','oracle_bgp_peering_ipv6')):
+                    if mapping.get(field):
+                        value=label+': '+mapping[field];details.append(value);peers[label].append(value)
+                if mapping.get('vlan') is not None:details.append('VLAN: '+str(mapping['vlan']))
+            summary=[values[0] for values in peers.values() if values]
+        for field,label in (('circuit_type','Circuit type'),('bandwidth_shape_name','Bandwidth'),('bgp_session_state','BGP IPv4 state'),('bgp_ipv6_session_state','BGP IPv6 state'),('port_speed_shape_name','Port speed'),('minimum_links','Minimum links')):
+            if r.get(field) is not None:details.append(label+': '+str(r[field]))
         r['display_details']=details
-        r['summary_details']=summary
+        r['summary_details']=['IP: '+ip for ip in private] if r['kind']=='db_system' else summary
     if redact:
         for i,g in enumerate(result.get('presentation',{}).get('groups',[])):
             g['label']='Shared services' if g.get('role')=='shared' else 'Service '+str(i+1)

@@ -307,3 +307,142 @@ be regenerated. Reuse never silently changes an incompatible saved placement.
 Saved real-AI synthetic examples and their inspection notes are in
 [`artifacts/ai-quality`](../artifacts/ai-quality/README.md). `accepted` records a
 model's judgment of that particular preview, not a guarantee for every inventory.
+
+## DRG and peering scope
+
+Collection includes scoped DRGs, DRG Attachments, Local Peering Gateways (LPG) and
+Remote Peering Connections (RPC). `ListDrgAttachments` explicitly requests ALL
+attachment types; the SDK default is VCN-only. `network_details.id/type` take
+priority over deprecated VCN attachment fields. Permission failures and successful
+empty lists remain distinct coverage records. Shared SDK pagination/retry applies.
+
+The graph preserves attachment → DRG/network and peer_id relationships with API
+field evidence. It does not infer a direct VCN-to-VCN relationship or traffic
+reachability. Only resources returned for selected compartments are resolved;
+remote regions/tenancies/compartments are never fetched automatically. An API
+reports PEERED but omits the peer ID → the peer remains explicitly unknown.
+Other attachment network types (beyond VCN/RPC/IPSec-tunnel/VirtualCircuit) are retained as references and recorded as
+unsupported endpoints; DRG route-policy evaluation is not implemented. Other database platforms and OKE remain follow-up scope. IAM policies are never changed.
+
+DRG and RPC use official native toolkit icons; LPG uses a logical editable tag.
+Attachment names/cards/frames are omitted from all diagram pages. Direct DRG
+links retain exact Attachment API-field provenance in native edge metadata and
+the original snapshot. Peering state and peer region stay in the information
+appendix. Source collection/coverage are unchanged. Older snapshots without
+network data still render without invented connections.
+
+```sh
+oci-lenz sample --scenario network-peering --output /tmp/oci-lenz-network-sample
+oci-lenz draw --snapshot /tmp/oci-lenz-network-sample/snapshot.json --output /tmp/oci-lenz-network-diagram
+# Explicit diagnostic run without model calls:
+oci-lenz draw --snapshot /tmp/oci-lenz-network-sample/snapshot.json --output /tmp/oci-lenz-network-diagnostic --no-ai
+```
+
+This independently synthetic case includes cross-compartment attachments, two
+known LPG endpoints and an unresolved remote RPC. For semantics/permissions see
+[Oracle SDK](https://docs.oracle.com/en-us/iaas/tools/python/latest/api/core/client/oci.core.VirtualNetworkClient.html)
+and [Core IAM reference](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/corepolicyreference.htm).
+
+## Oracle Base Database Service
+
+The collector supports VM./BM. Base DB shapes through scoped ListDbSystems and
+per-system ListDbNodes using the shared pagination/retry/coverage wrapper.
+VM.BaseDB.x86 and older VM shapes are accepted; Exadata or unknown shapes are
+recorded unsupported. No DB Home, logical database/PDB, Data Guard or database
+connection is queried. Other database engines/platforms remain follow-up scope.
+
+Default architecture: ONE official DB System icon, the actual System Display Name,
+and observed client Node IPs. Two-node systems show both addresses. Node hostname
+cards and backup addresses are not shown on the overview. If network reads fail,
+no IP is fabricated. Client/backup VNIC and NSG/subnet relations stay in the minimal
+snapshot, native XML, appendix and optional --detail-pages output. A backend to
+an observed Node may visually connect to its owning System; its physical target
+ID and API relation are retained and validated in XML. This is aggregation, not
+an inferred application flow or traffic reachability result.
+
+```sh
+oci-lenz sample --scenario base-database --output /tmp/oci-lenz-base-db
+oci-lenz draw --snapshot /tmp/oci-lenz-base-db/snapshot.json --output /tmp/oci-lenz-base-db-diagram
+```
+
+The independent synthetic example has one two-node System, distinct client/backup
+networks and an explicit LB backend to a DB Node. `--no-ai` remains available for
+diagnostic rendering. [Oracle Base DB shapes](https://docs.oracle.com/en/cloud/paas/base-database/guide/dbs-about.html)
+and [IAM requirements](https://docs.oracle.com/en/cloud/paas/base-database/guide/policy-details.html)
+are separate from any deployment/IAM changes; this app performs neither.
+
+### IPSec VPN
+
+기존 `collect` 명령으로 지정 컴파트먼트의 CPE, IPSec 연결, 각 연결의 터널을
+함께 수집합니다. `draw` 명령은 변경 없이 같은 스냅샷을 사용합니다. CPE·VPN
+게이트웨이 IP와 이름을 표시하며 상태·라우팅 방식·정적 경로는 정보 페이지에
+보존합니다. UP은 실제 트래픽 도달성을 보장하지 않습니다. 범위 밖 CPE/DRG와
+조회하지 못한 터널은 대상 미확인으로 남깁니다. PSK·장비 설정은 조회하지 않습니다.
+
+가상 데이터 재현:
+```sh
+oci-lenz sample --scenario ipsec-vpn --output "$HOME/oci-lenz-validation/ipsec-vpn"
+oci-lenz draw --snapshot "$HOME/oci-lenz-validation/ipsec-vpn/snapshot.json" --output "$HOME/oci-lenz-validation/ipsec-vpn/diagrams"
+```
+
+### DRG 직접 연결과 배치
+
+Attachment 상자·이름·경계는 본문, 정보 페이지, VCN 상세 페이지에서 모두
+표시하지 않습니다. 기존 스냅샷을 그대로 사용할 수 있으며, 수집기와 원본 API
+관계는 유지합니다. 하나의 Attachment에서 확인된 DRG와 네트워크 끝점을 직접
+연결하고, 연결선 메타데이터에 그 Attachment ID와 API 필드를 보존합니다.
+RPC 소속 선 등과 중복되면 한 선으로 표현하되 모든 근거를 유지합니다.
+
+VCN은 DRG 왼쪽, IPSec은 오른쪽, Remote Peering은 위쪽에 배치합니다. 여러
+DRG에도 각각 적용하며 서비스 소속이나 VCN 간 전이 통신을 추론하지 않습니다.
+대상이 범위 밖이거나 확인되지 않으면 `대상 미확인`으로 유지합니다.
+실제 OCI Attachment를 삭제하거나 IAM 정책을 변경하는 작업은 하지 않습니다.
+기존 Attachment 표시용 저장 배치는 `--reuse-layout` 없이 다시 생성하세요.
+
+`validation.json.routing_quality.network_edge_crossings`는 네트워크와 관련된
+선 사이의 교차·접촉 수, `network_overlap_length`는 겹친 길이(페이지 좌표)
+입니다. 실제 공통 끝점 접속 구간과 역방향 같은 끝점 쌍은 제외합니다.
+DRG 포트 대안과 최대 두 번의 배선 재검토로 교차·겹침을 줄이지만 전체 최적
+배치나 트래픽 도달성을 보장하지 않습니다. 원본 리소스 위치는 AI 계획대로
+유지하며, 실패 시 임의 배치로 대체하지 않습니다.
+
+가상 예제:
+```sh
+oci-lenz sample --scenario drg-centered --output "$HOME/oci-lenz-validation/direct-drg"
+oci-lenz draw --snapshot "$HOME/oci-lenz-validation/direct-drg/snapshot.json" --output "$HOME/oci-lenz-validation/direct-drg/diagrams"
+```
+
+### IPSec VPN 내부 터널 표시
+
+IPSec 연결은 실제 이름을 제목으로 가진 편집 가능한 VPN 컨테이너로 표시합니다.
+`ListIPSecConnectionTunnels` 요청 범위로 확인된 터널만 그 VPN 안에 배치하며,
+각 터널 이름·IP를 유지합니다. 같은 IP나 이름으로 소속을 추론하지 않습니다.
+DRG와 CPE는 컨테이너 밖에 두고 기존 API 근거의 선으로 연결합니다.
+
+컨테이너를 이동하면 소속 터널도 함께 이동하고, 터널은 개별 편집할 수 있습니다.
+소속 관계를 보여주는 중복 화살표는 숨기지만 원본 API 관계와 연결선 메타데이터는
+보존합니다. 터널이 0개인 알려진 VPN도 이름 있는 빈 박스로 표시하며 조회 실패와
+0건의 구분은 coverage.json에 남습니다. 소속 VPN이 범위 밖이면 가짜 컨테이너를
+만들지 않고 터널과 대상 미확인을 유지합니다. 기존 VPN 저장 배치는 재생성하세요.
+
+### FastConnect
+
+기존 `collect` 명령으로 같은 리전·컴파트먼트의 Virtual Circuit, Cross-Connect
+Group, Cross-Connect를 함께 수집합니다. DRG의 아래쪽에 FastConnect 분기를
+배치하고 Oracle 공식 FastConnect SVG 심볼을 사용합니다. VC의 gateway_id와
+물리 매핑 ID만 연결 근거로 쓰며, Cross-Connect 포트는 실제 소속 그룹 안에
+표시합니다. CPE나 공급자 장비를 IP·이름으로 추정해서 연결하지 않습니다.
+
+Public 회선에 DRG 참조가 없으면 독립 리소스로 유지합니다. 공급자 관리 회선의
+물리 참조가 범위 밖이면 대상 미확인으로 표시하며, 매핑 자체가 없으면 물리
+장비를 임의로 추가하지 않습니다. BGP 상태·VLAN·속도는 정보 페이지에 보존하고,
+본문에는 실제 이름과 관측된 Customer/Oracle 피어링 IP를 표시합니다.
+BGP UP이나 ACTIVE는 실제 애플리케이션 통신 검증 결과가 아닙니다.
+BGP MD5 키, MACsec·장비 설정, LOA와 공급자 키는 저장하지 않습니다.
+VPN-over-FastConnect의 터널 연계나 BGP 경로 분석은 이번 범위에 포함하지 않습니다.
+
+가상 예제:
+```sh
+oci-lenz sample --scenario fastconnect --output "$HOME/oci-lenz-validation/fastconnect"
+oci-lenz draw --snapshot "$HOME/oci-lenz-validation/fastconnect/snapshot.json" --output "$HOME/oci-lenz-validation/fastconnect/diagrams"
+```

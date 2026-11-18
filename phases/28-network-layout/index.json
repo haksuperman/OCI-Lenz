@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "28-network-layout",
+  "steps": [
+    {
+      "step": 0,
+      "name": "network-alignment-and-crossing-aware-routing",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}
