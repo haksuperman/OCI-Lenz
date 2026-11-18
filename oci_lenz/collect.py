@@ -5,7 +5,7 @@ def collect(profile,region,compartment,config_file=None):
     if any(c in compartment for c in ("'", '\n', '\r')): raise ValueError('invalid compartment')
     cfg=oci.config.from_file(config_file or oci.config.DEFAULT_LOCATION,profile);cfg['region']=region
     retry=oci.retry.RetryStrategyBuilder(max_attempts_check=True,max_attempts=3,total_elapsed_time_check=True,total_elapsed_time_seconds=30).get_retry_strategy()
-    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'search':oci.resource_search.ResourceSearchClient}.items()}
+    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient}.items()}
     s={'version':1,'scope':{'region':region,'compartments':[compartment]},'resources':[],'coverage':[]}
     def call(service,method,*args,**kwargs):
         entry={'region':region,'compartment':compartment,'service':service,'api':method}
@@ -68,6 +68,12 @@ def collect(profile,region,compartment,config_file=None):
             s['resources'].append({'id':lb.id+'/backend-set/'+bs.name,'kind':'backend_set','name':bs.name,'lb_id':lb.id,'backends':[{'ip_address':b.ip_address,'port':b.port} for b in backends or []]})
     from .network import collect_network
     collect_network(call,add,s,compartment)
+    from .vpn import collect_vpn
+    collect_vpn(call,add,compartment)
+    from .fastconnect import collect_fastconnect
+    collect_fastconnect(call,add,compartment)
+    from .database import collect_base_database
+    collect_base_database(call,add,s,compartment)
     # Search counts are inventory evidence only, never inferred graph relationships.
     query=oci.resource_search.models.StructuredSearchDetails(query=f"query all resources where compartmentId = '{compartment}'")
     inventory=call('search','search_resources',query)
@@ -75,6 +81,6 @@ def collect(profile,region,compartment,config_file=None):
         mapping={'Vcn':'vcn','Subnet':'subnet','Instance':'compute','LoadBalancer':'lb','NatGateway':'nat','InternetGateway':'internet','ServiceGateway':'service','NetworkSecurityGroup':'nsg','RouteTable':'route'}
         s['coverage'][-1]['inventory_comparison']={kind:{'search':sum(getattr(r,'resource_type',None)==api_type for r in inventory),'collected':sum(r['kind']==kind for r in s['resources'])} for api_type,kind in mapping.items()}
         s['coverage'][-1]['comparison_note']='Search visibility/indexing may differ; differences do not establish missing resources.'
-    for kind in ('database','oke','drg_routing'):
+    for kind in ('other_database_services','database_catalog','oke','drg_routing'):
         s['coverage'].append({'region':region,'compartment':compartment,'service':kind,'status':'unsupported'})
     return s

@@ -36,12 +36,13 @@ class NetworkCollectorTests(unittest.TestCase):
         m=oci.core.models
         extra={'list_drg_attachments':[
             m.DrgAttachment(id='legacy',drg_id='drg',vcn_id='v'),
-            m.DrgAttachment(id='circuit',drg_id='drg',network_details=m.VirtualCircuitDrgAttachmentNetworkDetails(id='outside-circuit'))]}
+            m.DrgAttachment(id='circuit',drg_id='drg',network_details=m.VirtualCircuitDrgAttachmentNetworkDetails(id='outside-circuit')),
+            m.DrgAttachment(id='future',drg_id='drg',network_details=fixtures.N(id='outside-future',type='FUTURE_SERVICE'))]}
         s,_=fixtures.CollectorTests().run_collect(extra=extra);nodes,edges=graph(s)
         self.assertEqual(nodes['legacy']['network_type'],'VCN')
         self.assertEqual(next(e for e in edges if e['source']=='legacy' and e['kind']=='attachment_network')['evidence'],'DrgAttachment.vcn_id')
         self.assertIn('unknown:outside-circuit',nodes)
-        self.assertTrue(any(c['status']=='unsupported' and c.get('resource_type')=='VIRTUAL_CIRCUIT' for c in s['coverage']))
+        self.assertTrue(any(c['status']=='unsupported' and c.get('resource_type')=='FUTURE_SERVICE' for c in s['coverage']))
 
 
 class NetworkGraphTests(unittest.TestCase):
@@ -64,8 +65,9 @@ class NetworkGraphTests(unittest.TestCase):
         xml=render(prepare_display(s));validate(xml,prepare_display(s))
         cells={c.get('id'):c for c in E.fromstring(xml).find('diagram').iter('mxCell')}
         self.assertIn('drg-icon',cells);self.assertIn('rpc-icon',cells)
-        for i,edge in enumerate(edges):
-            if edge['kind'] in ('drg_id','attachment_network','peer_id'):
+        from oci_lenz.diagram_model import diagram_graph
+        for i,edge in enumerate(diagram_graph(s)[1]):
+            if edge['kind'] in ('drg_id','drg_network','peer_id'):
                 self.assertNotEqual(cells['edge-'+str(i)].get('visible'),'0')
                 self.assertIn('textOpacity=0;',cells['edge-'+str(i)].get('style'))
 

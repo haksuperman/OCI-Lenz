@@ -154,8 +154,119 @@ wrapper for DRGs, all attachment types, LPGs and RPCs. Attachment network_detail
 take priority over deprecated vcn_id. Only allowlisted IDs/type/peering state and
 peer region are stored. No remote region, tenant or compartment is traversed.
 Graph edges retain exact field evidence; peers missing from the selected scope
-stay unknown and visible in overview. DRG/RPC icons and logical attachment/LPG
-tags join the same alias-only AI pipeline. No direct/transitive VCN peering edge
+stay unknown and visible in overview. DRG/RPC icons and logical LPG tags join the same alias-only AI pipeline.
+Attachment records remain internal evidence; their cards are not drawn. No direct/transitive VCN peering edge
 or traffic reachability is invented. DRG route/distribution policies remain
 unsupported. Search reconciliation still covers the original supported types;
 new network resources use their List API coverage, not assumed Search support.
+
+`database.collect_base_database` lists scoped DbSystemSummary objects and per-system
+DbNodeSummary objects. VM./BM. shapes are classified as Base DB; other/unknown
+shapes are recorded unsupported rather than mislabeled. Client/backup subnets,
+NSGs and observed VNIC fields retain exact SDK evidence. No database credentials,
+keys, tags, connection strings or SQL access are used. Denied node/network calls
+do not discard the System; zero and failed calls remain distinct in coverage.
+The overview aggregates Base DB into one official System symbol with its actual
+Display Name and all observed client Node IPs (no backup IPs or hostname cards).
+Node/VNIC cells and API edges remain hidden/editable; the appendix and optional
+details retain them. A backend whose physical target is a hidden Node displays
+against its known System; ociEvidenceTarget stores the original Node ID and the
+validator checks both API evidence and the Node-to-System membership. Original
+graph endpoints are never mutated. Prior scene signatures/outputs are unchanged
+for snapshots without Base DB resources. DB catalog/PDB/Data Guard and other
+database platforms remain separate follow-up scope.
+
+`vpn.collect_vpn` uses the same scoped, paginated, bounded-retry wrapper for
+ListCpes, ListIPSecConnections and per-connection ListIPSecConnectionTunnels.
+No Get call is needed: the tunnel List response already contains the allowed
+endpoints/status/routing fields. Membership evidence is the request's ipsc_id,
+not an invented response field. IPSecConnection.cpe_id/drg_id and attachment
+network_details.id resolve only against selected resources; outside endpoints
+stay unknown. An unreadable tunnel list retains its connection and unresolved
+attachments with failed coverage, distinct from successful zero results.
+CPE uses official editable art; VPN connections/tunnels use compact logical tags
+(the toolkit's VPN connector is not a standalone resource icon). Display names
+and observed VPN/CPE IPs are applied locally; status/routing/static routes stay
+in the appendix. These are configured relations, not validated packet paths or
+BGP route analysis. Search reconciliation remains limited to its original types.
+
+The collector and `model.graph` retain the canonical API inventory/evidence.
+`diagram_model.diagram_graph` derives a separate diagram projection for ALL
+pages. Attachment nodes/names are omitted, including information/detail pages;
+`diagram_resources` filters index rows. Each direct DRG/network edge requires
+both references from the SAME Attachment record (drg_id + network_details.id,
+or the explicitly recorded legacy VCN field). Outside/missing endpoints remain
+unknown. No VCN-to-VCN transit or packet reachability is inferred.
+
+Native projected edges store exact sorted `ociAttachmentIds` and `ociEvidence`;
+validation independently recomputes the projection from the snapshot and rejects
+forged endpoints, provenance, missing or duplicate relationship IDs. Repeated
+attachments for the same endpoint pair share one line while retaining all IDs.
+An already-present RPC owner edge absorbs the same attachment evidence rather
+than creating a duplicate. The direct IPSec owner line is omitted only when an
+observed attached-tunnel chain expresses that same DRG/connection relationship.
+The canonical source graph and coverage are never changed by this projection.
+
+Network layout requests contain aliases of actual endpoints only: VCNs left of
+each DRG, IPSec members right, RPC/peers above, with branch_gap clearance. No
+Attachment names, placement slots, badges or frames remain. The old frame
+module/validator/diagnostic arrangement has been removed. Fresh AI, visual
+revisions and replay validate these directions; diagnostic seeds are separate
+and never repair model-owned rectangles. Older network plans require fresh
+geometry; non-network scene signatures/current example replays are unchanged.
+
+The native router keeps model rectangles and actual projected endpoints fixed.
+It penalizes crossings/collinear overlap, evaluates alternative network target
+ports and makes at most two refinement passes, retaining only better conflict
+scores. Resource/title avoidance stays mandatory. Genuine shared endpoint stubs
+and reciprocal pairs are exempted from ambiguity counts; unrelated connections
+are never joined. `validation.json.routing_quality` reports residual network
+crossings and overlap length, independently of graph validity and AI review.
+This bounded greedy routing does not guarantee a global optimum.
+
+IPSec connection resources are native containers (`ociVPNContainer=1`) on the
+overview and optional network pages. A tunnel's parent is its known ipsec_id,
+which the collector records from the ListIPSecConnectionTunnels request scope.
+No ownership is inferred from names/IPs. Unknown owners remain explicit root
+resources/edges; empty known VPNs retain their named container. Network detail
+pages close over observed VPN families so a selected tunnel cannot lose its
+known parent or siblings. CPEs remain outside the container.
+
+AI scenes treat ipsec as a measured-header container and retain immutable
+API-owned child parents. Each child keeps its editable native label and IPs.
+Known tunnel-owner wires are hidden in native XML and omitted from the AI edge
+request because containment expresses ownership; their original API edge IDs
+remain validated. DRG/tunnel projected edges and the connection/CPE edge stay
+visible. The router traverses container bodies while avoiding VPN titles and
+unrelated child cards. Container moves in diagnostic seeds translate descendants;
+AI rectangles are applied without local regrouping/repacking. Native validation
+rejects parent changes even if a forged child would geometrically fit elsewhere.
+Older VPN layouts require regeneration; non-VPN example XML is unchanged.
+
+`fastconnect.collect_fastconnect` reuses the shared scoped/paginated/bounded-retry
+wrapper for ListVirtualCircuits, ListCrossConnectGroups and ListCrossConnects.
+Allowlisted VC metadata includes type, gateway_id, bandwidth/lifecycle/BGP state
+and mapping target IDs/VLAN/peer IPs only. BGP MD5, MACsec, provider/account keys,
+tags and customer-reference fields never persist. No Get/LOA/config APIs or
+remote-scope expansion is needed. Successful zero and failed calls remain
+separate coverage entries; Search reconciliation retains its original scope.
+
+Canonical relationships use VirtualCircuit.gateway_id, each mapping's
+cross_connect_or_cross_connect_group_id and CrossConnect.cross_connect_group_id.
+The Attachment-free projection merges an equivalent VC gateway relation with
+its DRG Attachment evidence. Unknown/missing mapping targets remain explicit;
+public/provider-managed circuits never gain an inferred DRG/CPE/provider path.
+CrossConnectGroup is a native container for its observed physical CrossConnect
+children; owner wires remain hidden/validated. VC resources stay outside those
+groups. FastConnect branches sit below their DRG with actual mapped endpoints
+nearby, leaving VCN-left/VPN-right/RPC-above conventions intact. No new group
+field is added when no FastConnect member exists, preserving prior non-FC plans.
+
+Virtual Circuit and physical CrossConnect resource icons reuse the unmodified
+FastConnect SVG image cell from official Oracle library entry 210. The enclosing
+stock connector line/caption are excluded so no decorative edge is mistaken for
+an API relationship. Physical group rectangles, resource captions and API edges
+are separate editable native cells. The same .drawio is exported to PNG. BGP
+states are appendix metadata, not a reachability test. VPN-over-FastConnect
+transport associations, advertised-route analysis and provider physical inventory
+outside scope are not inferred by this version.

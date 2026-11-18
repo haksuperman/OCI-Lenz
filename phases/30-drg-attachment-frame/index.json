@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "30-drg-attachment-frame",
+  "steps": [
+    {
+      "step": 0,
+      "name": "evidenced-drg-attachment-backdrops",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

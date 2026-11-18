@@ -101,7 +101,11 @@ def main():
         if not args.no_png:
             print('OCI-Lenz: XML validated; PNG export started.',file=sys.stderr,flush=True)
             export(path)
-        save(args.output/'validation.json',{'graph_valid':True,'style':args.style,'redacted':args.redact,'visual_review_status':review_report['status'],'ai_provider':args.ai_provider,'model':args.model or 'local Codex configuration','skill_invoked':not args.no_ai and not bool(args.reuse_layout),'reused_layout':bool(args.reuse_layout),'references':[{'name':r.name,'sha256':hashlib.sha256(r.read_bytes()).hexdigest()} for r in refs]})
+        import xml.etree.ElementTree as E
+        from .routing import native_paths,path_quality
+        from .diagram_model import diagram_graph
+        routing_quality=path_quality(native_paths(E.fromstring(xml).find('diagram/mxGraphModel/root'),diagram_graph(safe)[0]))
+        save(args.output/'validation.json',{'graph_valid':True,'routing_quality':routing_quality,'style':args.style,'redacted':args.redact,'visual_review_status':review_report['status'],'ai_provider':args.ai_provider,'model':args.model or 'local Codex configuration','skill_invoked':not args.no_ai and not bool(args.reuse_layout),'reused_layout':bool(args.reuse_layout),'references':[{'name':r.name,'sha256':hashlib.sha256(r.read_bytes()).hexdigest()} for r in refs]})
         print(path.resolve())
     except LayoutFormatError:
         p.exit(1,'OCI-Lenz: saved layout format is retired. Regenerate without --reuse-layout; original Draw.io files remain editable.\n')

@@ -14,7 +14,7 @@ def collect_network(call,add,snapshot,compartment):
             network_id=legacy_vcn;network_type='VCN';evidence='DrgAttachment.vcn_id'
         add(attachment,'drg_attachment',drg_id=attachment.drg_id,
             network_id=network_id,network_type=network_type,network_evidence=evidence)
-        if network_type not in ('VCN','REMOTE_PEERING_CONNECTION'):
+        if network_type not in ('VCN','REMOTE_PEERING_CONNECTION','IPSEC_TUNNEL','VIRTUAL_CIRCUIT'):
             snapshot['coverage'].append({'region':snapshot['scope']['region'],'compartment':compartment,
                 'service':'drg_attachment_network','resource_type':network_type or 'UNKNOWN',
                 'status':'unsupported'})

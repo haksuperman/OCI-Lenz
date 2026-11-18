@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "31-direct-drg-links",
+  "steps": [
+    {
+      "step": 0,
+      "name": "attachment-free-evidenced-diagrams",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

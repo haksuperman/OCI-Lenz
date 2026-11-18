@@ -3,12 +3,12 @@ import copy
 import math
 import hashlib
 import xml.etree.ElementTree as E
-from .model import graph
+from .diagram_model import diagram_graph as graph
 from .display import scope_title
 from .typography import card_metrics,style_card,header_metrics,wrap_text,text_width
 
 GATEWAY_KINDS=('internet','nat','service')
-OVERVIEW_EDGE_KINDS=('backend','lb_id','drg_id','attachment_network','peer_id')
+OVERVIEW_EDGE_KINDS=('backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id')
 
 
 class LayoutFormatError(ValueError):
@@ -23,9 +23,9 @@ def compact_snapshot(snapshot):
     result=copy.deepcopy(snapshot)
     for r in result['resources']:
         details=r.get('display_details',[])
-        selected=r.get('summary_details') or details[:3]
+        selected=r.get('summary_details',details[:3])
         if r['kind'] not in ('vcn','subnet'):
-            selected=[value for value in selected if value.startswith(('Private: ','Public: ','IP: '))]
+            selected=[value for value in selected if value.startswith(('Private: ','Public: ','IP: ','Customer: ','Oracle: '))]
         r['display_details']=list(selected)
     return result
 
@@ -42,7 +42,18 @@ def make_scene(snapshot,view='detail'):
     cells={c.get('id'):c for c in root}
     nodes,edges=graph(snapshot)
     compact_nodes,_=graph(compact)
-    hidden={k for k,r in nodes.items() if view=='overview' and r['kind'] in ('vnic','route','nsg')}
+    hidden={k for k,r in nodes.items() if view=='overview' and (r['kind'] in ('vnic','route','nsg') or (r['kind']=='db_node' and nodes.get(r.get('db_system_id'),{}).get('kind')=='db_system'))}
+    display_targets={}
+    if view=='overview':
+        for i,e in enumerate(edges):
+            if e['kind']=='backend' and e['target'] in hidden and nodes[e['target']]['kind']=='db_node':
+                target=nodes[e['target']]['db_system_id'];display_targets[i]=target
+                c=cells['edge-'+str(i)];c.set('ociEvidenceTarget',e['target']);c.set('target',target)
+                parents=[];p=cells[e['source']].get('parent')
+                while p in cells:parents.append(p);p=cells[p].get('parent')
+                parents.append('1');p=cells[target].get('parent')
+                while p not in parents:p=cells[p].get('parent')
+                c.set('parent',p)
     if view=='overview':
         flow_nodes={key for e in edges if e['kind'] in OVERVIEW_EDGE_KINDS and e['source'] not in hidden and e['target'] not in hidden for key in (e['source'],e['target'])}
         hidden|={k for k,r in nodes.items() if r['kind']=='unknown' and k not in flow_nodes}
@@ -57,7 +68,7 @@ def make_scene(snapshot,view='detail'):
     for key in keys:
         c=cells[key];a=aliases[key]
         kind=nodes[key]['kind'] if key in nodes else ('region' if key=='layout-region' else ('service_group' if key.startswith('layout-service-') else 'compartment'))
-        container=kind in ('vcn','subnet','region','compartment','service_group')
+        container=kind in ('vcn','subnet','ipsec','cross_connect_group','region','compartment','service_group')
         width=170
         if kind in GATEWAY_KINDS:
             resource=compact_nodes[key]
@@ -67,7 +78,7 @@ def make_scene(snapshot,view='detail'):
                   'min_width':220 if container else width,
                   'min_height':64 if container else card_metrics(compact_nodes[key],width)['height'],
                   'container':container}
-        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','drg_attachment','lpg') else 'icon_label'
+        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','lpg','ipsec_tunnel') else 'icon_label'
         if container:
             header=header_metrics(c.get('value',''),220,container_font(kind))
             items[a]['header_height']=header['header_height']
@@ -79,8 +90,14 @@ def make_scene(snapshot,view='detail'):
         members=[k for k in keys if nodes.get(k,{}).get('kind') in GATEWAY_KINDS and nodes[k].get('vcn_id')==vcn and items[aliases[k]]['parent']==aliases[vcn]]
         members.sort(key=lambda k:(GATEWAY_KINDS.index(nodes[k]['kind']),k))
         if members:gateway_groups.append({'vcn':aliases[vcn],'members':[aliases[k] for k in members],'max_gap':12,'edge_inset':40})
-    request={'view':view,'items':items,'edges':[{'id':'e'+str(i),'source':aliases[e['source']],'target':aliases[e['target']],'kind':e['kind']} for i,e in enumerate(edges) if e['source'] in aliases and e['target'] in aliases],'gateway_groups':gateway_groups,'target_aspect_ratio':1.7}
-    signature=hashlib.sha256(repr((keys,items,request['edges'],gateway_groups)).encode()).hexdigest()
+    request={'view':view,'items':items,'edges':[{'id':'e'+str(i),'source':aliases[e['source']],'target':aliases[display_targets.get(i,e['target'])],'kind':e['kind']} for i,e in enumerate(edges) if e['source'] in aliases and display_targets.get(i,e['target']) in aliases and not ((e['kind']=='ipsec_id' and nodes[e['target']]['kind']=='ipsec') or (e['kind']=='cross_connect_group_id' and nodes[e['target']]['kind']=='cross_connect_group'))],'gateway_groups':gateway_groups,'target_aspect_ratio':1.7}
+    from .network_layout import network_groups
+    networks=network_groups(nodes,edges,aliases)
+    signature_data=(keys,items,request['edges'],gateway_groups)
+    if networks:
+        request['network_groups']=networks
+        signature_data+=(networks,)
+    signature=hashlib.sha256(repr(signature_data).encode()).hexdigest()
     return {'view':view,'items':items,'region':aliases['layout-region'],'aliases':aliases,'keys':{v:k for k,v in aliases.items()},'request':request,'signature':signature,'xml':E.tostring(doc,encoding='unicode')}
 
 
@@ -93,7 +110,7 @@ def seed_plan(scene):
     def measure(k):
         item=scene['items'][k];w=item['min_width'];h=item['min_height']
         if children[k]:
-            columns=3 if item['kind']=='subnet' else 2
+            columns=3 if item['kind']=='subnet' else (1 if item['kind'] in ('ipsec','cross_connect_group') else 2)
             y=max(64,item.get('header_height',48)+16)
             gateways=gateway_rows.get(k,[])
             ordinary=[child for child in children[k] if child not in gateways]
@@ -115,6 +132,8 @@ def seed_plan(scene):
         for child in children[k]:
             dx,dy=relative[child];position(child,x+dx,y+dy)
     position(scene['region'],20,90)
+    from .network_layout import orient_seed
+    orient_seed(scene,placements)
     return {'version':2,'scene_signature':scene['signature'],'placements':placements,'routes':[]}
 
 
@@ -163,6 +182,8 @@ def check_plan(scene,plan):
         area=sum(boxes[k]['width']*boxes[k]['height'] for k in members)
         if len(reached)!=len(members) or min(insets)>group['edge_inset'] or (right-left)*(bottom-top)>3*area:
             issues.append('gateway cluster '+group['vcn'])
+    from .network_layout import direction_issues
+    issues.extend(direction_issues(scene,boxes))
     edge_ids={e['id'] for e in scene['request']['edges']}
     seen=set()
     for route in plan.get('routes',[]):
@@ -201,7 +222,7 @@ def apply_plan(snapshot,scene,plan,region_only=False):
                 c.set('style',c.get('style')+f'fontSize={11 if kind=="subnet" else font};')
                 if kind in ('vcn','subnet'):
                     c.set('style',c.get('style')+('strokeWidth=1.3;dashPattern=4 3;' if kind=='vcn' else 'strokeWidth=0.7;strokeColor=#C6977D;dashPattern=2 3;'))
-            if key in nodes and nodes[key]['kind'] not in ('vcn','subnet'):
+            if key in nodes and nodes[key]['kind'] not in ('vcn','subnet','ipsec','cross_connect_group'):
                 style_card(page.find('mxGraphModel/root'),c,compact_nodes[key],p['width'])
                 icon=cells.get(key+'-icon')
                 if icon is not None:
@@ -234,13 +255,15 @@ def apply_plan(snapshot,scene,plan,region_only=False):
         for i,e in enumerate(edges):
             c=cells.get('edge-'+str(i))
             if c is None:continue
-            if page.get('id')=='region' and e['kind'] not in OVERVIEW_EDGE_KINDS:
+            if page.get('id')=='region' and (e['kind'] not in OVERVIEW_EDGE_KINDS or cells[e['source']].get('visible')=='0' or cells[c.get('target')].get('visible')=='0'):
                 c.set('visible','0')
             if e['kind'] in ('route','route_table_id','nsg_ids'):
                 c.set('style',c.get('style')+'textOpacity=0;')
-            if e['kind']=='lb_id':c.set('style',c.get('style')+'startArrow=block;endArrow=none;textOpacity=0;')
+            if e['kind'] in ('ipsec_id','cross_connect_group_id') and nodes[e['target']]['kind'] in ('ipsec','cross_connect_group') and cells[e['source']].get('parent')==e['target']:
+                c.set('visible','0')
+            if e['kind'] in ('lb_id','db_system_id'):c.set('style',c.get('style')+'startArrow=block;endArrow=none;textOpacity=0;')
             if e['kind']=='backend':c.set('style',c.get('style')+'textOpacity=0;')
-            if e['kind'] in ('drg_id','attachment_network','peer_id'):
+            if e['kind'] in ('drg_id','drg_network','peer_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id'):
                 c.set('style',c.get('style')+'textOpacity=0;')
                 if e['kind']=='peer_id':c.set('style',c.get('style')+'dashed=1;')
             if 'e'+str(i) in route_map:
@@ -260,11 +283,13 @@ def append_information_index(doc,snapshot,nodes):
     page=E.SubElement(doc,'diagram',id='information-index',name='Resource information')
     root=E.SubElement(E.SubElement(page,'mxGraphModel',page='0',background='#ffffff'),'root')
     E.SubElement(root,'mxCell',id='0');E.SubElement(root,'mxCell',id='1',parent='0')
-    if not snapshot['resources']:
+    from .diagram_model import diagram_resources
+    resources=diagram_resources(snapshot)
+    if not resources:
         c=E.SubElement(root,'mxCell',id='index-notice',value='No resources in this snapshot. Check coverage.json for collection status.',vertex='1',parent='1',style='text;whiteSpace=wrap;html=0;fontSize=12;align=left;verticalAlign=top;spacing=10;')
         E.SubElement(c,'mxGeometry',x='30',y='30',width='1100',height='54',**{'as':'geometry'})
     y=30
-    for i,r in enumerate(sorted(snapshot['resources'],key=lambda r:(r['kind'],r['id']))):
+    for i,r in enumerate(sorted(resources,key=lambda r:(r['kind'],r['id']))):
         lines=[r['name']+' / '+r['kind'],*r.get('display_details',[])]
         if r['kind']=='vcn' and r.get('compartment_id') and not snapshot.get('presentation',{}).get('redacted'):
             lines.append('Compartment: '+r['compartment_id'])
@@ -315,7 +340,9 @@ def validate_architecture(xml,snapshot):
     doc.remove(index);doc.attrib.pop('style',None)
     validate(E.tostring(doc,encoding='unicode'),compact_snapshot(snapshot))
     rows=index.findall('.//mxCell[@vertex="1"]')
-    expected={'information-'+str(i) for i in range(len(snapshot['resources']))} if snapshot['resources'] else {'index-notice'}
+    from .diagram_model import diagram_resources
+    resources=diagram_resources(snapshot)
+    expected={'information-'+str(i) for i in range(len(resources))} if resources else {'index-notice'}
     if len(rows)!=len(expected) or {c.get('id') for c in rows}!=expected:raise ValueError('information index mismatch')
     bottom=0
     for cell in index.findall('.//mxCell[@vertex="1"]'):

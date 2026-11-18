@@ -103,6 +103,38 @@
     {
       "dir": "25-drg-peering",
       "status": "pending"
+    },
+    {
+      "dir": "26-base-database",
+      "status": "pending"
+    },
+    {
+      "dir": "27-ipsec-vpn",
+      "status": "pending"
+    },
+    {
+      "dir": "28-network-layout",
+      "status": "pending"
+    },
+    {
+      "dir": "29-drg-orientation",
+      "status": "pending"
+    },
+    {
+      "dir": "30-drg-attachment-frame",
+      "status": "pending"
+    },
+    {
+      "dir": "31-direct-drg-links",
+      "status": "pending"
+    },
+    {
+      "dir": "32-vpn-tunnel-containers",
+      "status": "pending"
+    },
+    {
+      "dir": "33-fastconnect",
+      "status": "pending"
     }
   ]
 }

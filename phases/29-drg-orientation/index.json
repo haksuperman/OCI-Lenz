@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "29-drg-orientation",
+  "steps": [
+    {
+      "step": 0,
+      "name": "drg-centered-direction-contract",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

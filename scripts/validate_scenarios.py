@@ -15,6 +15,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from oci_lenz.synthetic import SCENARIOS
 from oci_lenz.model import sample,graph
+from oci_lenz.diagram_model import diagram_graph
 from oci_lenz.display import prepare_display
 from oci_lenz.draw import render,validate
 
@@ -68,7 +69,7 @@ def verify_case(out,snapshot,ai):
     layout=json.loads((out/'skill-layout.json').read_text()) if ai else None
     if render(display,layout,style='architecture')!=xml:raise ValueError('synthetic replay differs')
     cells=list(E.fromstring(xml).find('diagram').iter('mxCell'))
-    if not set(graph(snapshot)[0])<={c.get('id') for c in cells}:raise ValueError('missing synthetic resource')
+    if not set(diagram_graph(snapshot)[0])<={c.get('id') for c in cells}:raise ValueError('missing synthetic resource')
     if json.loads((out/'coverage.json').read_text())!=snapshot['coverage']:raise ValueError('coverage differs')
     pngs={name:inspect_png(out/name) for name in ('architecture.png','information-index.png')}
     review=json.loads((out/'visual-review.json').read_text())
@@ -76,7 +77,7 @@ def verify_case(out,snapshot,ai):
     if ai and (provenance.get('skill_invoked') is not True or provenance.get('reused_layout') is not False):
         raise ValueError('fresh AI provenance required')
     by_id={c.get('id'):c for c in cells}
-    nodes,edges=graph(snapshot)
+    nodes,edges=diagram_graph(snapshot)
     labels=[k for k,c in by_id.items() if k in nodes and c.get('visible')!='0' and 'ociNativeLabel=1;' in c.get('style','')]
     files=(*ARTIFACTS,'skill-layout.json') if ai else ARTIFACTS
     return {'graph_valid':True,'replay_equal':True,'png_dimensions':pngs,

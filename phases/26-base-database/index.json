@@ -1,0 +1,5 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "26-base-database",
+  "steps": [{"step": 0, "name": "base-db-infrastructure-and-system-captions", "status": "pending", "ac": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]]}]
+}

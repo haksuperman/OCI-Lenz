@@ -64,3 +64,71 @@ endpoints remain unknown; never recurse into peer scopes or infer transitive
 VCN connectivity. Use native official DRG/RPC art and editable logical labels
 where the bundled toolkit has no dedicated stencil. Keep routing-policy analysis,
 VPN/FastConnect, DB and OKE separate from this expansion.
+
+## 010 — Base DB System captions
+Collect Base DB VM/BM systems, nodes and their client/backup network references
+through read-only SDK calls. Overview displays each System's Display Name and
+observed client Node IPs only, with one official DB System icon. Hide individual
+hostname cards, retain physical data/relationships internally, and validate any
+backend-to-System visual projection against the actual Node ownership. Reject
+unknown/non-Base shapes as unsupported. Do not read secrets or connect to SQL;
+DB catalog/PDBs, Exadata/Exascale and other engines remain follow-up scope.
+
+## 011 — IPSec metadata without configuration secrets
+Collect compartment CPEs and IPSec connections, then list each connection's
+tunnels. Reuse actual tunnel OCIDs to resolve DRG attachments and record request
+scope as ownership evidence. Never read PSKs, device configurations, templates
+or BGP authentication data. Keep UP/DOWN and routing metadata separate from
+traffic claims. Render CPE with native official art and connection/tunnel objects
+as editable logical tags; do not misuse the toolkit's connector as a resource.
+
+## 012 — Network alignment and crossing-aware connectors
+Use API-evidenced alias-only alignment hints for peer pairs, DRG attachments and
+VPN tunnel groups. Preserve every resource, attachment and original graph edge;
+change placement instructions and connector costs, not topology. Favor separate
+parallel corridors over overlapping paths. Keep AI rectangles authoritative,
+measure remaining crossings/overlap and report them without claiming optimal
+routing or traffic reachability. Do not hide Attachment cards in this change.
+
+## 013 — DRG-centered directional convention
+Use the user's explicit DRG composition: nearest VCN Attachment column left,
+IPSec branch right and Remote Peering above. Encode observed members as aliases
+and validate directions/gaps before accepting AI geometry or visual revisions.
+Keep multiple DRGs independent, every resource visible and all API membership
+unchanged. Generate diagnostic seeds under the same convention; never rotate or
+repack AI rectangles locally. Regenerate older network plans for this contract.
+
+## 014 — DRG Attachment backdrops without API reparenting
+Draw a subtle native frame around a DRG and its actual Attachment cards, leaving
+VCN/RPC/tunnel/VPN/CPE endpoints outside. Reserve the derived border/header in
+the AI request and reject overlaps instead of repairing resource coordinates.
+Keep resource parents, graph endpoints and source evidence unchanged. Verify
+annotations independently before excluding them from base resource validation.
+This is a visual relationship boundary, not an OCI container or traffic zone.
+
+## 015 — Attachment-free diagram projection (supersedes 013/014 display details)
+Remove Attachment cards/names/frames from all diagram pages. Keep collection and
+canonical graph evidence unchanged. Derive direct DRG/network edges from the
+same Attachment's two API references, retain sorted IDs/field evidence in native
+metadata and reject forged/duplicate projected relationships. Deduplicate native
+RPC ownership and redundant IPSec ownership chains without inferring transit or
+traffic. VCN endpoints remain left, IPSec right and RPC above each DRG. Remove
+obsolete frame code and replace its tests with projection/evidence tests.
+
+## 016 — API-owned IPSec tunnel containment
+Render each IPSec connection as its existing resource's native container, with
+only observed ipsec_id tunnels inside. Keep DRG/CPE outside and preserve every
+resource name/IP and source relationship. Hide redundant ownership arrows rather
+than drawing a second connection card. Unknown owners stay unknown; duplicate
+addresses do not establish membership. Validate native parents, header clearance
+and exact source edge provenance. This is observed ownership, not a service or
+traffic grouping. Regenerate older VPN layouts; do not repair model coordinates.
+
+## 017 — FastConnect fields and official glyph provenance
+Collect scoped VC/physical groups/ports through List APIs and preserve exact
+OCID references. Keep public circuits and out-of-scope provider endpoints honest;
+no CPE is inferred from peer addresses. Exclude every authentication/config field
+before snapshots/logs/artifacts. Use the exact SVG symbol embedded in Oracle's
+FastConnect connector, with decorative edges removed. Physical ports belong to
+their API group container; VCs remain separate. Place the branch below its DRG
+without altering existing non-FC plans. Do not treat BGP UP as traffic validation.

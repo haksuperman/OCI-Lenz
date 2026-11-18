@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "33-fastconnect",
+  "steps": [
+    {
+      "step": 0,
+      "name": "scoped-fastconnect-and-official-icons",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}
