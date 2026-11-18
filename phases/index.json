@@ -151,6 +151,10 @@
     {
       "dir": "37-common-connector-rules",
       "status": "pending"
+    },
+    {
+      "dir": "43-quality-dependency-isolation",
+      "status": "pending"
     }
   ]
 }

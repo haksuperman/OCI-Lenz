@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "43-quality-dependency-isolation",
+  "steps": [
+    {
+      "step": 0,
+      "name": "remove-unpublished-import-and-check-clean-installs",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

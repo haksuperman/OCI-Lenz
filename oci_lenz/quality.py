@@ -10,7 +10,6 @@ from .diagram_model import diagram_graph
 from .routing import native_paths,path_quality,visible_rectangle,intersects
 from .typography import text_width
 from .composition import measure
-from .database_services import DB_SYSTEMS
 
 
 def edge_conflicts(paths,nodes):
@@ -20,7 +19,7 @@ def edge_conflicts(paths,nodes):
         if nodes.get(source,{}).get('kind')!='backend_set':return None
         kind=nodes.get(target,{}).get('kind')
         if kind=='lb':return target  # Native ownership arrow is reversed.
-        if kind in ('compute','vnic','db_node','unknown','mysql_db_system','autonomous_database',*DB_SYSTEMS):return source
+        if kind in ('compute','vnic','db_node','db_system','unknown'):return source
         return None
     def orient(path,key):
         points=path['points'] if path['source']==key else list(reversed(path['points']))

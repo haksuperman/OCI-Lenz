@@ -70,3 +70,11 @@ error_message/blocked_reason 및 이전 완료 타임스탬프를 제거해 재�
 ## References
 - https://learn.chatgpt.com/docs/non-interactive-mode
 - 실행 환경의 `codex exec --help`에서 sandbox, ephemeral, output-schema, stdin 지원 확인.
+
+## 독립 브랜치 검증
+
+PR 분리 검증은 기존 편집 설치를 공유하지 않는 새 가상환경에서 `pip install .`로
+수행한다. 편집 설치는 다른 작업 트리의 미포함 모듈을 찾을 수 있어 최상위 패키지
+경로만 확인해서는 부족하다. 모듈 경로 회귀 테스트는 로드된 모든 `oci_lenz.*`의
+실제 경로를 확인한다. 설치 패키지의 CLI도 체크아웃 밖에서 sample·XML draw로
+검증하고, 최종 머지 가능 여부는 해당 커밋의 CI 결과까지 확인한다.
