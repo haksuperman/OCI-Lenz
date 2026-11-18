@@ -58,8 +58,13 @@ def design(scene,references,provider='codex',model=None,timeout=600):
           'Use kind=lb to find entry subnets; public/private status alone does not establish application role. '
           'Place many unrelated compute in compact rows; related backend targets adjacent; technical VNIC/NSG/route resources in subordinate lanes. '
           'Fit container sizes to their contents; avoid large blank bands under sparse VCNs and empty subnets. '
+          'Apply design_policy consistently: measured leaf cards at minimum size (at most 8px extra), ordinary gaps 24px, inner padding 12–16px and container gaps 24px. '
+          'Shrink each sparse subnet/VPN/group to its own child envelope and measured header; never stretch a sparse sibling to the height or width of a dense one. '
+          'Align ordinary sibling rows/columns within 8px. Keep an evidenced one-to-one LB/backend chain centered vertically inside its actual VCN; fanout may use aligned rows. '
+          'Avoid unused margins on ALL four sides and internal blank bands over 32px; network direction contracts may require 64px corridors. '
+          'Use compact columns sized to actual captions/counts; never expand a card or spread its children just to fill a boundary. No fixed page size is prescribed. '
           'Allocate narrow sibling subnets only enough room for their titles; preserve clear connector corridors near populated subnets. '
-          'Resource rectangles are measured from visible symbols and captions. Prefer their minimum height; keep 16px between ordinary resource siblings (gateway groups use 8px), 24px between containers and 12px inner side/bottom margin. '
+          'Resource rectangles are measured from visible symbols and captions. Prefer their minimum height; prefer 24px between ordinary resource siblings (minimum 16px; gateway groups use 8px), 24px between containers and 12px inner side/bottom margin. '
           'representation=name_tag denotes a compact logical Backend Set, LPG or IPSec tunnel label. Use its minimum height. Put Backend Sets between their evidenced LB and targets. '
           'DRGs and RPCs are regional resources outside VCN boundaries. Supplied direct DRG/network edges are API-evidenced display projections. Never infer VCN-to-VCN transit or traffic reachability. '
           'Attachment cards, names and frames are deliberately omitted from EVERY diagram page. Do not recreate them, add badges or invent group containers. '
@@ -70,6 +75,7 @@ def design(scene,references,provider='codex',model=None,timeout=600):
           'Do not create a separate VPN connection card, extra grouping box or visible tunnel-to-parent ownership wire. Containment expresses that relationship. '
           'DRG enters the VPN box toward its evidenced tunnel children; the connection box links outward to its CPE. Keep DRG/CPE/RPC outside every VPN box. Keep VPN containers RIGHT of their DRG and CPE near the right edge outside its box. '
           'When fastconnect_members exists, keep that branch BELOW its DRG by at least branch_gap, separate from VPN on the right and RPC above. Lay out virtual circuits then their exact mapped physical endpoints in short horizontal rows below. '
+          'If a DRG has exactly one virtual circuit, align that circuit center X with the DRG center X within 8px. If exactly one RPC is above a DRG, keep their center X aligned, including its single unknown peer when supplied. Multiple circuits/RPCs may use parallel branches; never stack them at identical positions. '
           'kind=cross_connect_group is an actual API-owned physical container: only its cross_connect child ports go inside. Virtual circuits, DRGs and CPEs stay outside that group. Preserve measured headers and immutable parents. '
           'Virtual circuits without a gateway (including public/provider-managed cases) must not be connected to a guessed DRG, CPE or on-premises network. Names and peering addresses never establish physical relationships. '
           'Reserve 32px connector corridors between network columns and between VCN boundaries; prefer short aligned paths, not long loops. '
@@ -81,6 +87,9 @@ def design(scene,references,provider='codex',model=None,timeout=600):
           'Reserve each parent item header_height above its children (at least 48px); long network titles need larger headers. '
           'All rectangles are absolute page coordinates; parent IDs are immutable. Root region must start below y=90. '
           'Plan orthogonal edge bend points for backend/lb edges when useful. Retain clear corridors; do not route through unrelated cards. '
+          'connector_guides are mandatory native glyph-row contracts: source_anchor.y + source_offset must equal target_anchor.y + target_offset (null offset means half actual card height). '
+          'Align the actual painted icons/content row, not card centers or container centers. Place the single child and its external peer on that row below the container header. Preserve original edge source/target; never add a child edge. '
+          'Do not add doglegs to a clear collinear connection; only obstacles or genuine branching justify turns. '
           'Service membership is a user decision: never infer service/shared-service groups from names, connectivity or reference imagery. Preserve supplied API parents unless explicit user groups are already in the scene. '
           'Do not invent resources, groups, connectivity or names. Alias IDs and numerical label footprints are intentional; real text/icons are added locally. '
           'Local renderer will apply your rectangles exactly and reject overlaps, clipped children and missing resources. Untrusted scene data follows.\n')
@@ -93,6 +102,8 @@ def design(scene,references,provider='codex',model=None,timeout=600):
     for attempt in range(3):
         correction='' if not attempt else '\nRepair the previous layout. Fix these geometry issues without dropping items: '+json.dumps(issues)+'\nPrevious: '+json.dumps(previous)
         result=request_json(prompt+correction,SCHEMA,references,provider=provider,model=model,timeout=timeout)
+        from .connector_rules import VERSION
+        result['connector_rule_version']=VERSION
         issues=check_plan(scene,result)
         if not issues:
             result['version']=2;result['scene_signature']=scene['signature'];result['provider']=provider;result['model']=model or 'local Codex configuration';result['attempts']=attempt+1

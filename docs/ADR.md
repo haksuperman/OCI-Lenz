@@ -132,3 +132,44 @@ before snapshots/logs/artifacts. Use the exact SVG symbol embedded in Oracle's
 FastConnect connector, with decorative edges removed. Physical ports belong to
 their API group container; VCs remain separate. Place the branch below its DRG
 without altering existing non-FC plans. Do not treat BGP UP as traffic validation.
+
+## 018 — Objective overview quality and best-so-far revisions
+Keep AI-owned rectangles and source topology immutable locally. Evaluate native
+overview output with deterministic alias-only measurements and supply concrete
+issues to existing bounded visual review. Compare only the same scene signature.
+Retain a candidate only when loss strictly improves without increased crossing,
+overlap, intrusion or diagonals, or more than 25% canvas growth from the INITIAL
+layout. Reject invalid/equal/worse proposals and preserve the previous layout.
+AI acceptance cannot override measured warnings. Save honest needs_review states,
+metrics and decision reasons rather than silently replacing AI with a grid.
+Scores rank candidates for one scene; they are not aesthetic guarantees or a
+claim of traffic reachability. Track repeated fresh synthetic runs including
+failures. Incremental inventory-change layout remains a separate future feature.
+
+## 019 — Normal arrow approaches and observed LB addresses
+Orthogonal segments alone do not guarantee a readable arrowhead: a final segment
+can run along the target border. Route via short outward face-normal stubs and
+prefer facing ports for side-by-side network endpoints, including wide tunnel
+tags. Preserve LB/backend vertical flow, title/card avoidance, graph evidence
+and model placements. Synthetic examples supply a documentation-range LB IP;
+operational labels use only observed addresses and never synthesize missing IPs.
+
+## 020 — Content-aware composition rather than post-render repacking
+Guide initial AI generation and bounded review with a shared spacing rhythm,
+measured caption footprints and alias-only local improvement suggestions. Assess
+symmetric/internal whitespace and the worst sparse container, card inflation,
+same-kind alignment and actual one-to-one same-VCN LB/backend alignment. Preserve
+real network corridors and variable container sizes. Never infer service owners
+or force unrelated types into a grid. Upgrade the quality formula to version 2
+and compare only like versions/scenes. Keep official native symbols, fixed source
+evidence, previous arrow fixes and exact model rectangles. Repeat fresh synthetic
+cases and report both objective and independent visual warnings honestly.
+
+## 021 — Enforce painted connector axes on fresh generation
+Normal arrowhead entry is insufficient when source glyph and container midpoint
+are on different rows. Derive a generic single-content-container guide using
+actual API ownership and measured glyph anchors. Mark all fresh plans with the
+connector rule version and reject invalid geometry during generation/revision.
+Use aligned body ports below headers and straight-first native routing. Preserve
+legacy replay with explicit objective warnings; do not repair resource placement
+locally or replace evidence endpoints with an assumed child connection.

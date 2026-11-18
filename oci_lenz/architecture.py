@@ -91,12 +91,19 @@ def make_scene(snapshot,view='detail'):
         members.sort(key=lambda k:(GATEWAY_KINDS.index(nodes[k]['kind']),k))
         if members:gateway_groups.append({'vcn':aliases[vcn],'members':[aliases[k] for k in members],'max_gap':12,'edge_inset':40})
     request={'view':view,'items':items,'edges':[{'id':'e'+str(i),'source':aliases[e['source']],'target':aliases[display_targets.get(i,e['target'])],'kind':e['kind']} for i,e in enumerate(edges) if e['source'] in aliases and display_targets.get(i,e['target']) in aliases and not ((e['kind']=='ipsec_id' and nodes[e['target']]['kind']=='ipsec') or (e['kind']=='cross_connect_group_id' and nodes[e['target']]['kind']=='cross_connect_group'))],'gateway_groups':gateway_groups,'target_aspect_ratio':1.7}
+    from .composition import policy
+    request['design_policy']=policy()
     from .network_layout import network_groups
     networks=network_groups(nodes,edges,aliases)
     signature_data=(keys,items,request['edges'],gateway_groups)
     if networks:
         request['network_groups']=networks
         signature_data+=(networks,)
+    from .connector_rules import guides
+    from .draw import icon_extent
+    offsets={a:(8+icon_extent(nodes[k]['kind'])[1]/2 if k+'-icon' in cells else None)
+             for k,a in aliases.items() if not items[a]['container']}
+    request['connector_guides']=guides({'items':items,'edges':[e for e in request['edges'] if e['kind'] in OVERVIEW_EDGE_KINDS]},offsets)
     signature=hashlib.sha256(repr(signature_data).encode()).hexdigest()
     return {'view':view,'items':items,'region':aliases['layout-region'],'aliases':aliases,'keys':{v:k for k,v in aliases.items()},'request':request,'signature':signature,'xml':E.tostring(doc,encoding='unicode')}
 
@@ -184,6 +191,10 @@ def check_plan(scene,plan):
             issues.append('gateway cluster '+group['vcn'])
     from .network_layout import direction_issues
     issues.extend(direction_issues(scene,boxes))
+    from .connector_rules import alignment_issues,VERSION
+    if plan.get('connector_rule_version')==VERSION:
+        issues.extend(alignment_issues(scene['request'].get('connector_guides',[]),plan))
+    elif plan.get('connector_rule_version') is not None:issues.append('unsupported connector rule version')
     edge_ids={e['id'] for e in scene['request']['edges']}
     seen=set()
     for route in plan.get('routes',[]):
