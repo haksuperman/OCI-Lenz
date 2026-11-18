@@ -112,7 +112,8 @@ class PresentationReviewTests(unittest.TestCase):
         plan={'version':3,'overview':seed_plan(scene)}
         with tempfile.TemporaryDirectory() as tmp,patch('oci_lenz.visual_review.export_preview',return_value=Path('/tmp/synthetic.png')),patch('oci_lenz.visual_review.request_json',return_value={'acceptable':True,'issues':[],'revision':None}):
             result,report=review_design(s,plan,[],rounds=1)
-        self.assertEqual(result,plan);self.assertEqual(report['status'],'accepted')
+        self.assertEqual(result,plan);self.assertEqual(report['status'],'needs_review')
+        self.assertIn('flow_alignment_error',report['quality']['final']['issues'])
         rejected={'acceptable':False,'issues':['excessive_whitespace'],'revision':None}
         with patch('oci_lenz.visual_review.export_preview',return_value=Path('/tmp/synthetic.png')),patch('oci_lenz.visual_review.request_json',return_value=rejected):
             _,report=review_design(s,plan,[],rounds=0)
@@ -136,15 +137,17 @@ class PresentationReviewTests(unittest.TestCase):
 
     def test_valid_revision_is_rendered_and_reviewed_again(self):
         s=prepare_display(sample());scene=make_scene(s,view='overview')
-        plan={'version':3,'overview':seed_plan(scene)}
-        revision=copy.deepcopy(plan['overview'])
-        root=next(p for p in revision['placements'] if p['id']==scene['region']);root['width']+=100
+        revision=seed_plan(scene)
+        plan={'version':3,'overview':copy.deepcopy(revision)}
+        root=next(p for p in plan['overview']['placements'] if p['id']==scene['region']);root['width']+=100
         responses=[{'acceptable':False,'issues':['inconsistent_spacing'],'revision':revision},
                    {'acceptable':True,'issues':[],'revision':None}]
         with patch('oci_lenz.visual_review.export_preview',return_value=Path('/tmp/synthetic.png')) as preview,patch('oci_lenz.visual_review.request_json',side_effect=responses) as request:
             result,report=review_design(s,plan,[],rounds=1)
         self.assertEqual(request.call_count,2);self.assertEqual(preview.call_count,2)
-        self.assertEqual(report['status'],'accepted')
+        self.assertEqual(report['status'],'needs_review')
+        self.assertTrue(report['decisions'][0]['accepted'])
+        self.assertIn('flow_alignment_error',report['quality']['final']['issues'])
         self.assertEqual(result['overview']['placements'],revision['placements'])
 
     def test_cli_groups_file_controls_service_labels(self):

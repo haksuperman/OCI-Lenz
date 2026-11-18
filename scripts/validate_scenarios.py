@@ -18,6 +18,7 @@ from oci_lenz.model import sample,graph
 from oci_lenz.diagram_model import diagram_graph
 from oci_lenz.display import prepare_display
 from oci_lenz.draw import render,validate
+from oci_lenz.quality import assess
 
 CASES=('basic','overview',*SCENARIOS)
 ARTIFACTS=('snapshot.json','coverage.json','architecture.drawio','architecture.png',
@@ -84,6 +85,7 @@ def verify_case(out,snapshot,ai):
             'graph_nodes':len(nodes),'evidence_edges':len(edges),'native_resource_labels':len(labels),
             'official_vector_groups':sum(k+'-icon' in by_id for k in labels),
             'visual_review_status':review['status'],
+            'layout_quality':assess(display,layout,xml=xml),
             'artifact_hashes':{name:digest((out/name).read_bytes()) for name in files}}
 
 
@@ -105,6 +107,7 @@ def run_matrix(output,cases,ai=False,resume=False,timeout=900):
                 verified=verify_case(out,s,ai)
                 if verified['artifact_hashes']==old.get('artifact_hashes'):
                     record.update(verified,status=old['status'],resumed=True)
+                    if ai and verified.get('layout_quality',{}).get('status')=='needs_review':record['status']='needs_review'
             except (OSError,ValueError,KeyError,E.ParseError):pass
         if not record['resumed']:
             (out/'snapshot.json').write_bytes(encoded)
@@ -116,7 +119,7 @@ def run_matrix(output,cases,ai=False,resume=False,timeout=900):
             try:
                 subprocess.run(cmd,cwd=ROOT,check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
                 record.update(verify_case(out,s,ai))
-                record['status']=('accepted' if record['visual_review_status']=='accepted' else 'needs_review') if ai else 'diagnostic_pass'
+                record['status']=('accepted' if record['visual_review_status']=='accepted' and record.get('layout_quality',{}).get('status','clear')=='clear' else 'needs_review') if ai else 'diagnostic_pass'
             except Exception as error:
                 # Raw model, SDK or process output must never enter the report.
                 record.update(status='failed',error_type=type(error).__name__)

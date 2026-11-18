@@ -12,6 +12,7 @@ from .ai import request_json,SCHEMA
 from .architecture import make_scene,apply_design,check_plan
 from .diagram_model import diagram_graph as graph
 from .draw import export,validate
+from .quality import assess,revision_decision
 
 ISSUES=['text_overlap','excessive_whitespace','edge_crossings','poor_grouping','unclear_flow','inconsistent_spacing','unreadable_labels']
 REVIEW_SCHEMA={'type':'object','properties':{'acceptable':{'type':'boolean'},
@@ -69,10 +70,12 @@ def export_preview(snapshot,plan,scene,directory):
 def review_design(snapshot,plan,references,provider='codex',model=None,timeout=600,rounds=1):
     if rounds not in (0,1,2):raise ValueError('review rounds must be 0..2')
     current=copy.deepcopy(plan)
-    report={'status':'skipped','revision_budget':rounds,'reviews':[]}
-    if not rounds:return current,report
     if plan.get('version')!=3:raise ValueError('visual review requires a version-3 layout')
     scene=make_scene(snapshot,view='overview')
+    quality=assess(snapshot,current,scene=scene)
+    report={'status':'skipped','revision_budget':rounds,'reviews':[],'decisions':[],
+            'quality':{'initial':quality,'final':quality}}
+    if not rounds:return current,report
     for iteration in range(rounds+1):
         with tempfile.TemporaryDirectory(prefix='oci-lenz-review-') as tmp:
             preview=export_preview(snapshot,current,scene,tmp)
@@ -86,25 +89,47 @@ def review_design(snapshot,plan,references,provider='codex',model=None,timeout=6
                     'Preserve each drg direction contract: vcns LEFT, ipsec_members RIGHT, remote_members ABOVE (branch_gap). No Attachment cards, names, labels or frames may be introduced. Never invent VCN transit. '
                     'IPSec connections are native containers. Keep each tunnel inside its supplied parent below header_height, with name/IP visible; DRG and CPE must remain outside. Do not turn the connection into a separate card or draw a redundant ownership wire. '
                     'FastConnect branches stay BELOW their evidenced DRG. Physical cross_connect ports stay inside their API-owned cross_connect_group container; virtual circuits stay outside. Do not infer provider/CPE connections from addresses. '
+                    'Objective quality uses lower loss as better, for this SAME inventory only. Fix the measured issues even if the image seems acceptable. '
+                    'Focus on the supplied alias IDs and preserve unaffected rectangles where possible. Reduce crossing/overlap and spacing shortfall, detours/bends and empty padding. '
+                    'Use design_feedback: suggested sizes are content-derived guides, not hard replacements. Reposition descendants coherently if shrinking a container. '
+                    'Apply design_policy rhythm, measured card sizes and aligned rows/columns; fix oversized sparse subnets and avoidable internal blank bands before changing global layout. '
+                    'Preserve the real 64px network branch corridors and mandatory headers; these are necessary space, not excessive whitespace. '
+                    'For an evidenced single circuit below or single RPC above its DRG, align their center X within 8px. Fix network_axis feedback before moving physical mapping groups. Multiple branches may stay parallel; do not overlap them. '
+                    'Obey connector_guides exactly using actual glyph side offsets (null means half actual card height). Align single-content container rows with the external icon below headers; preserve all original edge endpoints. Clear collinear wires must stay straight. '
+                    'Do not repeat a vague whitespace critique when only required headers/corridors remain: identify an avoidable gap in the supplied metrics or the rendered picture. '
+                    'A revision is retained only if objective loss strictly improves, no resource/title intrusion, diagonal, crossing or overlap metric increases, and canvas area stays within 125% of the initial area. '
+                    'Do not expand the page to buy fewer crossings, or shrink cards below measured minimums. Do not hide/delete edges or move children to another parent. '
                     'Do not use tools, read files or spawn agents. Return only schema JSON.\nScene: '+json.dumps(scene['request'])+
+                    '\nObjective quality: '+json.dumps(quality)+
                     '\nCurrent: '+json.dumps({k:current['overview'][k] for k in ('placements','routes')}))
             try:result=request_json(prompt,REVIEW_SCHEMA,[*references,preview],provider=provider,model=model,timeout=timeout)
             except (TimeoutError,subprocess.TimeoutExpired):raise VisualReviewTimeout('visual review timed out') from None
         if not isinstance(result.get('acceptable'),bool) or any(issue not in ISSUES for issue in result.get('issues',[])):
             raise ValueError('invalid visual review response')
         report['reviews'].append({'iteration':iteration,'acceptable':result['acceptable'],'issues':result['issues']})
-        if result['acceptable'] and not result['issues']:
+        if result['acceptable'] and not result['issues'] and quality['status']=='clear':
             report['status']='accepted';return current,report
         report['status']='needs_review'
+        if quality['status']!='clear':report['reason']='objective_issues'
         revision=result.get('revision')
         if iteration==rounds or not revision:return current,report
         if check_plan(scene,revision):
+            report['decisions'].append({'iteration':iteration,'accepted':False,'reason':'invalid_geometry'})
             report['reason']='invalid_revision';return current,report
         candidate=copy.deepcopy(current)
         candidate['overview']={**current['overview'],'placements':revision['placements'],'routes':revision['routes'],
                                'scene_signature':scene['signature']}
-        try:validate(apply_design(snapshot,candidate),snapshot)
+        try:candidate_quality=assess(snapshot,candidate,scene=scene)
         except ValueError:
+            report['decisions'].append({'iteration':iteration,'accepted':False,'reason':'invalid_geometry'})
             report['reason']='invalid_revision';return current,report
+        decision=revision_decision(quality,candidate_quality,initial=report['quality']['initial'])
+        report['decisions'].append({'iteration':iteration,**decision,
+                                    'previous_loss':quality['loss'],'candidate_loss':candidate_quality['loss'],
+                                    'candidate_metrics':candidate_quality['metrics']})
+        if not decision['accepted']:
+            report['reason']='revision_not_improved';return current,report
         current=candidate
+        quality=candidate_quality;report['quality']['final']=quality
+        report.pop('reason',None)
     return current,report

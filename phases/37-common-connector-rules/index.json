@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "37-common-connector-rules",
+  "steps": [
+    {
+      "step": 0,
+      "name": "shared-native-anchor-contract-and-straight-first-routing",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

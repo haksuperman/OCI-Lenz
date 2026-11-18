@@ -135,6 +135,26 @@
     {
       "dir": "33-fastconnect",
       "status": "pending"
+    },
+    {
+      "dir": "34-layout-quality",
+      "status": "pending"
+    },
+    {
+      "dir": "35-arrow-approach",
+      "status": "pending"
+    },
+    {
+      "dir": "36-composition-consistency",
+      "status": "pending"
+    },
+    {
+      "dir": "37-common-connector-rules",
+      "status": "pending"
+    },
+    {
+      "dir": "43-quality-dependency-isolation",
+      "status": "pending"
     }
   ]
 }

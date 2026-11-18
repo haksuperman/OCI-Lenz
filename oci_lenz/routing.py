@@ -154,13 +154,18 @@ def _route_native_edges(root,nodes,future=()):
     obstacles=list(rectangles.values())+titles
     def inside(point,rect):
         x,y,w,h=rect;return x<point[0]<x+w and y<point[1]<y+h
-    def port(key,other,forced=None):
+    def side_height(key):
+        if key+'-icon' in cells:
+            _,y,_,h=rectangle(key+'-icon');return y+h/2
+        _,y,_,h=rectangles.get(key,rectangle(key));return y+h/2
+    def port(key,other,forced=None,aligned_y=None):
         full=rectangle(key);x,y,w,h=rectangles.get(key,full);tx,ty,tw,th=other
         dx=tx+tw/2-x-w/2;dy=ty+th/2-y-h/2
         preferred=forced or ((1 if dx>=0 else 0,0.5) if abs(dx)/max(w,1)>abs(dy)/max(h,1) else (0.5,1 if dy>=0 else 0))
         alternatives=sorted(((0.5,1),(1,0.5),(0,0.5),(0.5,0)),key=lambda p:abs(x+w*p[0]-tx-tw/2)+abs(y+h*p[1]-ty-th/2))
         glyph=rectangle(key+'-icon') if key+'-icon' in cells and 'ociNativeLabel=1;' in cells[key].get('style','') else None
-        for anchor in (preferred,*alternatives):
+        candidates=[(preferred,aligned_y),(preferred,None),*((a,None) for a in alternatives)]
+        for anchor,aligned in candidates:
             point=(x+w*anchor[0],y+h*anchor[1])
             corridor=point
             if glyph is not None:
@@ -168,7 +173,19 @@ def _route_native_edges(root,nodes,future=()):
                 if anchor[0] in (0,1):
                     point=(gx+gw*anchor[0],gy+gh/2);corridor=(x+w*anchor[0],point[1])
                 elif anchor[1]==0:point=(gx+gw/2,gy);corridor=point
-            if not any(inside(point,r) or inside(corridor,r) for r in titles):
+            elif key not in rectangles and anchor[0] in (0,1) and aligned is not None:
+                st=dict(p.split('=',1) for p in cells[key].get('style','').split(';') if '=' in p)
+                font=float(st.get('fontSize',12))
+                header=max(48,12+(font+4)*len(cells[key].get('value','').split('\n')))
+                if not y+header<=aligned<=y+h-12:continue
+                point=(point[0],aligned)
+            # A port alone does not constrain the last segment. Approach the
+            # face normally from a short OUTSIDE stub, including logical tags.
+            # Glyph-side stubs first clear the full caption/content width.
+            if anchor[0] in (0,1):corridor=(x-12 if anchor[0]==0 else x+w+12,point[1])
+            elif anchor[1]==0:corridor=(point[0],min(y,point[1])-12)
+            else:corridor=(point[0],max(y+h,point[1])+12)
+            if not any(inside(point,r) or inside(corridor,r) for r in titles) and not any(inside(corridor,r) for other_key,r in rectangles.items() if other_key!=key):
                 relative=((point[0]-full[0])/full[2],(point[1]-full[1])/full[3])
                 return point,relative,corridor
         raise ValueError('no clear endpoint outside container title')
@@ -208,8 +225,15 @@ def _route_native_edges(root,nodes,future=()):
         flow=(nodes.get(source,{}).get('kind') in ('lb','backend_set') and nodes.get(target,{}).get('kind') in ('backend_set','compute','vnic','unknown'))
         downward=flow and a[1]+a[3]+8<=b[1]
         upward=flow and b[1]+b[3]+8<=a[1]
-        start,exit_port,start_corridor=port(source,b,(0.5,1) if downward else ((0.5,0) if upward else None))
-        end,entry_port,end_corridor=port(target,a,(0.5,0) if downward else ((0.5,1) if upward else None))
+        exit_face=(0.5,1) if downward else ((0.5,0) if upward else None)
+        entry_face=(0.5,0) if downward else ((0.5,1) if upward else None)
+        if is_network(c) and not flow:
+            # Wide short tunnel tags must not choose their TOP merely because
+            # normalizing distance by their height makes the vertical score big.
+            if a[0]+a[2]+8<=b[0]:exit_face,entry_face=(1,0.5),(0,0.5)
+            elif b[0]+b[2]+8<=a[0]:exit_face,entry_face=(0,0.5),(1,0.5)
+        start,exit_port,start_corridor=port(source,b,exit_face,aligned_y=side_height(target))
+        end,entry_port,end_corridor=port(target,a,entry_face,aligned_y=start[1])
         g=c.find('mxGeometry');parent=rectangle(c.get('parent')) if c.get('parent') in cells and cells[c.get('parent')].find('mxGeometry') is not None else (0,0,0,0)
         existing=g.find("Array[@as='points']")
         bends=[(float(p.get('x'))+parent[0],float(p.get('y'))+parent[1]) for p in existing] if existing is not None else []
@@ -228,14 +252,13 @@ def _route_native_edges(root,nodes,future=()):
         if source in trunks and c in fanouts[source]:
             trunk,branch=trunks[source]
             start,exit_port,_=port(source,b,(0.5,1))
-            end,entry_port,_=port(target,a,(0.5,0))
-            approach=(end[0],end[1]-12)
-            if any(rx<approach[0]<rx+rw and ry<approach[1]<ry+rh for rx,ry,rw,rh in obstacles):
-                points=trunk+route(branch,end,obstacles)[1:]
-            else:
-                points=trunk+route(branch,approach,obstacles)[1:]+[end]
+            end,entry_port,approach=port(target,a,(0.5,0))
+            points=trunk+route(branch,approach,obstacles)[1:]+[end]
         else:
-            if existing is None or any(any(segment_conflict(p,q,u,v)!=(0,0) for u,v in occupied) for p,q in zip(middle,middle[1:])) or any(p[0]!=q[0] and p[1]!=q[1] for p,q in zip(middle,middle[1:])) or any(intersects(p,q,r) for p,q in zip(middle,middle[1:]) for r in obstacles):middle=route(start_corridor,end_corridor,obstacles,occupied=occupied)
+            collinear=(abs(start[1]-end[1])<1e-6 and all(abs(p[1]-start[1])<1e-6 for p in (start_corridor,end_corridor))) or (abs(start[0]-end[0])<1e-6 and all(abs(p[0]-start[0])<1e-6 for p in (start_corridor,end_corridor)))
+            straight=collinear and not any(intersects(start_corridor,end_corridor,r) for r in obstacles) and not any(segment_conflict(start_corridor,end_corridor,u,v)!=(0,0) for u,v in occupied)
+            if straight:middle=[]
+            elif existing is None or any(any(segment_conflict(p,q,u,v)!=(0,0) for u,v in occupied) for p,q in zip(middle,middle[1:])) or any(p[0]!=q[0] and p[1]!=q[1] for p,q in zip(middle,middle[1:])) or any(intersects(p,q,r) for p,q in zip(middle,middle[1:]) for r in obstacles):middle=route(start_corridor,end_corridor,obstacles,occupied=occupied)
             points=[]
             for point in [start,*middle,end]:
                 if not points or points[-1]!=point:points.append(point)

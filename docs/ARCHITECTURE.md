@@ -270,3 +270,133 @@ are separate editable native cells. The same .drawio is exported to PNG. BGP
 states are appendix metadata, not a reachability test. VPN-over-FastConnect
 transport associations, advertised-route analysis and provider physical inventory
 outside scope are not inferred by this version.
+
+## Objective overview quality
+
+`quality.assess` validates native labels, graph structure and scene geometry, then
+measures ALL visible-edge crossings/overlap, card/title intrusions, diagonals,
+sibling spacing shortfall, bends/detours, canvas area relative to measured leaf
+footprints and trailing container slack. It never changes coordinates, evidence,
+API membership or official icon assets. Sub-micropixel anchor noise is rounded
+before intersection tests. Reports contain numeric measurements, fixed issue
+codes and scene aliases only. Optional detail pages retain structural validation
+but are not scored by this overview selector.
+
+The base loss terms (introduced in quality version 1) are lower-is-better for the SAME scene signature:
+1000 × (card/title intrusions + diagonals), 100 × crossings,
+20 × overlap / sqrt(measured leaf area), 5 × normalized spacing shortfall,
+4 × excess route-length ratio, 0.5 × bends / visible-edge count,
+0.5 × canvas-area / measured-leaf-area, and 2 × container-slack ratio.
+Spacing targets are 16px for ordinary siblings, 24px when a container is involved
+and 8px within API-owned gateway clusters. Slack above 35% or route detours above
+100% produce warnings alongside any crossing/overlap/intrusion/spacing violation.
+These are geometry heuristics, not an absolute aesthetic score.
+
+Visual review receives objective metrics and affected aliases. Candidates must
+pass native/scene validation, strictly reduce loss, never increase crossing,
+overlap, intrusion or diagonal metrics, and stay within 125% of INITIAL canvas
+area across the entire review budget. Equal, regressing or invalid proposals
+leave the incumbent unchanged. Existing review budgets remain unchanged; no
+automatic multi-candidate generation or extra model calls are added. Initial
+and final measurements and decision reasons go to visual-review.json. Fresh
+validation.json.layout_quality is written even for replay, --no-ai and --no-png.
+Objective warnings prevent visual acceptance; artifacts remain as needs_review.
+AI review remains necessary for concerns these heuristics cannot measure.
+
+`scripts/validate_repeatability.py` runs 2–10 independent fresh synthetic CLI
+generations without layout reuse, verifies XML/PNG and persists all failures and
+warnings plus min/max/mean metrics in repeatability-report.json. The scenario
+verifier recomputes objective metrics on resume instead of trusting older AI
+acceptance. Diagnostic-only runs are explicitly distinct from fresh AI evidence.
+
+Native connector ports use short outward approach corridors. The first/last
+segment meets the chosen resource face normally rather than running along that
+face and turning the arrowhead sideways. Side-by-side network resources prefer
+facing sides regardless of a wide tunnel tag's aspect ratio. LB/backend flow
+keeps its vertical port contract; fanout and alternative network ports retain
+normal approaches. Obstacles, source/target evidence and model rectangles stay
+unchanged. Replaying saved layouts can change connector geometry after this fix.
+The synthetic basic fixture includes a documentation-range public LB address;
+real resources still display only API-observed IPs, never a sample fallback.
+
+## Content-aware composition (quality version 2)
+
+`composition.policy` supplies one shared design rhythm to the initial alias-only
+AI request: 24px ordinary/container gaps, 12–16px inner padding, 32px connector
+corridors, 64px network corridors, 8px alignment tolerance and at most 8px card
+size allowance. These are design guides, not fixed region dimensions or a local
+packing engine. Existing minimum/ownership/direction constraints remain hard.
+
+`composition.measure` looks inside each actual container. It merges child X/Y
+projections, caps avoidable internal gaps at a 24px content rhythm (64px for the
+network region), adds measured headers/padding and compares content-sized area
+with current area. This detects empty margins on all sides and large blank bands
+without rewarding an artificial spreading/translation of children. Large empty
+subnets are measured against their own header minima; an entirely empty region
+is not assigned fictional content. Worst-container whitespace is recorded so a
+sparse subnet cannot disappear in a large region's weighted average.
+
+Quality v2 adds 20 × average avoidable whitespace, 8 × worst-container whitespace,
+6 × excess gap ratio (beyond 32px, or 96px for regional network branches),
+8 × normalized card inflation beyond the 8px allowance,
+4 × sibling alignment error, 6 × observed flow alignment error and
+20 × fully reversed flows. Same-kind siblings and actual gateway siblings are
+measured for alignment; unrelated kinds do not imply a row or service. Only
+observed one-to-one LB/backend edges in the SAME known VCN guide flow centering;
+fanout and cross-VCN edges are not forced into a made-up application column.
+
+Warnings use average/worst whitespace >20%/30%, excess gap ratio >0.25, card
+inflation >0.15, sibling alignment >0.35, flow alignment >0.20 or any reversed
+flow. Alias-only design_feedback contains affected IDs and content-derived sizes
+so review can revise the smallest affected area. Existing best-so-far rejection
+protects flow reversals as well as crossing/intrusion. Different quality versions
+are not compared. Old layouts remain replayable with freshly computed v2 metrics;
+policy-only changes do not alter inventory/footprint scene signatures.
+
+The renderer still applies AI rectangles exactly. Neither metrics nor guidance
+resize, reparent, hide or delete resources/edges. Native arrow approaches and
+observed LB IPs remain intact. AI visual critique remains independent of numeric
+acceptance; required headers/network corridors are not automatically treated as
+excess whitespace, and remaining subjective concerns stay needs_review.
+
+Single API-evidenced network branches also receive center-axis guidance: a sole
+Virtual Circuit below its DRG and a sole RPC above it align center X within 8px.
+The single unknown peer above that RPC may share the axis. Multiple circuits or
+RPCs are not collapsed into one column. Network alignment adds 6 × mean and
+4 × worst normalized offset to v2 loss; warnings use mean >0.15 or worst >0.20.
+This prevents a nominally downward branch from drifting sideways into VPN wires
+without inventing relationships or moving model rectangles locally.
+
+Quality conflict measurement respects the renderer's intentional Backend Set/LB
+fanout trunks. For the SAME API-evidenced owner, it trims only the contiguous
+shared prefix (including intermediate bends) before comparing diverged branches.
+Crossings/overlap after divergence and between different owners still count.
+Original native paths remain intact for label/title intrusion checks and XML
+evidence validation. The low-level network router's metrics are unchanged. Wide
+containers spanning several narrow sibling columns are not forced to align with
+every individual column; same-kind comparable rows/columns still are measured.
+
+## Common native connector contract
+
+`connector_rules` derives row guides from actual visible configured edges and
+immutable API parents. A one-to-one external edge to an API container with one
+visible leaf aligns the external glyph with that leaf's glyph row, not the
+container's full midpoint. The edge still ends at the SAME container; no child
+edge or inferred membership is created. Multiple children/targets remain
+ambiguous and do not imply one chosen port. Guides carry alias IDs and measured
+official glyph offsets (or half the height for a logical tag).
+
+Every fresh AI scene plan receives connector_rule_version=1 before validation.
+check_plan rejects row mismatches and sends them through bounded design repair;
+visual revisions inherit the same contract. Legacy unmarked plans remain
+structurally replayable but quality reports connector_alignment_errors and
+connector_feedback instead of claiming compliance. The loss adds 1000 per
+mismatch and revisions cannot increase this metric. Guide-only metadata does
+not change inventory/label footprint signatures or move old rectangles.
+
+The common router uses source-aligned body ports below real container headers,
+regardless of service type. When endpoints/corridors are collinear and clear,
+it emits a straight connection even if an older/model route supplied doglegs.
+Headers, unrelated cards, occupied routes and real branching still justify
+orthogonal turns. Actual icons/labels/parents/API endpoints remain unchanged.
+This rule applies during every render, not as a patch to a particular PNG.

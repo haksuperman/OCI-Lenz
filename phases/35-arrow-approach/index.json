@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "35-arrow-approach",
+  "steps": [
+    {
+      "step": 0,
+      "name": "normal-arrow-approaches-and-synthetic-lb-ip",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

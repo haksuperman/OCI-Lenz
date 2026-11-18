@@ -1,0 +1,22 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "36-composition-consistency",
+  "steps": [
+    {
+      "step": 0,
+      "name": "content-aware-composition-metrics-and-ai-feedback",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

@@ -68,7 +68,7 @@ def _sample(scenario):
         r('nat','nat',vcn_id='vcn'),r('internet','internet',vcn_id='vcn'),r('service','service',vcn_id='vcn'),
         r('app-nsg','nsg',vcn_id='vcn'),r('private-rt','route',vcn_id='vcn',rules=[{'destination':'0.0.0.0/0','network_entity_id':'nat'}]),
         r('public-rt','route',vcn_id='vcn',rules=[{'destination':'0.0.0.0/0','network_entity_id':'internet'}]),
-        r('lb','lb',subnet_ids=['public'],nsg_ids=['app-nsg']),
+        r('lb','lb',subnet_ids=['public'],nsg_ids=['app-nsg'],ip_addresses=[{'ip_address':'192.0.2.20','is_public':True}]),
         r('backend-set','backend_set',lb_id='lb',backends=[{'ip_address':'10.0.1.10','port':8080}]),
         r('compute','compute'),r('vnic','vnic',instance_id='compute',subnet_id='private',vcn_id='vcn',private_ips=['10.0.1.10'],nsg_ids=['app-nsg'])]}
 

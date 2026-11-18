@@ -446,3 +446,53 @@ VPN-over-FastConnect의 터널 연계나 BGP 경로 분석은 이번 범위에 �
 oci-lenz sample --scenario fastconnect --output "$HOME/oci-lenz-validation/fastconnect"
 oci-lenz draw --snapshot "$HOME/oci-lenz-validation/fastconnect/snapshot.json" --output "$HOME/oci-lenz-validation/fastconnect/diagrams"
 ```
+
+## 배치 품질과 반복 신규 생성 검증
+
+기본 실행은 기존과 동일하다. `validation.json`의 `layout_quality`에서 코드가
+측정한 교차·겹침·리소스/제목 침범·간격 부족·연결선 우회·여백을 확인할 수 있다.
+`loss`는 같은 스냅샷/라벨의 후보끼리 비교하며 낮을수록 좋다. 다른 고객사나 다른
+리소스 개수의 결과를 이 값으로 비교하지 않는다.
+
+AI 수정본은 기존보다 점수가 낮아지고 교차·겹침·침범·비직각 구간이 늘지 않을 때만
+채택한다. 최초 캔버스 대비 면적 25% 초과 증가도 거절한다. `visual-review.json`에
+최초/최종 평가와 `decisions`의 채택·거절 이유가 남는다. 기본 수정 예산은 1회이며
+`--review-rounds 0/1/2`로 지정한다. 자동 AI 호출 횟수는 추가하지 않았다.
+
+AI가 수용하더라도 코드가 측정한 문제가 남으면 `needs_review`다. 실패를 숨기거나
+리소스/연결선을 삭제해서 점수를 맞추지 않으며 편집 가능한 산출물은 보존한다.
+`--reuse-layout`, `--no-ai`, `--no-png`에서도 코드 평가는 수행하되 추가 AI 검토는
+호출하지 않는다. 코드는 글꼴별 실제 픽셀 렌더링이나 미적 완성도를 보장하지 않는다.
+
+같은 가상 스냅샷으로 배치 재사용 없이 3번 신규 생성하려면:
+
+```sh
+python scripts/validate_repeatability.py --case fastconnect --repeats 3 \
+  --output /tmp/oci-lenz-repeatability
+```
+
+복잡한 사례는 `--case dense` 또는 `--case fanout`으로 검증한다. 각 실행의
+Draw.io·PNG·검증 JSON과 상위 `repeatability-report.json`을 확인한다. 실패와
+검토 필요 결과도 포함하며, 문제가 남으면 명령은 0이 아닌 종료 코드를 반환한다.
+`--no-ai`는 구조 진단용으로 AI 균등성 검증 결과로 해석하지 않는다. 실행별로
+AI 사용량이 발생하므로 기본 반복은 3회, 허용 범위는 2~10회다.
+
+디자인 평가 v2는 `layout_quality.metrics`에 컨테이너별 최악/평균 불필요 여백,
+큰 내부 간격, 카드 크기 과장, 정렬 및 실제 LB/backend 관계의 흐름 정렬을 추가한다.
+`design_feedback`의 리소스 ID는 AI용 별칭이며, `suggested_width/height`는 수집된
+리소스 개수와 라벨에서 계산한 참고 크기다. 코드가 이 값으로 도형을 자동 재배치하지
+않는다. 실제 이름·IP와 모든 API 관계는 유지한다.
+
+최초 생성과 검토에 같은 간격 기준을 전달하며, 리소스가 적은 Subnet을 큰 형제
+Subnet 크기에 맞춰 늘리지 않도록 한다. 필요한 DRG 연결 공간과 긴 제목 공간은
+보존한다. v1/v2 점수는 직접 비교하지 말고 같은 버전으로 다시 평가해야 한다.
+
+공통 연결 규칙은 새 생성 때마다 적용한다. `skill-layout.json`의 장면별
+`connector_rule_version: 1`은 실제 아이콘 접속 축 검증을 거쳤음을 나타낸다.
+화살촉 진입 방향뿐 아니라, 단일 내부 리소스가 있는 API 컨테이너와 외부 리소스의
+접속 높이도 맞춘다. 장애물 없이 같은 축에 놓인 선은 불필요한 꺾임 없이 그린다.
+
+예전 저장 배치가 이 기준을 어기면 `connector_alignment_errors`로 표시한다.
+새 규칙으로 다시 배치하려면 `--reuse-layout` 없이 생성한다. 코드가 기존 리소스
+좌표를 임의로 이동시키거나 특정 고객사·리소스 이름별 예외를 넣지는 않는다.
+분기나 제목·다른 리소스를 피해야 하는 구간의 필요한 직각 꺾임은 유지한다.
