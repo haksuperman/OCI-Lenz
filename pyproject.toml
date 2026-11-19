@@ -6,7 +6,7 @@ name = "oci-lenz"
 version = "0.1.0"
 description = "OCI inventory to editable Draw.io with Codex skills"
 requires-python = ">=3.10"
-dependencies = ["oci>=2.150,<3"]
+dependencies = ["oci>=2.191,<3"]
 [project.scripts]
 oci-lenz = "oci_lenz.cli:main"
 [tool.setuptools]

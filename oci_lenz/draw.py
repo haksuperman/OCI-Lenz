@@ -5,12 +5,13 @@ import xml.etree.ElementTree as E
 from functools import lru_cache
 from .diagram_model import diagram_graph as graph
 from .display import resource_label,network_label
+from .load_balancers import subnet_ids
 ROOT=Path(__file__).resolve().parents[1]
 if not (ROOT/'assets/oci/library.xml').exists(): ROOT=Path(sys.prefix)/'share/oci-lenz'
-ICONS={'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'route':29,'service':31,'internet':32,'nat':33,'nsg':114,'cpe':21,'drg':30,'rpc':34,'db_system':36,'db_node':35,'virtual_circuit':210,'cross_connect':210}
+ICONS={'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'nlb':18,'waf':102,'route':29,'service':31,'internet':32,'nat':33,'nsg':114,'cpe':21,'drg':30,'rpc':34,'db_system':36,'db_node':35,'virtual_circuit':210,'cross_connect':210,'mysql_db_system':47,'autonomous_database':37,'autonomous_container_database':38,'autonomous_exadata_infrastructure':43,'autonomous_vm_cluster':44,'cloud_autonomous_vm_cluster':38,'exadata_infrastructure':44,'vm_cluster':44,'cloud_exadata_infrastructure':43,'cloud_vm_cluster':43,'exadata_db_system':43,'exadb_vm_cluster':43}
 
 def edge_label(edge):
-    return edge['label'] or {'nsg_ids':'NSG','route_table_id':'Route table','lb_id':'Backend set'}.get(edge['kind'],edge['kind'])
+    return edge['label'] or {'waf_protection':'Protects','nsg_ids':'NSG','route_table_id':'Route table','lb_id':'Backend set'}.get(edge['kind'],edge['kind'])
 
 def icon(root, rid, kind, x,y):
     if kind not in ICONS: return
@@ -109,12 +110,12 @@ def build_document(snapshot,detail_pages=False):
         for k in ordered:
             r=nodes[k]; sub=r.get('subnet_id') or next(iter(r.get('subnet_ids',[])),None)
             if r['kind']=='backend_set':
-                sub=next(iter(nodes.get(r.get('lb_id'),{}).get('subnet_ids',[])),None)
+                sub=next(iter(subnet_ids(nodes.get(r.get('lb_id'),{}))),None)
             if r['kind']=='compute':
                 sub=next((v.get('subnet_id') for v in sorted(nodes.values(),key=lambda n:(n.get('is_primary') is not True,n['id'])) if v.get('instance_id')==k),None)
             if r['kind']=='db_node':
                 vnic=nodes.get(r.get('vnic_id'),{})
-                sub=vnic.get('subnet_id') or nodes.get(r.get('db_system_id'),{}).get('subnet_id')
+                sub=vnic.get('subnet_id') or nodes.get(r.get('vm_cluster_id') or r.get('db_system_id'),{}).get('subnet_id')
             if sub in children and r['kind'] not in ('vcn','subnet'): children[sub].append(k)
         def setbox(k,label,x,y,w,h,parent,kind):
             parents[k]=parent; sizes[k]=(w,h); specs[k]=(label,x,y,w,h,parent,kind)
@@ -289,7 +290,7 @@ def validate(xml,snapshot):
         if page.get('id')=='region' and not set(nodes)<=ids:raise ValueError('missing resources')
         for c in cells:
             original=c.get('ociEvidenceTarget')
-            if original is not None and (original not in ids or nodes.get(original,{}).get('kind')!='db_node' or nodes[original].get('db_system_id')!=c.get('target') or nodes.get(c.get('source'),{}).get('kind')!='backend_set'):
+            if original is not None and (original not in ids or nodes.get(original,{}).get('kind')!='db_node' or (nodes[original].get('vm_cluster_id') or nodes[original].get('db_system_id'))!=c.get('target') or nodes.get(c.get('source'),{}).get('kind')!='backend_set'):
                 raise ValueError('invalid DB node display projection')
         for i,e in enumerate(edges):
             c=cellmap.get('edge-'+str(i))

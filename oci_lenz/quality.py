@@ -10,6 +10,7 @@ from .diagram_model import diagram_graph
 from .routing import native_paths,path_quality,visible_rectangle,intersects
 from .typography import text_width
 from .composition import measure
+from .database_services import DB_SYSTEMS
 
 
 def edge_conflicts(paths,nodes):
@@ -18,8 +19,8 @@ def edge_conflicts(paths,nodes):
         source,target=path['source'],path['target']
         if nodes.get(source,{}).get('kind')!='backend_set':return None
         kind=nodes.get(target,{}).get('kind')
-        if kind=='lb':return target  # Native ownership arrow is reversed.
-        if kind in ('compute','vnic','db_node','db_system','unknown'):return source
+        if kind in ('lb','nlb'):return target  # Native ownership arrow is reversed.
+        if kind in ('compute','vnic','db_node','unknown','mysql_db_system','autonomous_database',*DB_SYSTEMS):return source
         return None
     def orient(path,key):
         points=path['points'] if path['source']==key else list(reversed(path['points']))
@@ -86,7 +87,7 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
     # Snap sub-micropixel noise before orthogonal intersection measurement.
     paths=[{**p,'points':[(round(x,6),round(y,6)) for x,y in p['points']]}
            for p in native_paths(root,nodes)]
-    # The legacy router metric intentionally counts network-involved pairs only.
+    # The router metric counts network/DB-involved pairs only.
     # Quality selection must also count unrelated LB/backend/compute crossings.
     conflicts=edge_conflicts(paths,nodes)
     intrusions=touched_titles=diagonal=bends=0;length=distance=0

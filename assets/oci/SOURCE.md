@@ -28,3 +28,21 @@ connector arrow and stock caption are excluded: they are drawing decorations,
 not OCI API relationships. The actual API connection lines and resource labels
 remain separate editable Draw.io cells. The original library file is unchanged.
 CrossConnectGroup is an API-owned physical-port container, not a substitute icon.
+
+Database service expansion: MySQL uses entry 47, Autonomous DB 37, dedicated
+Autonomous containers/cloud VM clusters 38, Exadata/cloud infrastructures and
+VM clusters 43, and ExaCC infrastructures/VM clusters 44. Legacy Exadata DbSystems
+also use 43. The pinned library has no dedicated Exascale or Storage Vault art:
+Exadb VM Cluster reuses Exadata 43; Storage Vault and on-prem VM Cluster Network
+are logical editable name tags, with no borrowed OCI Block Storage/VCN identity.
+
+
+Network Load Balancer uses entry 18 (Networking - Load Balancer), the official
+generic LB glyph. The pinned archive has no dedicated NLB entry. Native resource
+kind and relationships distinguish NLB from classic LB; no invented artwork or
+unrelated Flexible Load Balancer symbol is substituted.
+
+
+Regional WAF uses entry 102 (Identity and Security - WAF), the official native
+editable WAF stencil. WAF is outside subnet containers and points to the observed
+protected load balancer; the artwork does not imply an additional proxy hop.

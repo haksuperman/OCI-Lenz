@@ -3,6 +3,15 @@ import copy
 import heapq
 import xml.etree.ElementTree as E
 from .typography import text_width
+from .load_balancers import LOAD_BALANCER_KINDS
+
+
+def conflict_aware(nodes,source,target):
+    """Network and DB relationships share routing, not topology semantics."""
+    from .network_layout import NETWORK_KINDS
+    from .database_services import MODELS,DB_SYSTEMS
+    kinds=(*NETWORK_KINDS,*MODELS,*DB_SYSTEMS,'db_node','waf')
+    return any(nodes.get(key,{}).get('kind') in kinds for key in (source,target))
 
 
 def visible_rectangle(cell,rectangle):
@@ -33,11 +42,14 @@ def segment_conflict(a,b,c,d):
 
 
 def path_quality(paths):
-    """Count network-involved ambiguity, exempting genuine shared endpoint stubs."""
+    """Count network/DB ambiguity, exempting genuine shared endpoint stubs.
+
+    Metric keys retain their historical network_ prefix for compatibility.
+    """
     crossings=0;overlap=0
     for i,left in enumerate(paths):
         for right in paths[i+1:]:
-            if not (left['network'] or right['network']):continue
+            if not (left['network'] or right['network'] or left.get('conflict_aware') or right.get('conflict_aware')):continue
             if {left['source'],left['target']}=={right['source'],right['target']}:continue
             lp,rp=left['points'],right['points'];contacts=set()
             common={left['source']:lp[0],left['target']:lp[-1]}.keys() & {right['source'],right['target']}
@@ -82,7 +94,8 @@ def native_paths(root,nodes):
         source,target=c.get('source'),c.get('target');parent=c.get('parent')
         px,py,_,_=box(parent) if parent in cells and cells[parent].find('mxGeometry') is not None else (0,0,0,0)
         points=[endpoint(source,'exit'),*[(float(p.get('x'))+px,float(p.get('y'))+py) for p in c.findall('mxGeometry/Array/mxPoint')],endpoint(target,'entry')]
-        paths.append({'source':source,'target':target,'network':any(nodes.get(k,{}).get('kind') in NETWORK_KINDS for k in (source,target)),'points':points})
+        paths.append({'source':source,'target':target,'network':any(nodes.get(k,{}).get('kind') in NETWORK_KINDS for k in (source,target)),
+                      'conflict_aware':conflict_aware(nodes,source,target),'points':points})
     return paths
 
 
@@ -198,11 +211,11 @@ def _route_native_edges(root,nodes,future=()):
         if edge.get('edge')!='1' or edge.get('visible')=='0' or 'opacity=0;' in edge.get('style',''):continue
         source,target=edge.get('source'),edge.get('target')
         reverse=(nodes.get(source,{}).get('kind')=='backend_set' and
-                 nodes.get(target,{}).get('kind')=='lb' and 'startArrow=block;' in edge.get('style',''))
+                 nodes.get(target,{}).get('kind') in LOAD_BALANCER_KINDS and 'startArrow=block;' in edge.get('style',''))
         if reverse:source,target=target,source
         connections[edge.get('id')]=(source,target,reverse)
         sk=nodes.get(source,{}).get('kind');tk=nodes.get(target,{}).get('kind')
-        if (sk=='lb' and tk=='backend_set') or (sk=='backend_set' and tk in ('compute','vnic','unknown')):
+        if (sk in LOAD_BALANCER_KINDS and tk=='backend_set') or (sk=='backend_set' and tk in ('compute','vnic','unknown')):
             fanouts.setdefault(source,[]).append(edge)
     trunks={}
     for source,group in fanouts.items():
@@ -214,15 +227,16 @@ def _route_native_edges(root,nodes,future=()):
         trunks[source]=(route(start,branch,obstacles),branch)
     from .network_layout import NETWORK_KINDS
     def is_network(c):return any(nodes.get(c.get(k),{}).get('kind') in NETWORK_KINDS for k in ('source','target'))
-    routed=0;drawn=[(p['source'],p['target'],p['points']) for p in future if p['network']]
+    def avoids_conflicts(c):return conflict_aware(nodes,c.get('source'),c.get('target'))
+    routed=0;drawn=[(p['source'],p['target'],p['points']) for p in future if p['network'] or p.get('conflict_aware')]
     ordered=[c for c in root if c.get('edge')=='1']
-    ordered.sort(key=is_network)
+    ordered.sort(key=avoids_conflicts)
     for c in ordered:
         style=c.get('style','')
         if c.get('edge')!='1' or c.get('visible')=='0' or 'opacity=0;' in style:continue
         source,target,reverse=connections[c.get('id')]
         a,b=rectangles.get(source,rectangle(source)),rectangles.get(target,rectangle(target))
-        flow=(nodes.get(source,{}).get('kind') in ('lb','backend_set') and nodes.get(target,{}).get('kind') in ('backend_set','compute','vnic','unknown'))
+        flow=(nodes.get(source,{}).get('kind') in (*LOAD_BALANCER_KINDS,'backend_set') and nodes.get(target,{}).get('kind') in ('backend_set','compute','vnic','unknown'))
         downward=flow and a[1]+a[3]+8<=b[1]
         upward=flow and b[1]+b[3]+8<=a[1]
         exit_face=(0.5,1) if downward else ((0.5,0) if upward else None)
@@ -240,7 +254,7 @@ def _route_native_edges(root,nodes,future=()):
         if reverse:bends.reverse()
         middle=[start_corridor]+bends+[end_corridor]
         occupied=[]
-        if is_network(c):
+        if avoids_conflicts(c):
             for previous_source,previous_target,previous_points in drawn:
                 if {source,target}=={previous_source,previous_target}:continue
                 shared=set()
@@ -280,6 +294,32 @@ def _route_native_edges(root,nodes,future=()):
                         if not candidate or candidate[-1]!=point:candidate.append(point)
                     candidate_score=score(candidate)
                     if candidate_score<best:points=candidate;end=alt_end;entry_port=alt_port;best=candidate_score
+        # A DB ownership chain can enter and leave the same icon face. Moving
+        # only the corridor then causes a short reversal over the incoming wire.
+        # Search normal endpoint faces without moving cards or changing evidence.
+        if avoids_conflicts(c) and not is_network(c) and source not in trunks:
+            others=[{'source':u,'target':v,'network':True,'points':pp}
+                    for u,v,pp in drawn if {u,v}!={source,target}]
+            def db_score(candidate):
+                current={'source':source,'target':target,'network':True,'points':candidate}
+                values=[path_quality([current,other]) for other in others]
+                return (sum(v['network_edge_crossings'] for v in values),
+                        sum(v['network_overlap_length'] for v in values),
+                        sum(abs(p[0]-q[0])+abs(p[1]-q[1]) for p,q in zip(candidate,candidate[1:])))
+            best=db_score(points)
+            if best[:2]!=(0,0):
+                for exit_face in ((0.5,0),(0,0.5),(1,0.5),(0.5,1)):
+                    for entry_face in ((0.5,0),(0,0.5),(1,0.5),(0.5,1)):
+                        alt_start,alt_exit,alt_out=port(source,b,exit_face)
+                        alt_end,alt_entry,alt_in=port(target,a,entry_face)
+                        try:middle=route(alt_out,alt_in,obstacles,occupied=occupied)
+                        except ValueError:continue
+                        candidate=[]
+                        for point in [alt_start,*middle,alt_end]:
+                            if not candidate or candidate[-1]!=point:candidate.append(point)
+                        candidate_score=db_score(candidate)
+                        if candidate_score<best:
+                            points=candidate;exit_port,entry_port=alt_exit,alt_entry;best=candidate_score
         drawn=[p for p in drawn if {p[0],p[1]}!={source,target}]
         drawn.append((source,target,list(points)))
         if reverse:

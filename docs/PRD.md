@@ -3,13 +3,15 @@
 OCI 테넌시의 읽기 전용 인벤토리에서 편집 가능한 Draw.io와 공유용 PNG를 생성한다.
 
 첫 버전: 전체 환경을 담은 아키텍처 한 페이지와 선택적인 VCN별 상세 페이지,
-VCN·Subnet·Compute·LB·Internet/NAT/Service Gateway,
+VCN·Subnet·Compute·LB·Network Load Balancer(NLB)·Internet/NAT/Service Gateway,
 Route Table 목적지/다음 홉, NSG와 LB Backend Set 관계를 포함한다.
+Regional WAF는 Subnet 밖에서 API가 지정한 보호 대상 LB를 향해 연결한다.
 Oracle 공식 아이콘을 사용하고 같은 Draw.io에서 PNG를 내보낸다.
 DRG·Attachment, LPG·RPC의 구성 관계까지 수집한다. 범위 밖 피어를 자동 조회하거나
 VCN 간 전이 연결을 추론하지 않는다. Oracle Base DB의 DB System·Node·VNIC도 수집하며,
-기본 구성도에는 System Display Name과 Node IP만 표시한다. Exadata·Exascale·다른 DB
-서비스와 OKE, DRG 라우팅 정책은 후속 범위다.
+기본 구성도에는 System Display Name과 Node IP만 표시한다. MySQL, Autonomous DB,
+ExaCC, ExaCI, Exascale의 인프라·클러스터·네트워크 관계도 수집한다.
+DB Home·일반 Database/PDB 카탈로그·Data Guard, OKE, DRG 라우팅 정책은 후속 범위다.
 FastConnect Virtual Circuit·Cross-Connect Group·Cross-Connect를 읽기 전용으로 수집하고 공식 FastConnect 심볼로 표시한다.
 Attachment는 내부 API 관계 근거로 유지하고 도형·이름·경계는 모든 페이지에서 제외한다.
 VCN–DRG–IPSec/Remote Peering 관계를 검증된 직접 연결선으로 표시한다.

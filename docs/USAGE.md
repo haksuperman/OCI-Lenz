@@ -322,7 +322,7 @@ reachability. Only resources returned for selected compartments are resolved;
 remote regions/tenancies/compartments are never fetched automatically. An API
 reports PEERED but omits the peer ID → the peer remains explicitly unknown.
 Other attachment network types (beyond VCN/RPC/IPSec-tunnel/VirtualCircuit) are retained as references and recorded as
-unsupported endpoints; DRG route-policy evaluation is not implemented. Other database platforms and OKE remain follow-up scope. IAM policies are never changed.
+unsupported endpoints; DRG route-policy evaluation is not implemented. DB catalog/PDB/Data Guard and OKE remain follow-up scope. IAM policies are never changed.
 
 DRG and RPC use official native toolkit icons; LPG uses a logical editable tag.
 Attachment names/cards/frames are omitted from all diagram pages. Direct DRG
@@ -347,9 +347,10 @@ and [Core IAM reference](https://docs.oracle.com/en-us/iaas/Content/Identity/Ref
 
 The collector supports VM./BM. Base DB shapes through scoped ListDbSystems and
 per-system ListDbNodes using the shared pagination/retry/coverage wrapper.
-VM.BaseDB.x86 and older VM shapes are accepted; Exadata or unknown shapes are
-recorded unsupported. No DB Home, logical database/PDB, Data Guard or database
-connection is queried. Other database engines/platforms remain follow-up scope.
+VM.BaseDB.x86 and older VM shapes are accepted. Legacy Exadata.* systems use a
+distinct exadata_db_system kind; unknown shapes are recorded unsupported. No DB Home, logical database/PDB, Data Guard or database
+connection is queried. Additional database infrastructure platforms are described
+in the expanded DB service section below.
 
 Default architecture: ONE official DB System icon, the actual System Display Name,
 and observed client Node IPs. Two-node systems show both addresses. Node hostname
@@ -496,3 +497,105 @@ Subnet 크기에 맞춰 늘리지 않도록 한다. 필요한 DRG 연결 공간�
 새 규칙으로 다시 배치하려면 `--reuse-layout` 없이 생성한다. 코드가 기존 리소스
 좌표를 임의로 이동시키거나 특정 고객사·리소스 이름별 예외를 넣지는 않는다.
 분기나 제목·다른 리소스를 피해야 하는 구간의 필요한 직각 꺾임은 유지한다.
+
+## 확장 DB 서비스
+
+기존 `collect` 명령에 MySQL → Autonomous DB → ExaCC → ExaCI → Exascale 수집을
+추가했다. SDK 최소 버전은 `oci>=2.191,<3`이며 기존 설치는 `python -m pip install -e .`
+명령으로 의존성도 갱신한다. 서비스별 권한이 없으면 해당 API 실패를 coverage에
+기록하고 다른 수집을 계속한다. 성공 0건과 실패는 구분한다. Search 비교는 기존
+리소스만 대상으로 하며 새 DB 서비스의 완전성을 보장하지 않는다.
+
+| 서비스 | 수집·표시 범위 |
+| --- | --- |
+| MySQL | DB System 목록과 개별 GetDbSystem의 Subnet·NSG·IP·포트·버전·HA 및 HeatWave 연결 여부. 개별 조회 실패 시 목록의 System/IP 유지 |
+| Autonomous DB | Serverless/public/private 및 Dedicated DB, Container DB, Autonomous VM Cluster와 Cloud Autonomous VM Cluster, 레거시 Autonomous Exadata Infrastructure. 실제 private_endpoint_ip와 소속 ID만 사용 |
+| ExaCC | Exadata Infrastructure, VM Cluster, VM Cluster Network의 client/backup 주소와 SCAN, 요청 범위로 확인한 DB Node. 온프레미스 네트워크를 OCI Subnet/VCN으로 추정하지 않음 |
+| ExaCI | Cloud Exadata Infrastructure, Cloud VM Cluster, DB Node/VNIC, client/backup Subnet·NSG 및 GetPrivateIp로 확인한 SCAN IP. 레거시 Exadata.* DbSystem은 Base DB와 별도 종류로 유지 |
+| Exascale | Exadb VM Cluster, Exascale DB Storage Vault, DB Node/VNIC 및 client/backup 네트워크. 기존 CloudVmCluster/VmCluster의 Vault 참조도 보존 |
+
+기본 구성도는 실제 Display Name과 관측 IP를 표시한다. DB Node는 소속 System/VM
+Cluster로 모아 client IP를 표시하고 개별 Node/VNIC는 XML·정보 페이지와 선택한
+상세 페이지에 보존한다. Backup 주소·포트·버전·상태는 정보 페이지에 둔다.
+클러스터의 SCAN 조회가 실패하면 주소를 만들지 않는다. 공개 Autonomous DB의
+DNS/접속 문자열로 IP나 Subnet을 만들지 않는다. Dedicated DB가 Subnet을 제공하지
+않으면 부모 클러스터의 Subnet을 DB 자체의 소속으로 복사하지 않는다.
+
+MySQL/Autonomous/클러스터의 실제 private endpoint가 LB VCN 안에서 유일하게
+확인되면 설정된 Backend IP를 연결한다. 주소가 중복되거나 VCN 소속이 미확인이면
+`대상 미확인`으로 남긴다. Node로 향하는 Backend의 화면상 끝점만 소속 Cluster로
+모으며 `ociEvidenceTarget`에는 원래 Node를 유지·검증한다. 도달성을 뜻하지 않는다.
+
+MySQL·Autonomous·Exadata·ExaCC는 번들 Oracle 공식 아이콘을 사용한다. 번들에
+전용 Exascale/Vault 심볼이 없어 Exadb VM Cluster에는 Exadata 아이콘을 사용하고
+Storage Vault와 온프레미스 VM Cluster Network는 편집 가능한 논리 태그로 표시한다.
+인프라와 클러스터는 소속 ID로 연결하며 이를 임의의 VCN 컨테이너로 만들지 않는다.
+
+DB 암호·wallet·접속 문자열·태그·SSH 키·고객 연락처·장비 설정은 보존하지 않는다.
+SQL 접속, DB Home/일반 Database/PDB 카탈로그, Data Guard, MySQL 복제/Channel과
+개별 HeatWave 노드, Exadata 물리 DB Server 및 저장 서버 인벤토리는 이번 범위가 아니다.
+명시한 컴파트먼트 밖의 부모는 추가 조회하지 않으며, 선택된 다른 컴파트먼트에서
+수집된 부모는 병합 후 연결한다. ExaCC Network List에는 부모 Infrastructure ID와
+현재 선택 컴파트먼트 필터를 함께 적용한다.
+
+각 서비스의 독립 합성 예제는 `mysql`, `autonomous-db`, `exacc`, `exaci`, `exascale`이다.
+
+```sh
+oci-lenz sample --scenario mysql --output /tmp/oci-lenz-mysql
+oci-lenz draw --snapshot /tmp/oci-lenz-mysql/snapshot.json --output /tmp/oci-lenz-mysql/diagrams
+python scripts/validate_scenarios.py --case mysql --case autonomous-db --case exacc --case exaci --case exascale --output /tmp/oci-lenz-db-validation
+```
+
+행렬 명령의 기본 실행은 모델 없는 구조 진단이며 실제 AI 품질 합격이 아니다.
+Draw.io Desktop을 실행할 수 없는 환경에서는 `draw --no-ai --no-png`로 XML만
+검증한다. 이 결과는 PNG 시각 검수나 실제 OCI API 검증을 대신하지 않는다.
+
+
+Dedicated ADB의 Container DB·VM Cluster·Infrastructure는 API에서 수집된 참조가
+있을 때만 관계선으로 표시한다. Serverless ADB에 이를 임의로 추가하지 않는다.
+DB 관계선은 공통 교차 회피와 접속 면 선택을 사용한다. 기존 저장 배치를
+`--reuse-layout`으로 다시 그려도 도형 위치·크기·Subnet 소속은 유지하고 연결선을
+현재 규칙으로 재생성한다. 복잡한 배치에서 모든 교차 제거를 보장하지 않으며
+남은 문제는 `validation.json`의 품질 경고로 확인한다.
+
+
+## Network Load Balancer (NLB)
+
+`collect`는 기존 LB와 별도로 Network Load Balancer, Listener, Backend Set 및
+Backend를 읽기 전용으로 수집한다. NLB의 실제 단일 Subnet과 NSG 연결을 보존하고,
+기본 구성도에는 이름·관측 IP를 표시한다. Backend Set은 기존 네모 태그로 표시한다.
+Listener·포트·대상 상세는 정보 페이지에 보존한다. 번들에 전용 NLB 심볼이 없어
+Oracle 공식 일반 Load Balancer 심볼을 사용한다.
+
+백엔드에 Instance/Private IP OCID가 지정되면 수집된 리소스와 정확히 대조한다.
+대상이 조회 범위 밖이거나 ID가 중복/미확인이면 `대상 미확인`으로 남기며, 같은
+IP가 보인다는 이유로 다른 리소스에 연결하지 않는다. IP만 지정된 경우에는
+NLB와 같은 VCN에서 유일한 관측 VNIC/DB endpoint가 있을 때 연결한다. Private IP
+OCID는 새 수집부터 저장되므로 기존 스냅샷은 재수집이 필요하다. 구성 관계를
+보여주는 것이며 소스 IP 보존·보안 규칙·헬스 상태·실제 트래픽 도달성을 검증하지 않는다.
+
+```sh
+oci-lenz sample --scenario network-load-balancer --output /tmp/oci-lenz-nlb
+oci-lenz draw --snapshot /tmp/oci-lenz-nlb/snapshot.json --output /tmp/oci-lenz-nlb/diagrams
+python scripts/validate_scenarios.py --ai --case network-load-balancer --output /tmp/oci-lenz-nlb-validation
+```
+
+
+## Regional Web Application Firewall (WAF)
+
+`collect`는 선택 컴파트먼트의 Regional WAF 연결을 수집한다. 구성도에서는 WAF를
+VCN·Subnet 밖에 두고, API의 `load_balancer_id`가 가리키는 LB를 향해 화살표를
+그린다. WAF에는 실제 이름과 Oracle 공식 WAF 아이콘을 표시하며 IP를 만들지 않는다.
+LB가 조회 범위 밖이면 `대상 미확인`으로 남기고 추가 조회하지 않는다. 여러
+컴파트먼트를 명시해서 함께 수집하면 병합된 실제 LB OCID로 연결한다.
+화살표는 WAF 보호 설정 관계이며 별도 프록시 홉이나 트래픽 검증 결과가 아니다.
+
+정책 ID는 최소 메타데이터로 보존한다. 규칙·로그·인증정보·정책 본문은 조회/저장하지
+않는다. Legacy WAAS의 도메인·Origin 기반 관계는 이번 범위에 포함하지 않으며
+coverage에 `waas: unsupported`로 구분한다. 도메인·IP·이름으로 LB를 추정하지 않는다.
+
+```sh
+oci-lenz sample --scenario regional-waf --output /tmp/oci-lenz-waf
+oci-lenz draw --snapshot /tmp/oci-lenz-waf/snapshot.json --output /tmp/oci-lenz-waf/diagrams
+python scripts/validate_scenarios.py --ai --case regional-waf --output /tmp/oci-lenz-waf-validation
+```

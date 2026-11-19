@@ -173,8 +173,8 @@ details retain them. A backend whose physical target is a hidden Node displays
 against its known System; ociEvidenceTarget stores the original Node ID and the
 validator checks both API evidence and the Node-to-System membership. Original
 graph endpoints are never mutated. Prior scene signatures/outputs are unchanged
-for snapshots without Base DB resources. DB catalog/PDB/Data Guard and other
-database platforms remain separate follow-up scope.
+for snapshots without Base DB resources. DB catalog/PDB/Data Guard remain separate follow-up scope. Additional database
+platforms are implemented by database_services as described below.
 
 `vpn.collect_vpn` uses the same scoped, paginated, bounded-retry wrapper for
 ListCpes, ListIPSecConnections and per-connection ListIPSecConnectionTunnels.
@@ -400,3 +400,80 @@ it emits a straight connection even if an older/model route supplied doglegs.
 Headers, unrelated cards, occupied routes and real branching still justify
 orthogonal turns. Actual icons/labels/parents/API endpoints remain unchanged.
 This rule applies during every render, not as a patch to a particular PNG.
+
+`database_services` extends the same collector in MySQL, Autonomous, ExaCC,
+ExaCI and Exascale order. A separate MySQL client performs ListDbSystems and
+GetDbSystem; every other service uses DatabaseClient List APIs. Scoped failures
+retain parents and references. Coverage adds allowlisted request filters for
+per-system/per-cluster calls. The minimum SDK is 2.191 to cover Exascale models.
+No raw objects, connection payloads, tags, keys or contacts enter snapshots.
+
+Shared DB Node collection accepts db_system_id or vm_cluster_id request scope.
+Canonical vm_cluster_id edges explicitly cite the ListDbNodes request because
+DbNodeSummary has no VM cluster field. SCAN PrivateIp IDs are resolved with
+GetPrivateIp and retained alongside their observed addresses. ExaCC networks
+retain only network roles, node IP/VIP and SCAN IP lists. Networks are listed
+under both observed infrastructure and cluster parent IDs, always filtered to
+the selected compartment; a parent outside the scope is never fetched.
+
+The graph uses exact SDK reference fields for DB/container/VM/infrastructure/
+network/vault relationships. Cross-compartment references resolve after merging.
+Overview aggregates client Node IPs into their owning System or VM Cluster;
+physical backend evidence survives under ociEvidenceTarget. Unique observed
+DB endpoint IPs can resolve configured LB backends only inside the LB VCN;
+ambiguity stays unknown. Non-OCI networks and vaults are logical editable tags,
+not invented OCI subnet containers. Exascale clusters reuse official Exadata
+art because the pinned toolkit has no dedicated Exascale stencil. Existing
+snapshots without new database kinds keep their original scene contracts.
+
+
+## DB relationship routing
+Network and database endpoints participate in the same bounded orthogonal
+conflict avoidance. DB participation does not classify a database as network
+topology. When an ownership chain enters and leaves the same icon face, the
+router may choose another normal source/target face to avoid retracing a wire.
+It preserves AI rectangles, API endpoints, parents, names and observed addresses.
+The historical `network_edge_crossings`/`network_overlap_length` router keys now
+also include DB-involved pairs; the final overview evaluator still checks all
+visible relationships. Equal or worse refinement is discarded as before.
+
+
+## Network Load Balancer
+NLB is a distinct `nlb` resource with its API's single `subnet_id`, NSG IDs,
+observed public/private IPs and minimal listeners. Backend Sets reuse the existing
+`backend_set`/`lb_id` display contract with NLB request ownership evidence.
+Collection uses scoped NLB List APIs through the shared pagination/retry/coverage
+adapter, supporting Collection.items and SDK-flattened lists. Listeners fall back
+to observed summary fields when a child read fails; other failed child lists stay
+explicitly failed in coverage rather than inventing backend relationships.
+
+An NLB Backend.target_id resolves only to a collected Instance ID or a unique
+PrivateIp.id returned for a collected VNIC. Missing or ambiguous explicit IDs stay
+unknown even if an IP would match. IP-only backends use the same unique same-VCN
+matching as classic LB. No out-of-scope target is fetched. Normalized private-IP
+OCIDs are retained with VNICs to preserve exact target evidence; raw responses,
+tags, descriptions and configuration credentials are excluded. NLB participates
+in existing LB arrow direction, fanout, AI role guidance and name/IP rendering.
+The pinned official toolkit's generic LB symbol is reused honestly; no dedicated
+NLB artwork is fabricated.
+
+
+## Regional WAF protection
+Collect WebAppFirewallLoadBalancerSummary via scoped ListWebAppFirewalls only.
+Normalize Collection/items through the shared pagination/retry/coverage adapter.
+Store firewall identity/name, backend type, policy ID, lifecycle state and exact
+load_balancer_id. A `waf_protection` edge points from enforcement point to the
+collected classic LB, with WebAppFirewallLoadBalancer.load_balancer_id evidence.
+Out-of-scope/missing or non-LB targets remain unknown, without fetching another
+compartment or guessing by IP/name. A policy shared by enforcement points is not
+a duplicate physical WAF; keep each observed firewall ID and its own LB relation.
+Policy content is not queried or represented as a separate infrastructure card.
+
+WAF has no subnet/vcn membership and its native parent is the region. Parent and
+non-overlap constraints keep AI placements outside VCN/subnet boundaries. AI is
+guided to place it beside the referenced LB on the same icon row (or above with a clear title-free corridor), but the arrow direction and API
+endpoints stay fixed independently of position. It uses official WAF stencil 102
+and the common orthogonal conflict-aware routing, without joining physical DRG
+layout groups. The arrow means protection association, not a tested traffic hop.
+Legacy WAAS is explicitly unsupported in coverage: its domain/origin configuration
+cannot establish the same direct LB OCID evidence and is never inferred here.

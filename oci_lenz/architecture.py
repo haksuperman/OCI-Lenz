@@ -7,8 +7,10 @@ from .diagram_model import diagram_graph as graph
 from .display import scope_title
 from .typography import card_metrics,style_card,header_metrics,wrap_text,text_width
 
+from .database_services import DB_SYSTEMS,node_owner,REFERENCES
+
 GATEWAY_KINDS=('internet','nat','service')
-OVERVIEW_EDGE_KINDS=('backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id')
+OVERVIEW_EDGE_KINDS=('waf_protection','backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id','vm_cluster_id',*REFERENCES)
 
 
 class LayoutFormatError(ValueError):
@@ -42,12 +44,12 @@ def make_scene(snapshot,view='detail'):
     cells={c.get('id'):c for c in root}
     nodes,edges=graph(snapshot)
     compact_nodes,_=graph(compact)
-    hidden={k for k,r in nodes.items() if view=='overview' and (r['kind'] in ('vnic','route','nsg') or (r['kind']=='db_node' and nodes.get(r.get('db_system_id'),{}).get('kind')=='db_system'))}
+    hidden={k for k,r in nodes.items() if view=='overview' and (r['kind'] in ('vnic','route','nsg') or (r['kind']=='db_node' and nodes.get(node_owner(r),{}).get('kind') in DB_SYSTEMS))}
     display_targets={}
     if view=='overview':
         for i,e in enumerate(edges):
             if e['kind']=='backend' and e['target'] in hidden and nodes[e['target']]['kind']=='db_node':
-                target=nodes[e['target']]['db_system_id'];display_targets[i]=target
+                target=node_owner(nodes[e['target']]);display_targets[i]=target
                 c=cells['edge-'+str(i)];c.set('ociEvidenceTarget',e['target']);c.set('target',target)
                 parents=[];p=cells[e['source']].get('parent')
                 while p in cells:parents.append(p);p=cells[p].get('parent')
@@ -78,7 +80,7 @@ def make_scene(snapshot,view='detail'):
                   'min_width':220 if container else width,
                   'min_height':64 if container else card_metrics(compact_nodes[key],width)['height'],
                   'container':container}
-        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','lpg','ipsec_tunnel') else 'icon_label'
+        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','lpg','ipsec_tunnel','exascale_db_storage_vault','vm_cluster_network') else 'icon_label'
         if container:
             header=header_metrics(c.get('value',''),220,container_font(kind))
             items[a]['header_height']=header['header_height']
@@ -273,7 +275,8 @@ def apply_plan(snapshot,scene,plan,region_only=False):
             if e['kind'] in ('ipsec_id','cross_connect_group_id') and nodes[e['target']]['kind'] in ('ipsec','cross_connect_group') and cells[e['source']].get('parent')==e['target']:
                 c.set('visible','0')
             if e['kind'] in ('lb_id','db_system_id'):c.set('style',c.get('style')+'startArrow=block;endArrow=none;textOpacity=0;')
-            if e['kind']=='backend':c.set('style',c.get('style')+'textOpacity=0;')
+            if e['kind'] in REFERENCES or e['kind']=='vm_cluster_id':c.set('style',c.get('style')+'textOpacity=0;')
+            if e['kind'] in ('backend','waf_protection'):c.set('style',c.get('style')+'textOpacity=0;')
             if e['kind'] in ('drg_id','drg_network','peer_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id'):
                 c.set('style',c.get('style')+'textOpacity=0;')
                 if e['kind']=='peer_id':c.set('style',c.get('style')+'dashed=1;')

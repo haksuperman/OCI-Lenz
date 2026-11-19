@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "47-regional-waf",
+  "steps": [
+    {
+      "step": 0,
+      "name": "regional-waf-protection-relationships-and-diagrams",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_waf",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

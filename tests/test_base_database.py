@@ -33,13 +33,14 @@ class BaseDatabaseCollectorTests(unittest.TestCase):
         empty,_=fixtures.CollectorTests().run_collect()
         self.assertEqual(next(c for c in empty['coverage'] if c.get('api')=='list_db_systems')['count'],0)
 
-    def test_exadata_and_unknown_shapes_are_not_misclassified_as_base(self):
+    def test_legacy_exadata_is_distinct_from_base_and_unknown_shapes(self):
         extra=self.responses();m=fixtures.oci.database.models
         extra['list_db_systems']=[m.DbSystemSummary(id='exa',shape='Exadata.Quarter3.100'),m.DbSystemSummary(id='unknown')]
         s,calls=fixtures.CollectorTests().run_collect(extra=extra)
         self.assertFalse(any(r['kind']=='db_system' for r in s['resources']))
-        self.assertNotIn('list_db_nodes',calls)
-        self.assertEqual(sum(c.get('resource_type')=='db_system_shape' and c['status']=='unsupported' for c in s['coverage']),2)
+        self.assertEqual(next(r['kind'] for r in s['resources'] if r['id']=='exa'),'exadata_db_system')
+        self.assertIn('list_db_nodes',calls)
+        self.assertEqual(sum(c.get('resource_type')=='db_system_shape' and c['status']=='unsupported' for c in s['coverage']),1)
 
     def test_denied_vnic_keeps_node_and_unresolved_network_evidence(self):
         s,_=fixtures.CollectorTests().run_collect(fail='get_vnic',extra=self.responses());nodes,edges=graph(s)
