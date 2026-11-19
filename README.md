@@ -5,10 +5,31 @@ OCI 테넌시에 배포된 리소스를 읽기 전용으로 조회하고, **Code
 ```text
 로컬 OCI API 프로필 → Python SDK 조회 → 리소스·관계 스냅샷
                                       ↓
-                  Codex Draw.io 스킬 + 공식 아이콘 + 예시 사진
+           AI + Draw.io 스킬 지침 + 참고 이미지 → 배치 JSON
                                       ↓
-                          architecture.drawio + PNG
+           Python 생성기 + Oracle 공식 아이콘 → architecture.drawio
+                                      ↓
+           Draw.io Desktop 내보내기 명령 → architecture.png
 ```
+
+## 다이어그램을 만드는 방식
+
+OCI-Lenz는 Computer Use로 Draw.io 화면을 클릭하거나 도형을 드래그하지 않습니다.
+AI가 배치를 설계하고, Python 코드가 편집 가능한 Draw.io XML을 작성합니다.
+
+| 구성 요소 | 역할 |
+| --- | --- |
+| Draw.io 스킬 | AI에 제공하는 다이어그램 작성 지침입니다. 스킬 자체가 앱을 조작하는 프로그램은 아닙니다. |
+| AI | 수집된 관계를 별칭으로 표현한 장면과 참고 이미지를 보고, 컨테이너·리소스 위치와 크기 및 연결선 경로를 JSON으로 제안합니다. 렌더링된 익명 미리보기를 검토하고 수정안을 제안하기도 합니다. |
+| Python 생성기 | AI 배치에 실제 이름·IP와 Oracle 공식 아이콘을 적용해 `.drawio` XML을 생성합니다. API 관계와 배치 품질을 검증하고 직각 연결선을 처리합니다. |
+| Draw.io Desktop | 생성된 동일 `.drawio` 파일을 명령줄 내보내기로 렌더링해 PNG를 만듭니다. |
+
+현재 구현은 Draw.io 스킬의 지침을 읽어 AI에 전달하되, AI의 작성 결과를 배치 JSON으로 제한합니다.
+AI가 최종 XML을 직접 작성하거나 Draw.io 앱 안에서 직접 그리는 구조가 아닙니다.
+아이콘·라벨·연결선은 `.drawio`의 개별 편집 가능한 요소로 생성되므로 결과를 Draw.io에서 수정할 수 있습니다.
+
+PNG 변환 중 Draw.io 앱이 실행되거나 창이 잠깐 보일 수 있습니다. 이는 Desktop 실행 파일의
+내보내기 기능을 호출하기 때문이며, 화면을 인식해 마우스·키보드로 그리는 자동화는 사용하지 않습니다.
 
 ## 설치
 

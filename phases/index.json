@@ -191,6 +191,10 @@
     {
       "dir": "47-regional-waf",
       "status": "pending"
+    },
+    {
+      "dir": "48-readme-generation-workflow",
+      "status": "pending"
     }
   ]
 }
