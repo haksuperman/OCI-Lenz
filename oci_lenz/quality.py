@@ -19,7 +19,7 @@ def edge_conflicts(paths,nodes):
         source,target=path['source'],path['target']
         if nodes.get(source,{}).get('kind')!='backend_set':return None
         kind=nodes.get(target,{}).get('kind')
-        if kind=='lb':return target  # Native ownership arrow is reversed.
+        if kind in ('lb','nlb'):return target  # Native ownership arrow is reversed.
         if kind in ('compute','vnic','db_node','unknown','mysql_db_system','autonomous_database',*DB_SYSTEMS):return source
         return None
     def orient(path,key):

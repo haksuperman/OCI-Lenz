@@ -102,3 +102,30 @@ SQL, wallet 다운로드, Autonomous 접속 문자열 조회, SSH/DB 암호, MyS
 - [ExaCC 정책](https://docs.oracle.com/en-us/iaas/exadata/doc/ecc-policy-details.html)
 - [ExaCI 정책](https://docs.oracle.com/en/engineered-systems/exadata-cloud-service/ecscm/ecs-policy-details.html)
 - [Exascale 정책](https://docs.oracle.com/en-us/iaas/exadb-xs/doc/exadb-xs-policy-details.html)
+
+
+## Network Load Balancer
+
+| API | 필요 권한 | IAM verb/resource |
+| --- | --- | --- |
+| ListNetworkLoadBalancers | NETWORK_LOAD_BALANCER_INSPECT | inspect network-load-balancers |
+| ListListeners, ListBackendSets, ListBackends | NETWORK_LOAD_BALANCER_READ | read network-load-balancers |
+
+모든 요청은 선택한 컴파트먼트의 NLB 및 해당 NLB/Backend Set으로 한정한다.
+추가 Private IP ID는 기존 ListPrivateIps 결과에서만 보존하며 범위 밖 대상을
+추적 조회하지 않는다. GetNetworkLoadBalancer/헬스/인증/쓰기 API는 호출하지 않는다.
+정책은 사용자가 준비하며 앱은 IAM 정책을 생성하거나 수정하지 않는다.
+공식 근거: [Oracle NLB IAM 권한표](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/nlbpolicyreference.htm).
+
+
+## Regional WAF
+
+| API | 필요 권한 | IAM verb/resource |
+| --- | --- | --- |
+| ListWebAppFirewalls | WEB_APP_FIREWALL_INSPECT | inspect web-app-firewall |
+
+목록의 LoadBalancer summary subtype에 있는 보호 대상 ID만 사용하므로
+GetWebAppFirewall(`WEB_APP_FIREWALL_READ`)이나 정책 Get/List·규칙/로그 API는
+필요하지 않다. 보호 대상 LB는 기존 선택 범위의 LB 목록에서 확인한다. IAM 정책은
+앱이 생성/수정하지 않는다. Legacy WAAS 권한은 이번 기능에서 요청하지 않는다.
+공식 근거: [Oracle WAF IAM 권한표](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/wafpolicyreference_topic-Details_for_WAF_Policies.htm).

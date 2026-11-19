@@ -205,3 +205,24 @@ Keep existing conflict metrics strict: no new shared-chain exemption or threshol
 relaxation. Verify the synthetic failing layout, deterministic replay, unchanged
 placements and regressions for other DBs and network branches. No new OCI fields
 or live calls are required for this renderer correction.
+
+
+## 024 — Scoped NLB with explicit backend targets
+Represent NLB separately from classic LB while sharing native LB/Backend Set
+flow and official generic LB artwork. Preserve the NLB single-subnet model and
+API field evidence. Prefer explicit Backend.target_id and retain PrivateIp IDs
+from observed VNIC lists; never substitute an IP guess for an unresolved ID.
+Only IP-only targets require unique matching inside the owner's VCN. Normalize
+NLB collection wrappers at the shared call boundary and test actual SDK-generated
+methods with real pagination. Keep IAM mutation, health/reachability verification,
+service membership inference and out-of-scope crawling excluded.
+
+
+## 025 — Regional WAF outside subnet with explicit protection direction
+Represent the regional WebAppFirewall enforcement point, not an invented proxy
+inside the protected subnet. List summary subtype supplies load_balancer_id;
+use this sole reference for WAF → LB and preserve unknown out-of-scope targets.
+Policy ID is metadata only; do not query rules, address lists, logs, credentials
+or add policy cards that duplicate protection endpoints. Use official WAF art.
+Keep WAAS origin/domain mapping deferred rather than guessing LB relationships.
+No source topology, resource placement or traffic-reachability inference is added.

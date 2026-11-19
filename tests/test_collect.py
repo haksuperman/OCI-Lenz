@@ -50,7 +50,24 @@ class CollectorTests(unittest.TestCase):
         class MysqlClient(Client):
             def __getattr__(self,name):
                 return super().__getattr__('mysql_'+name)
-        with patch.object(oci.mysql,'DbSystemClient',MysqlClient),patch.object(oci.config,'from_file',return_value={'tenancy':'t','region':'r'}),patch.object(oci.identity,'IdentityClient',Client),patch.object(oci.core,'ComputeClient',Client),patch.object(oci.database,'DatabaseClient',Client),patch.object(oci.core,'VirtualNetworkClient',Client),patch.object(oci.load_balancer,'LoadBalancerClient',Client),patch.object(oci.resource_search,'ResourceSearchClient',Client),patch.object(oci.pagination,'list_call_get_all_results',side_effect=lambda fn,*a,**kw:fn(*a,**kw)):
+        class NlbClient(Client):
+            def __getattr__(self,name):
+                # Keep service-specific List APIs distinct from classic LB.
+                def run(*a,**kw):
+                    key='nlb_'+name
+                    if request_log is not None:request_log.append((key,a,kw))
+                    if key==fail:raise oci.exceptions.ServiceError(403,'NotAuthorized',{},'sensitive error')
+                    return N(data=responses.get(key,[]))
+                return run
+        class WafClient(Client):
+            def __getattr__(self,name):
+                def run(*a,**kw):
+                    key='waf_'+name
+                    if request_log is not None:request_log.append((key,a,kw))
+                    if key==fail:raise oci.exceptions.ServiceError(403,'NotAuthorized',{},'sensitive error')
+                    return N(data=responses.get(key,[]))
+                return run
+        with patch.object(oci.waf,'WafClient',WafClient),patch.object(oci.network_load_balancer,'NetworkLoadBalancerClient',NlbClient),patch.object(oci.mysql,'DbSystemClient',MysqlClient),patch.object(oci.config,'from_file',return_value={'tenancy':'t','region':'r'}),patch.object(oci.identity,'IdentityClient',Client),patch.object(oci.core,'ComputeClient',Client),patch.object(oci.database,'DatabaseClient',Client),patch.object(oci.core,'VirtualNetworkClient',Client),patch.object(oci.load_balancer,'LoadBalancerClient',Client),patch.object(oci.resource_search,'ResourceSearchClient',Client),patch.object(oci.pagination,'list_call_get_all_results',side_effect=lambda fn,*a,**kw:fn(*a,**kw)):
             return collect('P','r','c'),calls
     def test_allowlist_secondary_vnics_and_zero_results(self):
         s,calls=self.run_collect()

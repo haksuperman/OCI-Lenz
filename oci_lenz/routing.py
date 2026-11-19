@@ -3,13 +3,14 @@ import copy
 import heapq
 import xml.etree.ElementTree as E
 from .typography import text_width
+from .load_balancers import LOAD_BALANCER_KINDS
 
 
 def conflict_aware(nodes,source,target):
     """Network and DB relationships share routing, not topology semantics."""
     from .network_layout import NETWORK_KINDS
     from .database_services import MODELS,DB_SYSTEMS
-    kinds=(*NETWORK_KINDS,*MODELS,*DB_SYSTEMS,'db_node')
+    kinds=(*NETWORK_KINDS,*MODELS,*DB_SYSTEMS,'db_node','waf')
     return any(nodes.get(key,{}).get('kind') in kinds for key in (source,target))
 
 
@@ -210,11 +211,11 @@ def _route_native_edges(root,nodes,future=()):
         if edge.get('edge')!='1' or edge.get('visible')=='0' or 'opacity=0;' in edge.get('style',''):continue
         source,target=edge.get('source'),edge.get('target')
         reverse=(nodes.get(source,{}).get('kind')=='backend_set' and
-                 nodes.get(target,{}).get('kind')=='lb' and 'startArrow=block;' in edge.get('style',''))
+                 nodes.get(target,{}).get('kind') in LOAD_BALANCER_KINDS and 'startArrow=block;' in edge.get('style',''))
         if reverse:source,target=target,source
         connections[edge.get('id')]=(source,target,reverse)
         sk=nodes.get(source,{}).get('kind');tk=nodes.get(target,{}).get('kind')
-        if (sk=='lb' and tk=='backend_set') or (sk=='backend_set' and tk in ('compute','vnic','unknown')):
+        if (sk in LOAD_BALANCER_KINDS and tk=='backend_set') or (sk=='backend_set' and tk in ('compute','vnic','unknown')):
             fanouts.setdefault(source,[]).append(edge)
     trunks={}
     for source,group in fanouts.items():
@@ -235,7 +236,7 @@ def _route_native_edges(root,nodes,future=()):
         if c.get('edge')!='1' or c.get('visible')=='0' or 'opacity=0;' in style:continue
         source,target,reverse=connections[c.get('id')]
         a,b=rectangles.get(source,rectangle(source)),rectangles.get(target,rectangle(target))
-        flow=(nodes.get(source,{}).get('kind') in ('lb','backend_set') and nodes.get(target,{}).get('kind') in ('backend_set','compute','vnic','unknown'))
+        flow=(nodes.get(source,{}).get('kind') in (*LOAD_BALANCER_KINDS,'backend_set') and nodes.get(target,{}).get('kind') in ('backend_set','compute','vnic','unknown'))
         downward=flow and a[1]+a[3]+8<=b[1]
         upward=flow and b[1]+b[3]+8<=a[1]
         exit_face=(0.5,1) if downward else ((0.5,0) if upward else None)

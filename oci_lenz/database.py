@@ -24,6 +24,7 @@ def collect_nodes(call,add,snapshot,compartment,system,filter_name='db_system_id
             if vnic.private_ip:private_ips.add(vnic.private_ip)
             add(vnic,'vnic',db_node_id=node.id,subnet_id=vnic.subnet_id,vcn_id=subnet.get('vcn_id'),
                 nsg_ids=vnic.nsg_ids or [],private_ips=sorted(private_ips),
+                private_ip_ids=sorted({p.id for p in ips or [] if getattr(p,'id',None)}),
                 primary_private_ip=vnic.private_ip,public_ip=getattr(vnic,'public_ip',None),
                 network_role='backup' if field.startswith('backup_') else 'client')
             resources[vnic.id]=snapshot['resources'][-1]

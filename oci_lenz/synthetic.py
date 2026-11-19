@@ -4,14 +4,33 @@ from collections import Counter
 
 from .database_synthetic import CASES as DATABASE_CASES
 
-SCENARIOS=('long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
+SCENARIOS=('regional-waf','network-load-balancer','long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
 
 
 def build_scenario(case):
     from .model import sample
     if case not in SCENARIOS:raise ValueError('unknown synthetic matrix case')
     s=sample('overview' if case in ('cross-compartment','network-peering') else 'basic')
-    if case in DATABASE_CASES:
+    if case=='regional-waf':
+        s['resources'].append({'id':'synthetic-waf','kind':'waf','name':'Synthetic Regional WAF',
+            'compartment_id':'synthetic-compartment-1','backend_type':'LOAD_BALANCER',
+            'load_balancer_id':'lb','web_app_firewall_policy_id':'synthetic-waf-policy'})
+    elif case=='network-load-balancer':
+        lb=next(r for r in s['resources'] if r['kind']=='lb')
+        lb.update(kind='nlb',name='Synthetic Network Load Balancer',subnet_id='public')
+        lb.pop('subnet_ids')
+        lb['ip_addresses']=[{'ip_address':'192.0.2.30','is_public':True}]
+        backend=next(r for r in s['resources'] if r['kind']=='backend_set')
+        backend['backends'][0]['target_id']='compute'
+        vnic=next(r for r in s['resources'] if r['kind']=='vnic')
+        vnic['private_ip_ids']=['synthetic-private-ip']
+        s['resources'].append({'id':'synthetic-private-nlb','kind':'nlb','name':'Synthetic Private NLB',
+            'compartment_id':'synthetic-compartment-1','subnet_id':'private','nsg_ids':['app-nsg'],
+            'ip_addresses':[{'ip_address':'10.0.1.30','is_public':False}]})
+        s['resources'].append({'id':'synthetic-private-nlb/backend-set/servers','kind':'backend_set',
+            'name':'Synthetic private targets','lb_id':'synthetic-private-nlb',
+            'backends':[{'target_id':'synthetic-private-ip','ip_address':None,'port':443}]})
+    elif case in DATABASE_CASES:
         from .database_synthetic import add_database_scenario
         add_database_scenario(s,case)
     elif case=='empty':s['resources']=[]

@@ -436,3 +436,44 @@ It preserves AI rectangles, API endpoints, parents, names and observed addresses
 The historical `network_edge_crossings`/`network_overlap_length` router keys now
 also include DB-involved pairs; the final overview evaluator still checks all
 visible relationships. Equal or worse refinement is discarded as before.
+
+
+## Network Load Balancer
+NLB is a distinct `nlb` resource with its API's single `subnet_id`, NSG IDs,
+observed public/private IPs and minimal listeners. Backend Sets reuse the existing
+`backend_set`/`lb_id` display contract with NLB request ownership evidence.
+Collection uses scoped NLB List APIs through the shared pagination/retry/coverage
+adapter, supporting Collection.items and SDK-flattened lists. Listeners fall back
+to observed summary fields when a child read fails; other failed child lists stay
+explicitly failed in coverage rather than inventing backend relationships.
+
+An NLB Backend.target_id resolves only to a collected Instance ID or a unique
+PrivateIp.id returned for a collected VNIC. Missing or ambiguous explicit IDs stay
+unknown even if an IP would match. IP-only backends use the same unique same-VCN
+matching as classic LB. No out-of-scope target is fetched. Normalized private-IP
+OCIDs are retained with VNICs to preserve exact target evidence; raw responses,
+tags, descriptions and configuration credentials are excluded. NLB participates
+in existing LB arrow direction, fanout, AI role guidance and name/IP rendering.
+The pinned official toolkit's generic LB symbol is reused honestly; no dedicated
+NLB artwork is fabricated.
+
+
+## Regional WAF protection
+Collect WebAppFirewallLoadBalancerSummary via scoped ListWebAppFirewalls only.
+Normalize Collection/items through the shared pagination/retry/coverage adapter.
+Store firewall identity/name, backend type, policy ID, lifecycle state and exact
+load_balancer_id. A `waf_protection` edge points from enforcement point to the
+collected classic LB, with WebAppFirewallLoadBalancer.load_balancer_id evidence.
+Out-of-scope/missing or non-LB targets remain unknown, without fetching another
+compartment or guessing by IP/name. A policy shared by enforcement points is not
+a duplicate physical WAF; keep each observed firewall ID and its own LB relation.
+Policy content is not queried or represented as a separate infrastructure card.
+
+WAF has no subnet/vcn membership and its native parent is the region. Parent and
+non-overlap constraints keep AI placements outside VCN/subnet boundaries. AI is
+guided to place it beside the referenced LB on the same icon row (or above with a clear title-free corridor), but the arrow direction and API
+endpoints stay fixed independently of position. It uses official WAF stencil 102
+and the common orthogonal conflict-aware routing, without joining physical DRG
+layout groups. The arrow means protection association, not a tested traffic hop.
+Legacy WAAS is explicitly unsupported in coverage: its domain/origin configuration
+cannot establish the same direct LB OCID evidence and is never inferred here.

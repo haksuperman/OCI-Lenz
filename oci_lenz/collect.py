@@ -5,7 +5,7 @@ def collect(profile,region,compartment,config_file=None):
     if any(c in compartment for c in ("'", '\n', '\r')): raise ValueError('invalid compartment')
     cfg=oci.config.from_file(config_file or oci.config.DEFAULT_LOCATION,profile);cfg['region']=region
     retry=oci.retry.RetryStrategyBuilder(max_attempts_check=True,max_attempts=3,total_elapsed_time_check=True,total_elapsed_time_seconds=30).get_retry_strategy()
-    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient,'mysql':oci.mysql.DbSystemClient}.items()}
+    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'nlb':oci.network_load_balancer.NetworkLoadBalancerClient,'waf':oci.waf.WafClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient,'mysql':oci.mysql.DbSystemClient}.items()}
     s={'version':1,'scope':{'region':region,'compartments':[compartment]},'resources':[],'coverage':[]}
     def call(service,method,*args,**kwargs):
         entry={'region':region,'compartment':compartment,'service':service,'api':method}
@@ -15,6 +15,8 @@ def collect(profile,region,compartment,config_file=None):
             fn=getattr(clients[service],method)
             if method.startswith(('list_','search_')): data=oci.pagination.list_call_get_all_results(fn,*args,**kwargs).data
             else:data=fn(*args,**kwargs).data
+            # NLB/WAF APIs use Collection wrappers; support raw and flattened paginator results.
+            if service in ('nlb','waf') and method.startswith('list_') and not isinstance(data,list):data=data.items
             count=len(data) if isinstance(data,list) else 1
             entry.update(status='ok',count=count)
             return data
@@ -55,7 +57,7 @@ def collect(profile,region,compartment,config_file=None):
         ips=call('network','list_private_ips',vnic_id=v.id)
         private_ips={p.ip_address for p in ips or [] if p.ip_address}
         if v.private_ip:private_ips.add(v.private_ip)
-        add(v,'vnic',instance_id=a.instance_id,subnet_id=v.subnet_id,vcn_id=subnet['vcn_id'] if subnet else None,nsg_ids=v.nsg_ids or [],private_ips=sorted(private_ips),public_ip=getattr(v,'public_ip',None),primary_private_ip=v.private_ip,is_primary=getattr(v,'is_primary',None))
+        add(v,'vnic',instance_id=a.instance_id,subnet_id=v.subnet_id,vcn_id=subnet['vcn_id'] if subnet else None,nsg_ids=v.nsg_ids or [],private_ips=sorted(private_ips),private_ip_ids=sorted({p.id for p in ips or [] if getattr(p,'id',None)}),public_ip=getattr(v,'public_ip',None),primary_private_ip=v.private_ip,is_primary=getattr(v,'is_primary',None))
     for r in instances:
         add(r,'compute')
     for lb in call('lb','list_load_balancers',compartment) or []:
@@ -68,6 +70,10 @@ def collect(profile,region,compartment,config_file=None):
         for bs in sets or []:
             backends=call('lb','list_backends',lb.id,bs.name)
             s['resources'].append({'id':lb.id+'/backend-set/'+bs.name,'kind':'backend_set','name':bs.name,'lb_id':lb.id,'backends':[{'ip_address':b.ip_address,'port':b.port} for b in backends or []]})
+    from .load_balancers import collect_nlb
+    collect_nlb(call,add,s,compartment)
+    from .waf import collect_waf
+    collect_waf(call,add,s,compartment)
     from .network import collect_network
     collect_network(call,add,s,compartment)
     from .vpn import collect_vpn
@@ -86,9 +92,9 @@ def collect(profile,region,compartment,config_file=None):
     query=oci.resource_search.models.StructuredSearchDetails(query=f"query all resources where compartmentId = '{compartment}'")
     inventory=call('search','search_resources',query)
     if inventory is not None:
-        mapping={'Vcn':'vcn','Subnet':'subnet','Instance':'compute','LoadBalancer':'lb','NatGateway':'nat','InternetGateway':'internet','ServiceGateway':'service','NetworkSecurityGroup':'nsg','RouteTable':'route'}
+        mapping={'Vcn':'vcn','Subnet':'subnet','Instance':'compute','LoadBalancer':'lb','NetworkLoadBalancer':'nlb','NatGateway':'nat','InternetGateway':'internet','ServiceGateway':'service','NetworkSecurityGroup':'nsg','RouteTable':'route'}
         s['coverage'][-1]['inventory_comparison']={kind:{'search':sum(getattr(r,'resource_type',None)==api_type for r in inventory),'collected':sum(r['kind']==kind for r in s['resources'])} for api_type,kind in mapping.items()}
         s['coverage'][-1]['comparison_note']='Search visibility/indexing may differ; differences do not establish missing resources.'
-    for kind in ('database_catalog','oke','drg_routing'):
+    for kind in ('database_catalog','oke','drg_routing','waas'):
         s['coverage'].append({'region':region,'compartment':compartment,'service':kind,'status':'unsupported'})
     return s

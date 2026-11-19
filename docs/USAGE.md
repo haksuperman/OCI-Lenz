@@ -557,3 +557,45 @@ DB 관계선은 공통 교차 회피와 접속 면 선택을 사용한다. 기�
 `--reuse-layout`으로 다시 그려도 도형 위치·크기·Subnet 소속은 유지하고 연결선을
 현재 규칙으로 재생성한다. 복잡한 배치에서 모든 교차 제거를 보장하지 않으며
 남은 문제는 `validation.json`의 품질 경고로 확인한다.
+
+
+## Network Load Balancer (NLB)
+
+`collect`는 기존 LB와 별도로 Network Load Balancer, Listener, Backend Set 및
+Backend를 읽기 전용으로 수집한다. NLB의 실제 단일 Subnet과 NSG 연결을 보존하고,
+기본 구성도에는 이름·관측 IP를 표시한다. Backend Set은 기존 네모 태그로 표시한다.
+Listener·포트·대상 상세는 정보 페이지에 보존한다. 번들에 전용 NLB 심볼이 없어
+Oracle 공식 일반 Load Balancer 심볼을 사용한다.
+
+백엔드에 Instance/Private IP OCID가 지정되면 수집된 리소스와 정확히 대조한다.
+대상이 조회 범위 밖이거나 ID가 중복/미확인이면 `대상 미확인`으로 남기며, 같은
+IP가 보인다는 이유로 다른 리소스에 연결하지 않는다. IP만 지정된 경우에는
+NLB와 같은 VCN에서 유일한 관측 VNIC/DB endpoint가 있을 때 연결한다. Private IP
+OCID는 새 수집부터 저장되므로 기존 스냅샷은 재수집이 필요하다. 구성 관계를
+보여주는 것이며 소스 IP 보존·보안 규칙·헬스 상태·실제 트래픽 도달성을 검증하지 않는다.
+
+```sh
+oci-lenz sample --scenario network-load-balancer --output /tmp/oci-lenz-nlb
+oci-lenz draw --snapshot /tmp/oci-lenz-nlb/snapshot.json --output /tmp/oci-lenz-nlb/diagrams
+python scripts/validate_scenarios.py --ai --case network-load-balancer --output /tmp/oci-lenz-nlb-validation
+```
+
+
+## Regional Web Application Firewall (WAF)
+
+`collect`는 선택 컴파트먼트의 Regional WAF 연결을 수집한다. 구성도에서는 WAF를
+VCN·Subnet 밖에 두고, API의 `load_balancer_id`가 가리키는 LB를 향해 화살표를
+그린다. WAF에는 실제 이름과 Oracle 공식 WAF 아이콘을 표시하며 IP를 만들지 않는다.
+LB가 조회 범위 밖이면 `대상 미확인`으로 남기고 추가 조회하지 않는다. 여러
+컴파트먼트를 명시해서 함께 수집하면 병합된 실제 LB OCID로 연결한다.
+화살표는 WAF 보호 설정 관계이며 별도 프록시 홉이나 트래픽 검증 결과가 아니다.
+
+정책 ID는 최소 메타데이터로 보존한다. 규칙·로그·인증정보·정책 본문은 조회/저장하지
+않는다. Legacy WAAS의 도메인·Origin 기반 관계는 이번 범위에 포함하지 않으며
+coverage에 `waas: unsupported`로 구분한다. 도메인·IP·이름으로 LB를 추정하지 않는다.
+
+```sh
+oci-lenz sample --scenario regional-waf --output /tmp/oci-lenz-waf
+oci-lenz draw --snapshot /tmp/oci-lenz-waf/snapshot.json --output /tmp/oci-lenz-waf/diagrams
+python scripts/validate_scenarios.py --ai --case regional-waf --output /tmp/oci-lenz-waf-validation
+```

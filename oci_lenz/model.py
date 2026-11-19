@@ -75,6 +75,7 @@ def _sample(scenario):
 
 def graph(snapshot):
     from .database_services import MODELS,REFERENCES
+    from .load_balancers import subnet_ids
     resources = snapshot['resources']
     nodes={r['id']:dict(r) for r in resources}
     if len(nodes)!=len(resources): raise ValueError('duplicate resource IDs')
@@ -87,10 +88,22 @@ def graph(snapshot):
         edges.append(dict(source=source,target=target,kind=kind,evidence=evidence,label=label))
     for r in resources:
         rid=r['id']; kind=r['kind']
+        if kind=='waf':
+            target=r.get('load_balancer_id')
+            if not target or (target in nodes and nodes[target]['kind']!='lb'):
+                target='waf-protected-target:'+rid
+            edge(rid,target,'waf_protection','WebAppFirewallLoadBalancer.load_balancer_id')
         for field in ('vcn_id','subnet_id','route_table_id','instance_id','lb_id'):
-            if r.get(field): edge(rid,r[field],field,(MODELS[kind]+'.'+field) if kind in MODELS else field)
+            if r.get(field):
+                evidence=(MODELS[kind]+'.'+field) if kind in MODELS else field
+                if kind=='nlb' and field=='subnet_id':evidence='NetworkLoadBalancer.subnet_id'
+                if kind=='backend_set' and field=='lb_id':evidence=r.get('lb_id_evidence') or evidence
+                edge(rid,r[field],field,evidence)
         for field in ('subnet_ids','nsg_ids'):
-            for target in r.get(field,[]): edge(rid,target,field,(MODELS[kind]+'.'+field+'[]') if kind in MODELS else field)
+            for target in r.get(field,[]):
+                evidence=(MODELS[kind]+'.'+field+'[]') if kind in MODELS else field
+                if kind=='nlb' and field=='nsg_ids':evidence='NetworkLoadBalancer.network_security_group_ids[]'
+                edge(rid,target,field,evidence)
         if kind in MODELS:
             model=MODELS[kind]
             for field in REFERENCES:
@@ -133,10 +146,18 @@ def graph(snapshot):
                      'Subnet.route_table_id → RouteTable.route_rules[].network_entity_id',rule.get('destination',''))
         if kind=='backend_set':
             lb=nodes.get(r.get('lb_id'),{})
-            vcns={nodes.get(s,{}).get('vcn_id') for s in lb.get('subnet_ids',[])}-{None}
+            vcns={nodes.get(s,{}).get('vcn_id') for s in subnet_ids(lb)}-{None}
             for backend in r.get('backends',[]):
-                matches=[n for n in resources if n['kind']=='vnic' and (n.get('vcn_id') or nodes.get(n.get('subnet_id'),{}).get('vcn_id')) in vcns and backend['ip_address'] in n.get('private_ips',[])]
-                endpoints=[n for n in resources if n['kind'] in ('mysql_db_system','autonomous_database','cloud_vm_cluster','exadb_vm_cluster') and nodes.get(n.get('subnet_id'),{}).get('vcn_id') in vcns and backend['ip_address'] in n.get('private_ips',[])]
+                explicit=backend.get('target_id') if lb.get('kind')=='nlb' else None
+                if explicit:
+                    direct=nodes.get(explicit,{})
+                    matches=[n for n in resources if n['kind']=='vnic' and explicit in n.get('private_ip_ids',[])]
+                    target=explicit if direct.get('kind')=='compute' else ((matches[0].get('instance_id') or matches[0].get('db_node_id') or matches[0]['id']) if len(matches)==1 else explicit)
+                    if direct and direct.get('kind')!='compute' and len(matches)!=1:target='unresolved-nlb-target:'+explicit
+                    edge(rid,target,'backend','NetworkLoadBalancer Backend.target_id → Instance.id or unique observed PrivateIp.id/VNIC',f"Backend :{backend['port']}")
+                    continue
+                matches=[n for n in resources if n['kind']=='vnic' and (n.get('vcn_id') or nodes.get(n.get('subnet_id'),{}).get('vcn_id')) in vcns and backend.get('ip_address') and backend['ip_address'] in n.get('private_ips',[])]
+                endpoints=[n for n in resources if n['kind'] in ('mysql_db_system','autonomous_database','cloud_vm_cluster','exadb_vm_cluster') and nodes.get(n.get('subnet_id'),{}).get('vcn_id') in vcns and backend.get('ip_address') and backend['ip_address'] in n.get('private_ips',[])]
                 candidates=matches+endpoints
                 target=(candidates[0].get('instance_id') or candidates[0].get('db_node_id') or candidates[0]['id']) if len(candidates)==1 else 'backend:'+rid+':'+str(len(edges))
                 evidence='BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN'

@@ -10,7 +10,7 @@ from .typography import card_metrics,style_card,header_metrics,wrap_text,text_wi
 from .database_services import DB_SYSTEMS,node_owner,REFERENCES
 
 GATEWAY_KINDS=('internet','nat','service')
-OVERVIEW_EDGE_KINDS=('backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id','vm_cluster_id',*REFERENCES)
+OVERVIEW_EDGE_KINDS=('waf_protection','backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id','vm_cluster_id',*REFERENCES)
 
 
 class LayoutFormatError(ValueError):
@@ -276,7 +276,7 @@ def apply_plan(snapshot,scene,plan,region_only=False):
                 c.set('visible','0')
             if e['kind'] in ('lb_id','db_system_id'):c.set('style',c.get('style')+'startArrow=block;endArrow=none;textOpacity=0;')
             if e['kind'] in REFERENCES or e['kind']=='vm_cluster_id':c.set('style',c.get('style')+'textOpacity=0;')
-            if e['kind']=='backend':c.set('style',c.get('style')+'textOpacity=0;')
+            if e['kind'] in ('backend','waf_protection'):c.set('style',c.get('style')+'textOpacity=0;')
             if e['kind'] in ('drg_id','drg_network','peer_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id'):
                 c.set('style',c.get('style')+'textOpacity=0;')
                 if e['kind']=='peer_id':c.set('style',c.get('style')+'dashed=1;')

@@ -183,6 +183,14 @@
     {
       "dir": "45-database-relation-routing",
       "status": "pending"
+    },
+    {
+      "dir": "46-network-load-balancer",
+      "status": "pending"
+    },
+    {
+      "dir": "47-regional-waf",
+      "status": "pending"
     }
   ]
 }

@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "46-network-load-balancer",
+  "steps": [
+    {
+      "step": 0,
+      "name": "scoped-nlb-collection-and-native-diagrams",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_network_load_balancer",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

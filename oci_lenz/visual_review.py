@@ -98,6 +98,7 @@ def review_design(snapshot,plan,references,provider='codex',model=None,timeout=6
                     'Obey connector_guides exactly using actual glyph side offsets (null means half actual card height). Align single-content container rows with the external icon below headers; preserve all original edge endpoints. Clear collinear wires must stay straight. '
                     'Do not repeat a vague whitespace critique when only required headers/corridors remain: identify an avoidable gap in the supplied metrics or the rendered picture. '
                     'A revision is retained only if objective loss strictly improves, no resource/title intrusion, diagonal, crossing or overlap metric increases, and canvas area stays within 125% of the initial area. '
+                    'WAF resources stay outside VCN/subnet containers. Fix protection detours by placing WAF beside its protected LB on the same icon row, outside the VCN and below title bands; use above placement only with a clear header-free vertical corridor. Keep waf_protection arrows directed from WAF toward their API-referenced LB; do not move WAF into that subnet or infer other protection targets. '
                     'Do not expand the page to buy fewer crossings, or shrink cards below measured minimums. Do not hide/delete edges or move children to another parent. '
                     'Do not use tools, read files or spawn agents. Return only schema JSON.\nScene: '+json.dumps(scene['request'])+
                     '\nObjective quality: '+json.dumps(quality)+

@@ -3,8 +3,9 @@
 OCI 테넌시의 읽기 전용 인벤토리에서 편집 가능한 Draw.io와 공유용 PNG를 생성한다.
 
 첫 버전: 전체 환경을 담은 아키텍처 한 페이지와 선택적인 VCN별 상세 페이지,
-VCN·Subnet·Compute·LB·Internet/NAT/Service Gateway,
+VCN·Subnet·Compute·LB·Network Load Balancer(NLB)·Internet/NAT/Service Gateway,
 Route Table 목적지/다음 홉, NSG와 LB Backend Set 관계를 포함한다.
+Regional WAF는 Subnet 밖에서 API가 지정한 보호 대상 LB를 향해 연결한다.
 Oracle 공식 아이콘을 사용하고 같은 Draw.io에서 PNG를 내보낸다.
 DRG·Attachment, LPG·RPC의 구성 관계까지 수집한다. 범위 밖 피어를 자동 조회하거나
 VCN 간 전이 연결을 추론하지 않는다. Oracle Base DB의 DB System·Node·VNIC도 수집하며,

@@ -74,7 +74,7 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 
 - 전체 환경을 한 아키텍처 페이지에 표시하고 그 안에서 VCN·Subnet을 구분
 - VCN별 별도 상세 페이지는 `--detail-pages`로 선택
-- Public/Private Subnet, Compute와 VNIC, Load Balancer와 Backend Set
+- Public/Private Subnet, Compute와 VNIC, Load Balancer·Network Load Balancer(NLB)와 Backend Set, Regional WAF의 보호 대상 LB 연결
 - Internet/NAT/Service Gateway, Route 목적지·다음 홉, NSG 연결
 - VCN–DRG 직접 연결, 로컬 피어링(LPG)·원격 피어링 연결(RPC)
 - Attachment는 관계 확인에만 사용하고 구성도에서 생략

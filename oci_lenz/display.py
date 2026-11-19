@@ -29,7 +29,7 @@ def prepare_display(snapshot,redact=False):
     result.setdefault('presentation',{})['redacted']=redact
     from .database_services import DB_SYSTEMS,node_owner,MODELS
     nodes,_=graph(result)
-    aliases={'compute':'VM','lb':'LB','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','drg':'DRG','lpg':'LPG','rpc':'RPC','virtual_circuit':'FastConnect','cross_connect':'CrossConnect','cross_connect_group':'CrossConnect group','cpe':'CPE','ipsec':'IPSec VPN','ipsec_tunnel':'VPN tunnel','db_system':'Base DB','db_node':'DB Node','unknown':'대상 미확인'}
+    aliases={'compute':'VM','lb':'LB','nlb':'NLB','waf':'WAF','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','drg':'DRG','lpg':'LPG','rpc':'RPC','virtual_circuit':'FastConnect','cross_connect':'CrossConnect','cross_connect_group':'CrossConnect group','cpe':'CPE','ipsec':'IPSec VPN','ipsec_tunnel':'VPN tunnel','db_system':'Base DB','db_node':'DB Node','unknown':'대상 미확인'}
     aliases.update({kind:kind.replace('_',' ').title() for kind in MODELS})
     alias={k:aliases.get(r['kind'],r['kind'])+' '+str(i+1) for i,(k,r) in enumerate(sorted(nodes.items()))}
     for r in result['resources']:
@@ -79,7 +79,7 @@ def prepare_display(snapshot,redact=False):
             if listener.get('default_backend_set_name'):label+=' → '+listener['default_backend_set_name']+' (default)'
             details.append(label)
         if r['kind']=='backend_set':
-            details.extend(sorted({str(b['ip_address'])+':'+str(b['port']) for b in r.get('backends',[])}))
+            details.extend(sorted({str(b.get('ip_address') or b.get('target_id') or '대상 미확인')+':'+str(b['port']) for b in r.get('backends',[])}))
         for field,label in (('peering_status','Peering status'),('peer_region_name','Peer region')):
             if r.get(field):details.append(label+': '+str(r[field]))
         for field,label in (('status','Status'),('routing','Routing'),('lifecycle_state','Lifecycle'),('cpe_ip','CPE IP')):
