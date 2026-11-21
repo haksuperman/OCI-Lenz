@@ -29,7 +29,7 @@ def prepare_display(snapshot,redact=False):
     result.setdefault('presentation',{})['redacted']=redact
     from .database_services import DB_SYSTEMS,node_owner,MODELS
     nodes,_=graph(result)
-    aliases={'compute':'VM','lb':'LB','nlb':'NLB','waf':'WAF','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','drg':'DRG','lpg':'LPG','rpc':'RPC','virtual_circuit':'FastConnect','cross_connect':'CrossConnect','cross_connect_group':'CrossConnect group','cpe':'CPE','ipsec':'IPSec VPN','ipsec_tunnel':'VPN tunnel','db_system':'Base DB','db_node':'DB Node','unknown':'대상 미확인'}
+    aliases={'object_storage_bucket':'Object Storage bucket','container_repository':'Container Registry','devops_project':'DevOps project','devops_repository':'Code repository','devops_build_pipeline':'Build pipeline','devops_deploy_pipeline':'Deploy pipeline','devops_deploy_environment':'Deploy environment','compute':'VM','lb':'LB','nlb':'NLB','waf':'WAF','edge_waf':'Edge WAF','edge_origin':'Origin','nosql_table':'NoSQL table','oci_cache':'OCI Cache','postgresql_db_system':'PostgreSQL','opensearch_cluster':'OpenSearch','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','drg':'DRG','lpg':'LPG','rpc':'RPC','virtual_circuit':'FastConnect','cross_connect':'CrossConnect','cross_connect_group':'CrossConnect group','cpe':'CPE','ipsec':'IPSec VPN','ipsec_tunnel':'VPN tunnel','db_system':'Base DB','db_node':'DB Node','unknown':'대상 미확인'}
     aliases.update({kind:kind.replace('_',' ').title() for kind in MODELS})
     alias={k:aliases.get(r['kind'],r['kind'])+' '+str(i+1) for i,(k,r) in enumerate(sorted(nodes.items()))}
     for r in result['resources']:
@@ -41,6 +41,8 @@ def prepare_display(snapshot,redact=False):
                 if rule.get('destination')!='0.0.0.0/0':rule['destination']='Route destination hidden'
             continue
         details=[]
+        if r['kind'] in ('oci_cache','postgresql_db_system','opensearch_cluster'):
+            details.extend(["Detail collection: "+r.get('detail_status','not recorded'),"Network observation: "+r.get('network_status','not recorded')])
         sources=[r]
         if r['kind']=='compute':
             sources=[v for v in result['resources'] if v.get('instance_id')==r['id'] and v['kind']=='vnic']
@@ -79,6 +81,7 @@ def prepare_display(snapshot,redact=False):
             if listener.get('default_backend_set_name'):label+=' → '+listener['default_backend_set_name']+' (default)'
             details.append(label)
         if r['kind']=='backend_set':
+            details.append('Backend collection: '+r.get('backends_status','legacy status unknown'))
             details.extend(sorted({str(b.get('ip_address') or b.get('target_id') or '대상 미확인')+':'+str(b['port']) for b in r.get('backends',[])}))
         for field,label in (('peering_status','Peering status'),('peer_region_name','Peer region')):
             if r.get(field):details.append(label+': '+str(r[field]))
@@ -101,6 +104,9 @@ def prepare_display(snapshot,redact=False):
             for net in r.get('vm_networks',[]):
                 details.extend(str(net.get('network_type') or 'UNKNOWN')+': '+n[field] for n in net.get('nodes',[]) for field in ('ip','vip') if n.get(field))
             details.extend('SCAN: '+ip for scan in r.get('scans',[]) for ip in scan.get('ips',[]))
+        if r['kind']=='edge_waf':
+            details.append('Origin status: '+r.get('origin_status','unavailable'))
+            details.extend('Origin '+o['key']+': '+(o.get('host') or '대상 미확인') for o in r.get('origins',[]))
         r['display_details']=details
         r['summary_details']=['IP: '+ip for ip in private] if r['kind'] in DB_SYSTEMS else summary
     if redact:

@@ -36,13 +36,12 @@ class NetworkLayoutTests(unittest.TestCase):
     def test_inventory_without_network_resources_has_no_new_layout_contract(self):
         self.assertNotIn('network_groups',make_scene(prepare_display(sample()))['request'])
 
-    def test_router_detours_around_prior_crossing_and_overlap(self):
+    def test_router_keeps_clear_crossing_short_but_detours_around_overlap(self):
         occupied=[((100,20),(100,100))]
         points=routing.route((20,60),(180,60),[],occupied=occupied)
-        self.assertNotEqual(points,[(20,60),(180,60)])
+        self.assertEqual(points,[(20,60),(180,60)])
         self.assertEqual(points,routing.route((20,60),(180,60),[],occupied=occupied))
-        for a,b in zip(points,points[1:]):
-            self.assertEqual(routing.segment_conflict(a,b,*occupied[0]),(0,0))
+        self.assertEqual(routing.segment_conflict(points[0],points[-1],*occupied[0]),(1,0))
         parallel=[((40,60),(160,60))]
         points=routing.route((20,60),(180,60),[],occupied=parallel)
         self.assertTrue(any(p[1]!=60 for p in points))
@@ -74,14 +73,17 @@ class NetworkLayoutTests(unittest.TestCase):
         nodes={key:{'kind':'rpc'} for key in positions}
         original={c.get('id'):E.tostring(c.find('mxGeometry')) for c in root if c.get('vertex')=='1'}
         routing.route_native_edges(root,nodes)
-        self.assertEqual(routing.path_quality(routing.native_paths(root,nodes)),{'network_edge_crossings':0,'network_overlap_length':0})
+        self.assertEqual(routing.path_quality(routing.native_paths(root,nodes))['network_overlap_length'],0)
+        from oci_lenz.line_jumps import crossing_report
+        self.assertEqual(crossing_report(routing.native_paths(root,nodes),nodes)['unbridged_crossings'],0)
         self.assertEqual({c.get('id'):E.tostring(c.find('mxGeometry')) for c in root if c.get('vertex')=='1'},original)
         self.assertEqual([(c.get('source'),c.get('target')) for c in root if c.get('edge')=='1'],[('a','b'),('c','d')])
         first_paths=routing.native_paths(root,nodes)
         routing.route_native_edges(root,nodes)
         paths=routing.native_paths(root,nodes)
         self.assertEqual(paths,first_paths)
-        self.assertEqual(routing.path_quality(paths),{'network_edge_crossings':0,'network_overlap_length':0})
+        self.assertEqual(routing.path_quality(paths)['network_overlap_length'],0)
+        self.assertEqual(crossing_report(paths,nodes)['unbridged_crossings'],0)
 
     def test_shared_drg_port_junction_is_not_an_unrelated_crossing(self):
         paths=[{'source':'a','target':'drg','network':True,'points':[(100,0),(20,0),(0,0)]},
@@ -99,4 +101,6 @@ class NetworkLayoutTests(unittest.TestCase):
             E.SubElement(c,'mxGeometry',relative='1')
         nodes={k:{'kind':'drg' if k=='drg' else 'drg_attachment'} for k in positions}
         routing.route_native_edges(root,nodes)
-        self.assertEqual(routing.path_quality(routing.native_paths(root,nodes)),{'network_edge_crossings':0,'network_overlap_length':0})
+        self.assertEqual(routing.path_quality(routing.native_paths(root,nodes))['network_overlap_length'],0)
+        from oci_lenz.line_jumps import crossing_report
+        self.assertEqual(crossing_report(routing.native_paths(root,nodes),nodes)['unbridged_crossings'],0)

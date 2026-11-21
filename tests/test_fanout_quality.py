@@ -6,6 +6,16 @@ from oci_lenz.quality import edge_conflicts
 class FanoutQualityTests(unittest.TestCase):
     def path(self,source,target,points):return {'source':source,'target':target,'network':False,'points':points}
 
+    def test_same_drg_prefix_is_a_junction_but_rejoining_after_divergence_is_not(self):
+        nodes={'drg':{'kind':'drg'},'a':{'kind':'ipsec_tunnel'},'b':{'kind':'ipsec_tunnel'}}
+        paths=[self.path('drg','a',[(0,0),(50,0),(50,100),(100,100)]),
+               self.path('drg','b',[(0,0),(50,0),(50,60),(100,60)])]
+        self.assertEqual(edge_conflicts(paths,nodes),{'edge_crossings':0,'edge_overlap_length':0})
+        paths[1]['points']=[(0,0),(50,0),(50,-20),(80,-20),(80,120)]
+        self.assertGreater(edge_conflicts(paths,nodes)['edge_crossings'],0)
+        nodes['other']={'kind':'drg'};paths[1]['source']='other'
+        self.assertGreater(edge_conflicts(paths,nodes)['edge_overlap_length'],0)
+
     def test_shared_backend_prefix_across_multiple_bends_is_not_ambiguity(self):
         paths=[self.path('set','a',[(0,0),(0,50),(100,50),(100,100)]),
                self.path('set','b',[(0,0),(0,50),(60,50),(60,100)])]

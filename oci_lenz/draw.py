@@ -6,16 +6,18 @@ from functools import lru_cache
 from .diagram_model import diagram_graph as graph
 from .display import resource_label,network_label
 from .load_balancers import subnet_ids
+from .regional_services import REGIONAL_KINDS
 ROOT=Path(__file__).resolve().parents[1]
 if not (ROOT/'assets/oci/library.xml').exists(): ROOT=Path(sys.prefix)/'share/oci-lenz'
-ICONS={'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'nlb':18,'waf':102,'route':29,'service':31,'internet':32,'nat':33,'nsg':114,'cpe':21,'drg':30,'rpc':34,'db_system':36,'db_node':35,'virtual_circuit':210,'cross_connect':210,'mysql_db_system':47,'autonomous_database':37,'autonomous_container_database':38,'autonomous_exadata_infrastructure':43,'autonomous_vm_cluster':44,'cloud_autonomous_vm_cluster':38,'exadata_infrastructure':44,'vm_cluster':44,'cloud_exadata_infrastructure':43,'cloud_vm_cluster':43,'exadata_db_system':43,'exadb_vm_cluster':43}
+ICONS={'object_storage_bucket':11,'container_repository':75,'devops_project':85,'devops_repository':85,'devops_build_pipeline':85,'devops_deploy_pipeline':85,'devops_deploy_environment':85,'oci_cache':46,'nosql_table':46,'postgresql_db_system':0,'opensearch_cluster':49,'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'nlb':18,'waf':102,'edge_waf':102,'route':29,'service':31,'internet':32,'nat':33,'nsg':114,'cpe':21,'drg':30,'rpc':34,'db_system':36,'db_node':35,'virtual_circuit':210,'cross_connect':210,'mysql_db_system':47,'autonomous_database':37,'autonomous_container_database':38,'autonomous_exadata_infrastructure':43,'autonomous_vm_cluster':44,'cloud_autonomous_vm_cluster':38,'exadata_infrastructure':44,'vm_cluster':44,'cloud_exadata_infrastructure':43,'cloud_vm_cluster':43,'exadata_db_system':43,'exadb_vm_cluster':43}
 
 def edge_label(edge):
-    return edge['label'] or {'waf_protection':'Protects','nsg_ids':'NSG','route_table_id':'Route table','lb_id':'Backend set'}.get(edge['kind'],edge['kind'])
+    return edge['label'] or {'waf_protection':'Protects','edge_protection':'Configured origin','nsg_ids':'NSG','route_table_id':'Route table','project_id':'Project','lb_id':'Backend set'}.get(edge['kind'],edge['kind'])
 
 def icon(root, rid, kind, x,y):
     if kind not in ICONS: return
-    library=json.loads(E.parse(ROOT/'assets/oci/library.xml').getroot().text)
+    library_path=ROOT/'assets/oci'/('postgresql.xml' if kind=='postgresql_db_system' else 'library.xml')
+    library=json.loads(E.parse(library_path).getroot().text)
     item=library[ICONS[kind]]
     xml=urllib.parse.unquote(zlib.decompress(base64.b64decode(item['xml']),-15).decode())
     src=E.fromstring(xml)
@@ -42,6 +44,9 @@ def icon(root, rid, kind, x,y):
     ox=min(r[0] for r in painted.values());oy=min(r[1] for r in painted.values())
     right=max(r[0]+r[2] for r in painted.values());bottom=max(r[1]+r[3] for r in painted.values())
     group=E.SubElement(root,'mxCell',id=rid+'-icon',value='',style='group',vertex='1',parent=rid)
+    if kind in REGIONAL_KINDS:group.set('ociOfficialIcon','Oracle OCI Library.xml:'+str(ICONS[kind])+' '+item['title'])
+    if kind in ('oci_cache','nosql_table'):group.set('ociOfficialIcon','Oracle OCI Library.xml:46 NoSQL'+(' (Cache reuse per Oracle reference)' if kind=='oci_cache' else ''))
+    if kind=='postgresql_db_system':group.set('ociOfficialIcon','Oracle OCI Toolkit v24.2 PostgreSQL native stencil')
     if kind in ('virtual_circuit','cross_connect'):group.set('ociOfficialIcon','Oracle OCI Library.xml:210 FastConnect SVG')
     E.SubElement(group,'mxGeometry',x=str(x),y=str(y),width=str((right-ox)*scale),height=str((bottom-oy)*scale),**{'as':'geometry'})
     for c in cells:
@@ -109,6 +114,7 @@ def build_document(snapshot,detail_pages=False):
         children={s:[] for s in subnets}
         for k in ordered:
             r=nodes[k]; sub=r.get('subnet_id') or next(iter(r.get('subnet_ids',[])),None)
+            if r['kind'] in REGIONAL_KINDS:sub=None
             if r['kind']=='backend_set':
                 sub=next(iter(subnet_ids(nodes.get(r.get('lb_id'),{}))),None)
             if r['kind']=='compute':
@@ -132,7 +138,7 @@ def build_document(snapshot,detail_pages=False):
         extras={v:[] for v in vcns}; unplaced=[]
         for k in ordered:
             if k in attached or nodes[k]['kind'] in ('vcn','subnet'): continue
-            v=nodes[k].get('vcn_id')
+            v=None if nodes[k]['kind'] in REGIONAL_KINDS else nodes[k].get('vcn_id')
             if v in extras: extras[v].append(k)
             else: unplaced.append(k)
         # Pack siblings into shelves; each row grows to its tallest container.
@@ -160,11 +166,21 @@ def build_document(snapshot,detail_pages=False):
         # Only API compartment IDs determine compartment membership; display aliases.
         compartments={}
         for v in vcns: compartments.setdefault(nodes[v].get('compartment_id') or 'unspecified',[]).append(v)
+        regional={}
+        for key in unplaced:
+            if nodes[key]['kind'] in REGIONAL_KINDS:
+                comp=nodes[key].get('compartment_id') or 'unspecified'
+                regional.setdefault(comp,[]).append(key);compartments.setdefault(comp,[])
+                sizes[key]=(170,cardheight)
+        unplaced=[key for key in unplaced if nodes[key]['kind'] not in REGIONAL_KINDS]
         compkeys=[]
         for i,(comp,vs) in enumerate(sorted(compartments.items())):
             ck='layout-compartment-'+str(i);compkeys.append(ck);width,bottom=0,0
             for v,x,y in pack(vs,1):
                 w,h=sizes[v];setbox(v,network_label(nodes[v],'VCN / '),x,y,w,h,ck,'vcn')
+                width=max(width,x+w+25);bottom=max(bottom,y+h+25)
+            for key,x,y in pack(regional.get(comp,[]),3,origin=(25,max(65,bottom))):
+                w,h=sizes[key];setbox(key,resource_label(nodes[key],width=30),x,y,w,h,ck,'card')
                 width=max(width,x+w+25);bottom=max(bottom,y+h+25)
             sizes[ck]=(max(width,700),max(bottom,150))
         region='layout-region';width,bottom=700,65
@@ -242,8 +258,9 @@ def validate(xml,snapshot):
         cells=list(page.iter('mxCell')); ids={c.get('id') for c in cells}
         if len(ids)!=len(cells):raise ValueError('duplicate cell')
         vertices={c.get('id') for c in cells if c.get('vertex')=='1' and c.get('id')!='notice' and not any(c.get('id').startswith(k+'-i-') or c.get('id')==k+'-icon' for k in nodes)}
-        present_vcns=[k for k in vertices if k in nodes and nodes[k]['kind']=='vcn']
-        compartment_count=len({nodes[k].get('compartment_id') or 'unspecified' for k in present_vcns})
+        present_owners=[k for k in vertices if k in nodes and nodes[k]['kind'] in ({'vcn'} | REGIONAL_KINDS)]
+        compartment_ids=sorted({nodes[k].get('compartment_id') or 'unspecified' for k in present_owners})
+        compartment_count=len(compartment_ids)
         structural={'layout-region'}|{'layout-compartment-'+str(i) for i in range(compartment_count)}
         structural|={'layout-service-'+str(i) for i in range(len(snapshot.get('presentation',{}).get('groups',[])))}
         resource_cells=vertices-structural
@@ -251,6 +268,9 @@ def validate(xml,snapshot):
         cellmap={c.get('id'):c for c in cells}
         for rid in nodes:
             native=cellmap.get(rid)
+            if native is not None and nodes[rid]['kind'] in REGIONAL_KINDS:
+                comp=nodes[rid].get('compartment_id') or 'unspecified'
+                if native.get('parent')!='layout-compartment-'+str(compartment_ids.index(comp)):raise ValueError(('NoSQL table' if nodes[rid]['kind']=='nosql_table' else 'Regional resource')+' must remain in its compartment outside VCNs')
             if native is not None and nodes[rid]['kind'] in ('drg','cpe') and native.get('parent')!='layout-region':
                 raise ValueError('DRG/CPE must remain outside VPN containers')
             if native is not None and nodes[rid]['kind']=='cross_connect':
@@ -270,7 +290,7 @@ def validate(xml,snapshot):
                 options=dict(p.split('=',1) for p in native.get('style','').split(';') if '=' in p)
                 g=native.find('mxGeometry');w,h=float(g.get('width')),float(g.get('height'))
                 metrics=card_metrics(nodes[rid],w)
-                height=metrics['name_height']+(2+metrics['detail_height'] if metrics['details'] else 0)
+                height=metrics['label_height']
                 top=float(options.get('spacingTop',0))
                 if top<0 or top+height>h:raise ValueError('native label exceeds card')
         rectangles={}

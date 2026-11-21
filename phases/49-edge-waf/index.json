@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "49-edge-waf",
+  "steps": [
+    {
+      "step": 0,
+      "name": "scoped-edge-policy-origin-collection-and-diagram",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_edge_waf",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

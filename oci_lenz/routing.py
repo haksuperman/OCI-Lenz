@@ -1,17 +1,22 @@
 """Deterministic orthogonal routing around resource cards, without moving them."""
 import copy
 import heapq
+from bisect import bisect_left,bisect_right
 import xml.etree.ElementTree as E
 from .typography import text_width
 from .load_balancers import LOAD_BALANCER_KINDS
+from .managed_data import KINDS as MANAGED_KINDS
+from .connector_rules import JUMP_SIZE,CROSSING_CLEARANCE,LANE_GAP,STROKE_WIDTH,ARROW_SIZE
+
+BEND_COST=26
+CROSS_COST=16
+OVERLAP_COST=24
+CONTACT_COST=400
 
 
 def conflict_aware(nodes,source,target):
-    """Network and DB relationships share routing, not topology semantics."""
-    from .network_layout import NETWORK_KINDS
-    from .database_services import MODELS,DB_SYSTEMS
-    kinds=(*NETWORK_KINDS,*MODELS,*DB_SYSTEMS,'db_node','waf')
-    return any(nodes.get(key,{}).get('kind') in kinds for key in (source,target))
+    """Every observed visible edge participates, independently of service type."""
+    return source in nodes or target in nodes
 
 
 def visible_rectangle(cell,rectangle):
@@ -39,6 +44,15 @@ def segment_conflict(a,b,c,d):
         return 0,overlap
     v1,v2,h1,h2=(a,b,c,d) if av else (c,d,a,b)
     return int(min(v1[1],v2[1])<=h1[1]<=max(v1[1],v2[1]) and min(h1[0],h2[0])<=v1[0]<=max(h1[0],h2[0])),0
+
+
+def contact_conflict(a,b,c,d):
+    """Proper crossings may jump; overlap or near-end contacts need a detour."""
+    cross,overlap=segment_conflict(a,b,c,d)
+    if overlap:return True
+    if not cross:return False
+    point=(a[0],c[1]) if a[0]==b[0] else (c[0],a[1])
+    return any(abs(point[0]-p[0])+abs(point[1]-p[1])<CROSSING_CLEARANCE for p in (a,b,c,d))
 
 
 def path_quality(paths):
@@ -95,20 +109,55 @@ def native_paths(root,nodes):
         px,py,_,_=box(parent) if parent in cells and cells[parent].find('mxGeometry') is not None else (0,0,0,0)
         points=[endpoint(source,'exit'),*[(float(p.get('x'))+px,float(p.get('y'))+py) for p in c.findall('mxGeometry/Array/mxPoint')],endpoint(target,'entry')]
         paths.append({'source':source,'target':target,'network':any(nodes.get(k,{}).get('kind') in NETWORK_KINDS for k in (source,target)),
-                      'conflict_aware':conflict_aware(nodes,source,target),'points':points})
+                      'conflict_aware':conflict_aware(nodes,source,target),'jump_style':st.get('jumpStyle','none'),'points':points})
     return paths
+
+
+def path_cost(points):
+    segments=[(a,b) for a,b in zip(points,points[1:]) if a!=b]
+    axes=[a[0]==b[0] for a,b in segments]
+    return sum(abs(a[0]-b[0])+abs(a[1]-b[1]) for a,b in segments)+BEND_COST*sum(a!=b for a,b in zip(axes,axes[1:]))
 
 
 def route(start,end,obstacles,occupied=()):
     xs=sorted({start[0],end[0],*[v for x,y,w,h in obstacles for v in (max(0,x-12),x+w+12)]})
     ys=sorted({start[1],end[1],*[v for x,y,w,h in obstacles for v in (max(0,y-12),y+h+12)]})
     if occupied:
-        xs=sorted(set(xs)|{max(0,p[0]+offset) for segment in occupied for p in segment for offset in (-8,8)})
-        ys=sorted(set(ys)|{max(0,p[1]+offset) for segment in occupied for p in segment for offset in (-8,8)})
+        xs=sorted(set(xs)|{max(0,p[0]+offset) for segment in occupied for p in segment for offset in (-LANE_GAP,LANE_GAP)})
+        ys=sorted(set(ys)|{max(0,p[1]+offset) for segment in occupied for p in segment for offset in (-LANE_GAP,LANE_GAP)})
+    # Index parallel/crossing segments by their fixed coordinate. A route may
+    # traverse thousands of grid edges; scanning every existing wire for each
+    # one makes ordinary dense backends unnecessarily expensive.
+    vertical={};horizontal={}
+    for a,b in occupied:
+        if a==b:continue
+        if a[0]==b[0]:vertical.setdefault(a[0],[]).append(sorted((a[1],b[1])))
+        else:horizontal.setdefault(a[1],[]).append(sorted((a[0],b[0])))
+    vx=sorted(vertical);hy=sorted(horizontal)
+    def penalty(a,b):
+        is_vertical=a[0]==b[0];axis=1 if is_vertical else 0
+        low,high=sorted((a[axis],b[axis]));fixed=a[1-axis]
+        parallel=vertical if is_vertical else horizontal
+        perpendicular=horizontal if is_vertical else vertical
+        levels=hy if is_vertical else vx
+        overlap=sum(max(0,min(high,q)-max(low,p)) for p,q in parallel.get(fixed,()))
+        crossings=sum((CONTACT_COST if min(fixed-p,q-fixed)<CROSSING_CLEARANCE else CROSS_COST)
+                      for level in levels[bisect_left(levels,low):bisect_right(levels,high)]
+                      for p,q in perpendicular[level] if p<=fixed<=q)
+        return crossings+overlap*OVERLAP_COST
+    near_cache={}
+    def near_wire(point):
+        if point not in near_cache:
+            x,y=point
+            near_cache[point]=(any(abs(x-level)<CROSSING_CLEARANCE and p-CROSSING_CLEARANCE<y<q+CROSSING_CLEARANCE
+                                  for level in vx[bisect_left(vx,x-CROSSING_CLEARANCE):bisect_right(vx,x+CROSSING_CLEARANCE)] for p,q in vertical[level]) or
+                               any(abs(y-level)<CROSSING_CLEARANCE and p-CROSSING_CLEARANCE<x<q+CROSSING_CLEARANCE
+                                  for level in hy[bisect_left(hy,y-CROSSING_CLEARANCE):bisect_right(hy,y+CROSSING_CLEARANCE)] for p,q in horizontal[level]))
+        return near_cache[point]
     origin=(xs.index(start[0]),ys.index(start[1]),-1)
     goal=(xs.index(end[0]),ys.index(end[1]))
     queue=[(abs(start[0]-end[0])+abs(start[1]-end[1]),0,origin)]
-    costs={origin:0};previous={};clear_cache={};count=0
+    costs={origin:0};previous={};clear_cache={};penalty_cache={};count=0
     while queue:
         _,cost,state=heapq.heappop(queue)
         if cost!=costs[state]:continue
@@ -131,11 +180,13 @@ def route(start,end,obstacles,occupied=()):
             b=(xs[ni],ys[nj]);cache_key=tuple(sorted((a,b)))
             if cache_key not in clear_cache:clear_cache[cache_key]=not any(intersects(a,b,r) for r in obstacles)
             if not clear_cache[cache_key]:continue
-            newcost=cost+abs(a[0]-b[0])+abs(a[1]-b[1])+(12 if direction not in (-1,nd) else 0)
+            turn=direction not in (-1,nd)
+            newcost=cost+abs(a[0]-b[0])+abs(a[1]-b[1])+(BEND_COST if turn else 0)
+            if turn and near_wire(a):newcost+=CONTACT_COST
             if occupied:
-                for c,d in occupied:
-                    cross,overlap=segment_conflict(a,b,c,d)
-                    newcost+=cross*400+overlap*24
+                if cache_key not in penalty_cache:
+                    penalty_cache[cache_key]=penalty(a,b)
+                newcost+=penalty_cache[cache_key]
             nxt=(ni,nj,nd)
             if newcost>=costs.get(nxt,float('inf')):continue
             costs[nxt]=newcost;previous[nxt]=state
@@ -211,11 +262,11 @@ def _route_native_edges(root,nodes,future=()):
         if edge.get('edge')!='1' or edge.get('visible')=='0' or 'opacity=0;' in edge.get('style',''):continue
         source,target=edge.get('source'),edge.get('target')
         reverse=(nodes.get(source,{}).get('kind')=='backend_set' and
-                 nodes.get(target,{}).get('kind') in LOAD_BALANCER_KINDS and 'startArrow=block;' in edge.get('style',''))
+                 nodes.get(target,{}).get('kind') in LOAD_BALANCER_KINDS and any('startArrow='+a+';' in edge.get('style','') for a in ('block','open')))
         if reverse:source,target=target,source
         connections[edge.get('id')]=(source,target,reverse)
         sk=nodes.get(source,{}).get('kind');tk=nodes.get(target,{}).get('kind')
-        if (sk in LOAD_BALANCER_KINDS and tk=='backend_set') or (sk=='backend_set' and tk in ('compute','vnic','unknown')):
+        if (sk in LOAD_BALANCER_KINDS and tk=='backend_set') or (sk=='backend_set' and tk in ('compute','vnic','unknown',*MANAGED_KINDS)):
             fanouts.setdefault(source,[]).append(edge)
     trunks={}
     for source,group in fanouts.items():
@@ -224,19 +275,28 @@ def _route_native_edges(root,nodes,future=()):
         if not all(ty>=y+h+24 for tx,ty,tw,th in targets):continue
         start=(x+w/2,y+h);branch=(start[0],(start[1]+min(t[1] for t in targets))/2)
         if any(inside(branch,r) for r in obstacles):continue
-        trunks[source]=(route(start,branch,obstacles),branch)
+        trunks[source]=(start,branch)
     from .network_layout import NETWORK_KINDS
     def is_network(c):return any(nodes.get(c.get(k),{}).get('kind') in NETWORK_KINDS for k in ('source','target'))
     def avoids_conflicts(c):return conflict_aware(nodes,c.get('source'),c.get('target'))
-    routed=0;drawn=[(p['source'],p['target'],p['points']) for p in future if p['network'] or p.get('conflict_aware')]
+    routed=0;drawn=[];trunk_routes={}
+    for p in future:
+        source,target,points=p['source'],p['target'],p['points']
+        if nodes.get(source,{}).get('kind')=='backend_set' and nodes.get(target,{}).get('kind') in LOAD_BALANCER_KINDS:
+            source,target,points=target,source,list(reversed(points))
+        drawn.append((source,target,points))
     ordered=[c for c in root if c.get('edge')=='1']
-    ordered.sort(key=avoids_conflicts)
+    def branch_order(c):
+        if c.get('id') not in connections:return ('',0,0,c.get('id',''))
+        source,target,_=connections[c.get('id')];x,y,_,_=rectangle(target)
+        return (source,y,x,c.get('id',''))
+    ordered.sort(key=branch_order)
     for c in ordered:
         style=c.get('style','')
         if c.get('edge')!='1' or c.get('visible')=='0' or 'opacity=0;' in style:continue
         source,target,reverse=connections[c.get('id')]
         a,b=rectangles.get(source,rectangle(source)),rectangles.get(target,rectangle(target))
-        flow=(nodes.get(source,{}).get('kind') in (*LOAD_BALANCER_KINDS,'backend_set') and nodes.get(target,{}).get('kind') in ('backend_set','compute','vnic','unknown'))
+        flow=(nodes.get(source,{}).get('kind') in (*LOAD_BALANCER_KINDS,'backend_set') and nodes.get(target,{}).get('kind') in ('backend_set','compute','vnic','unknown',*MANAGED_KINDS))
         downward=flow and a[1]+a[3]+8<=b[1]
         upward=flow and b[1]+b[3]+8<=a[1]
         exit_face=(0.5,1) if downward else ((0.5,0) if upward else None)
@@ -250,10 +310,7 @@ def _route_native_edges(root,nodes,future=()):
         end,entry_port,end_corridor=port(target,a,entry_face,aligned_y=start[1])
         g=c.find('mxGeometry');parent=rectangle(c.get('parent')) if c.get('parent') in cells and cells[c.get('parent')].find('mxGeometry') is not None else (0,0,0,0)
         existing=g.find("Array[@as='points']")
-        bends=[(float(p.get('x'))+parent[0],float(p.get('y'))+parent[1]) for p in existing] if existing is not None else []
-        if reverse:bends.reverse()
-        middle=[start_corridor]+bends+[end_corridor]
-        occupied=[]
+        occupied=[];foreign_occupied=[]
         if avoids_conflicts(c):
             for previous_source,previous_target,previous_points in drawn:
                 if {source,target}=={previous_source,previous_target}:continue
@@ -262,17 +319,37 @@ def _route_native_edges(root,nodes,future=()):
                 if source==previous_target:shared.add(previous_points[-1])
                 if target==previous_source:shared.add(previous_points[0])
                 if target==previous_target:shared.add(previous_points[-1])
-                occupied.extend((p,q) for p,q in zip(previous_points,previous_points[1:]) if not any(point in (p,q) for point in shared))
+                # A shared endpoint permits its short native stub, not an
+                # unrelated shared corridor or a later reconvergence.
+                allowed_prefix=set();branch_clearance={}
+                if source==previous_source and nodes.get(source,{}).get('kind')=='drg':
+                    # Only the initial normal stub and vertical bus on this
+                    # exact DRG face may be shared. Keep all later branches
+                    # occupied so divergence/rejoining remains a conflict.
+                    for index,(p,q) in enumerate(zip(previous_points,previous_points[1:])):
+                        same_bus=abs(p[0]-start_corridor[0])<1e-6 and abs(q[0]-start_corridor[0])<1e-6
+                        initial_stub=index==0 and abs(q[0]-start_corridor[0])<1e-6 and abs(q[1]-start_corridor[1])<1e-6
+                        if not (initial_stub or same_bus):
+                            if abs(p[0]-start_corridor[0])<1e-6 and p[1]==q[1]:
+                                dx=q[0]-p[0];step=min(LANE_GAP,abs(dx))*(1 if dx>0 else -1)
+                                branch_clearance[(p,q)]=((p[0]+step,p[1]),q)
+                            break
+                        allowed_prefix.add((p,q))
+                segments=[branch_clearance.get((p,q),(p,q)) for p,q in zip(previous_points,previous_points[1:]) if (p,q) not in allowed_prefix and not any(point in (p,q) for point in shared)]
+                occupied.extend(segments)
+                if previous_source!=source:foreign_occupied.extend(segments)
         if source in trunks and c in fanouts[source]:
-            trunk,branch=trunks[source]
+            trunk_start,branch=trunks[source]
+            if source not in trunk_routes:trunk_routes[source]=route(trunk_start,branch,obstacles,occupied=foreign_occupied)
+            trunk=trunk_routes[source]
             start,exit_port,_=port(source,b,(0.5,1))
             end,entry_port,approach=port(target,a,(0.5,0))
-            points=trunk+route(branch,approach,obstacles)[1:]+[end]
+            points=trunk+route(branch,approach,obstacles,occupied=occupied)[1:]+[end]
         else:
             collinear=(abs(start[1]-end[1])<1e-6 and all(abs(p[1]-start[1])<1e-6 for p in (start_corridor,end_corridor))) or (abs(start[0]-end[0])<1e-6 and all(abs(p[0]-start[0])<1e-6 for p in (start_corridor,end_corridor)))
-            straight=collinear and not any(intersects(start_corridor,end_corridor,r) for r in obstacles) and not any(segment_conflict(start_corridor,end_corridor,u,v)!=(0,0) for u,v in occupied)
+            straight=collinear and not any(intersects(start_corridor,end_corridor,r) for r in obstacles) and not any(contact_conflict(start_corridor,end_corridor,u,v) for u,v in occupied)
             if straight:middle=[]
-            elif existing is None or any(any(segment_conflict(p,q,u,v)!=(0,0) for u,v in occupied) for p,q in zip(middle,middle[1:])) or any(p[0]!=q[0] and p[1]!=q[1] for p,q in zip(middle,middle[1:])) or any(intersects(p,q,r) for p,q in zip(middle,middle[1:]) for r in obstacles):middle=route(start_corridor,end_corridor,obstacles,occupied=occupied)
+            else:middle=route(start_corridor,end_corridor,obstacles,occupied=occupied)
             points=[]
             for point in [start,*middle,end]:
                 if not points or points[-1]!=point:points.append(point)
@@ -281,7 +358,7 @@ def _route_native_edges(root,nodes,future=()):
             def score(candidate):
                 current={'source':source,'target':target,'network':True,'points':candidate}
                 values=[path_quality([current,other]) for other in others]
-                return (sum(v['network_edge_crossings'] for v in values),sum(v['network_overlap_length'] for v in values),sum(abs(p[0]-q[0])+abs(p[1]-q[1]) for p,q in zip(candidate,candidate[1:])))
+                return (sum(v['network_overlap_length'] for v in values),path_cost(candidate)+CROSS_COST*sum(v['network_edge_crossings'] for v in values))
             best=score(points)
             if best[:2]!=(0,0):
                 for anchor in ((0.5,0),(0,0.5),(1,0.5),(0.5,1)):
@@ -297,15 +374,15 @@ def _route_native_edges(root,nodes,future=()):
         # A DB ownership chain can enter and leave the same icon face. Moving
         # only the corridor then causes a short reversal over the incoming wire.
         # Search normal endpoint faces without moving cards or changing evidence.
-        if avoids_conflicts(c) and not is_network(c) and source not in trunks:
+        from .database_services import MODELS,DB_SYSTEMS
+        flexible_ports=any(nodes.get(k,{}).get('kind') in (*MODELS,*DB_SYSTEMS,'db_node','waf','edge_waf','edge_origin') for k in (source,target))
+        if flexible_ports and not is_network(c) and not flow and source not in trunks:
             others=[{'source':u,'target':v,'network':True,'points':pp}
                     for u,v,pp in drawn if {u,v}!={source,target}]
             def db_score(candidate):
                 current={'source':source,'target':target,'network':True,'points':candidate}
                 values=[path_quality([current,other]) for other in others]
-                return (sum(v['network_edge_crossings'] for v in values),
-                        sum(v['network_overlap_length'] for v in values),
-                        sum(abs(p[0]-q[0])+abs(p[1]-q[1]) for p,q in zip(candidate,candidate[1:])))
+                return (sum(v['network_overlap_length'] for v in values),path_cost(candidate)+CROSS_COST*sum(v['network_edge_crossings'] for v in values))
             best=db_score(points)
             if best[:2]!=(0,0):
                 for exit_face in ((0.5,0),(0,0.5),(1,0.5),(0.5,1)):
@@ -327,21 +404,26 @@ def _route_native_edges(root,nodes,future=()):
         if existing is not None:g.remove(existing)
         array=E.SubElement(g,'Array',**{'as':'points'})
         for x,y in points[1:-1]:E.SubElement(array,'mxPoint',x=str(x-parent[0]),y=str(y-parent[1]))
-        c.set('style',style+f'edgeStyle=none;noEdgeStyle=1;orthogonal=1;rounded=0;exitPerimeter=0;entryPerimeter=0;exitX={exit_port[0]:.15g};exitY={exit_port[1]:.15g};entryX={entry_port[0]:.15g};entryY={entry_port[1]:.15g};')
+        style=style.replace('startArrow=block;','startArrow=open;').replace('endArrow=block;','endArrow=open;')
+        c.set('style',style+f'jumpStyle=arc;jumpSize={JUMP_SIZE};strokeWidth={STROKE_WIDTH};startSize={ARROW_SIZE};endSize={ARROW_SIZE};startFill=0;endFill=0;edgeStyle=none;noEdgeStyle=1;orthogonal=1;rounded=0;exitPerimeter=0;entryPerimeter=0;exitX={exit_port[0]:.15g};exitY={exit_port[1]:.15g};entryX={entry_port[0]:.15g};entryY={entry_port[1]:.15g};')
         routed+=1
     return routed
 
 
 def route_native_edges(root,nodes):
-    """Bounded refinement; keep only strictly improved conflict counts."""
+    """Bounded refinement of overlap, normal contacts and path simplicity."""
+    from .quality import edge_conflicts
+    from .line_jumps import crossing_report
     count=_route_native_edges(root,nodes)
     for _ in range(2):
-        paths=native_paths(root,nodes);quality=path_quality(paths)
-        score=(quality['network_edge_crossings'],quality['network_overlap_length'])
-        if score==(0,0):break
+        paths=native_paths(root,nodes);quality=edge_conflicts(paths,nodes)
+        bridges=crossing_report(paths,nodes)
+        score=(bridges['unbridged_crossings'],quality['edge_overlap_length'],sum(path_cost(p['points']) for p in paths)+CROSS_COST*bridges['bridged_crossings'])
+        if quality['edge_crossings']==0 and quality['edge_overlap_length']==0:break
         previous=copy.deepcopy(root)
         _route_native_edges(root,nodes,future=paths)
-        candidate=path_quality(native_paths(root,nodes))
-        if (candidate['network_edge_crossings'],candidate['network_overlap_length'])>=score:
+        refined=native_paths(root,nodes);candidate=edge_conflicts(refined,nodes)
+        bridges=crossing_report(refined,nodes)
+        if (bridges['unbridged_crossings'],candidate['edge_overlap_length'],sum(path_cost(p['points']) for p in refined)+CROSS_COST*bridges['bridged_crossings'])>=score:
             root[:]=list(previous);break
     return count

@@ -4,14 +4,51 @@ from collections import Counter
 
 from .database_synthetic import CASES as DATABASE_CASES
 
-SCENARIOS=('regional-waf','network-load-balancer','long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
+SCENARIOS=('regional-services','regional-services-only','cache-nosql','nosql','nosql-only','managed-data','oci-cache','postgresql','opensearch','backend-status','edge-waf','regional-waf','network-load-balancer','long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
 
 
 def build_scenario(case):
     from .model import sample
     if case not in SCENARIOS:raise ValueError('unknown synthetic matrix case')
     s=sample('overview' if case in ('cross-compartment','network-peering') else 'basic')
-    if case=='regional-waf':
+    if case in ('regional-services','regional-services-only'):
+        if case=='regional-services-only':s['resources']=[]
+        for key,kind,name in [('bucket','object_storage_bucket','Object Storage Bucket'),('registry','container_repository','Container Registry'),('project','devops_project','DevOps Project'),('repo','devops_repository','Code Repository'),('build','devops_build_pipeline','Build Pipeline'),('deploy','devops_deploy_pipeline','Deploy Pipeline'),('environment','devops_deploy_environment','Deploy Environment')]:
+            item={'id':'qa-regional-'+key,'kind':kind,'name':'Synthetic '+name,'compartment_id':'synthetic-compartment-1','deployment_scope':'regional'}
+            if key in ('repo','build','deploy','environment'):item['project_id']='qa-regional-project'
+            s['resources'].append(item)
+    elif case in ('cache-nosql','nosql','nosql-only'):
+        if case=='cache-nosql':
+            s['resources'].append({'id':'qa-cache','kind':'oci_cache','name':'Synthetic OCI Cache','subnet_id':'private',
+                'nsg_ids':['app-nsg'],'private_ips':['10.0.1.41'],'primary_private_ip':'10.0.1.41','detail_status':'ok','network_status':'ok'})
+        if case=='nosql-only':s['resources']=[]
+        for i in range(2):
+            s['resources'].append({'id':'qa-nosql-'+str(i),'kind':'nosql_table','name':'Synthetic NoSQL Table '+str(i+1),
+                'compartment_id':'synthetic-compartment-1','deployment_scope':'regional','lifecycle_state':'ACTIVE'})
+    elif case in ('managed-data','oci-cache','postgresql','opensearch'):
+        for requested,key,kind,name,ips in (
+            ('oci-cache','qa-cache','oci_cache','Synthetic OCI Cache',['10.0.1.41','10.0.1.42']),
+            ('postgresql','qa-postgresql','postgresql_db_system','Synthetic PostgreSQL',['10.0.1.51','10.0.1.52','10.0.1.53']),
+            ('opensearch','qa-opensearch','opensearch_cluster','Synthetic OpenSearch',['10.0.1.61','10.0.1.62'])):
+            if case not in ('managed-data',requested):continue
+            s['resources'].append({'id':key,'kind':kind,'name':name,'subnet_id':'private','nsg_ids':['app-nsg'],
+                'private_ips':ips,'primary_private_ip':ips[0],'detail_status':'ok','network_status':'ok',
+                'endpoints':[{'role':'primary' if i==0 else 'secondary','ip_address':ip} for i,ip in enumerate(ips)]})
+    elif case=='backend-status':
+        base=next(r for r in s['resources'] if r['kind']=='backend_set')
+        base.update(name='Synthetic mixed backend set',backends_status='ok')
+        base['backends'].extend([{'ip_address':'203.0.113.10','port':80},{'ip_address':'203.0.113.11','port':443}])
+        for suffix,status in [('empty','ok'),('denied','unavailable'),('legacy',None)]:
+            item={'id':'synthetic-backend-'+suffix,'kind':'backend_set','name':'Synthetic '+suffix+' backend set','lb_id':'lb','backends':[]}
+            if status:item['backends_status']=status
+            s['resources'].append(item)
+    elif case=='edge-waf':
+        s['resources'].append({'id':'synthetic-edge-waf','kind':'edge_waf','name':'Synthetic Edge WAF',
+            'compartment_id':'synthetic-compartment-1','origin_status':'ok','origins':[
+                {'key':'primary','host':'192.0.2.20','http_port':80,'https_port':443,'selected_by':['WaasPolicy.waf_config.origin']},
+                {'key':'external','host':'origin.example.invalid','http_port':80,'https_port':443,'selected_by':['WaasPolicy.waf_config.origin_groups[] → WaasPolicy.origin_groups[].origins[].origin']}
+            ]})
+    elif case=='regional-waf':
         s['resources'].append({'id':'synthetic-waf','kind':'waf','name':'Synthetic Regional WAF',
             'compartment_id':'synthetic-compartment-1','backend_type':'LOAD_BALANCER',
             'load_balancer_id':'lb','web_app_firewall_policy_id':'synthetic-waf-policy'})

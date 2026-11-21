@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "50-connection-readability",
+  "steps": [
+    {
+      "step": 0,
+      "name": "common-connection-readability",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_connection_readability",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

@@ -76,6 +76,7 @@ def _sample(scenario):
 def graph(snapshot):
     from .database_services import MODELS,REFERENCES
     from .load_balancers import subnet_ids
+    from .managed_data import EVIDENCE,ENDPOINT_FIELDS,address as endpoint_address,KINDS as MANAGED_KINDS
     resources = snapshot['resources']
     nodes={r['id']:dict(r) for r in resources}
     if len(nodes)!=len(resources): raise ValueError('duplicate resource IDs')
@@ -86,8 +87,18 @@ def graph(snapshot):
             nodes.setdefault(unknown,{'id':unknown,'kind':'unknown','name':'대상 미확인'})
             target=unknown
         edges.append(dict(source=source,target=target,kind=kind,evidence=evidence,label=label))
+    from .regional_services import REGIONAL_KINDS,DEVOPS_MODELS
     for r in resources:
         rid=r['id']; kind=r['kind']
+        if kind in REGIONAL_KINDS:
+            if kind in DEVOPS_MODELS and r.get('project_id'):
+                edge(rid,r['project_id'],'project_id',DEVOPS_MODELS[kind]+'.project_id')
+            continue  # Regional metadata has no subnet/VNIC/NSG relationships.
+        if kind=='edge_waf':
+            from .edge_waf import origin_targets
+            extra,relations=origin_targets(r,resources,snapshot.get('presentation',{}).get('redacted',False))
+            nodes.update(extra)
+            for target,evidence in relations:edge(rid,target,'edge_protection',evidence)
         if kind=='waf':
             target=r.get('load_balancer_id')
             if not target or (target in nodes and nodes[target]['kind']!='lb'):
@@ -96,12 +107,14 @@ def graph(snapshot):
         for field in ('vcn_id','subnet_id','route_table_id','instance_id','lb_id'):
             if r.get(field):
                 evidence=(MODELS[kind]+'.'+field) if kind in MODELS else field
+                if kind in EVIDENCE:evidence=EVIDENCE[kind].get(field,evidence)
                 if kind=='nlb' and field=='subnet_id':evidence='NetworkLoadBalancer.subnet_id'
                 if kind=='backend_set' and field=='lb_id':evidence=r.get('lb_id_evidence') or evidence
                 edge(rid,r[field],field,evidence)
         for field in ('subnet_ids','nsg_ids'):
             for target in r.get(field,[]):
                 evidence=(MODELS[kind]+'.'+field+'[]') if kind in MODELS else field
+                if kind in EVIDENCE:evidence=EVIDENCE[kind].get(field,evidence)
                 if kind=='nlb' and field=='nsg_ids':evidence='NetworkLoadBalancer.network_security_group_ids[]'
                 edge(rid,target,field,evidence)
         if kind in MODELS:
@@ -157,10 +170,11 @@ def graph(snapshot):
                     edge(rid,target,'backend','NetworkLoadBalancer Backend.target_id → Instance.id or unique observed PrivateIp.id/VNIC',f"Backend :{backend['port']}")
                     continue
                 matches=[n for n in resources if n['kind']=='vnic' and (n.get('vcn_id') or nodes.get(n.get('subnet_id'),{}).get('vcn_id')) in vcns and backend.get('ip_address') and backend['ip_address'] in n.get('private_ips',[])]
-                endpoints=[n for n in resources if n['kind'] in ('mysql_db_system','autonomous_database','cloud_vm_cluster','exadb_vm_cluster') and nodes.get(n.get('subnet_id'),{}).get('vcn_id') in vcns and backend.get('ip_address') and backend['ip_address'] in n.get('private_ips',[])]
+                endpoints=[n for n in resources if n['kind'] in ('mysql_db_system','autonomous_database','cloud_vm_cluster','exadb_vm_cluster',*MANAGED_KINDS) and nodes.get(n.get('subnet_id'),{}).get('vcn_id') in vcns and endpoint_address(backend.get('ip_address')) is not None and endpoint_address(backend['ip_address']) in {endpoint_address(ip) for ip in n.get('private_ips',[])}]
                 candidates=matches+endpoints
                 target=(candidates[0].get('instance_id') or candidates[0].get('db_node_id') or candidates[0]['id']) if len(candidates)==1 else 'backend:'+rid+':'+str(len(edges))
                 evidence='BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN'
-                if endpoints:evidence='BackendSet.backends[].ip_address → unique observed VNIC or database endpoint in LB VCN'
+                if endpoints:evidence='BackendSet.backends[].ip_address → unique observed VNIC or database endpoint / managed-service endpoint in LB VCN'
+                if len(candidates)==1 and candidates[0]['kind'] in ENDPOINT_FIELDS:evidence='BackendSet.backends[].ip_address → unique same-VCN '+ENDPOINT_FIELDS[candidates[0]['kind']]
                 edge(rid,target,'backend',evidence,f"Backend :{backend['port']}")
     return nodes,edges

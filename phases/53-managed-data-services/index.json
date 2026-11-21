@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "53-managed-data-services",
+  "steps": [
+    {
+      "step": 0,
+      "name": "cache-postgresql-opensearch-infrastructure",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_managed_data",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

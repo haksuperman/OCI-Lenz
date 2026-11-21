@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "52-readable-crossings",
+  "steps": [
+    {
+      "step": 0,
+      "name": "short-orthogonal-paths-and-native-line-jumps",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_line_jumps",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

@@ -46,3 +46,31 @@ unrelated Flexible Load Balancer symbol is substituted.
 Regional WAF uses entry 102 (Identity and Security - WAF), the official native
 editable WAF stencil. WAF is outside subnet containers and points to the observed
 protected load balancer; the artwork does not imply an additional proxy hop.
+
+
+Edge WAF (WAAS) also uses official WAF entry 102. edge_waf is a separate logical
+service type from regional waf; there is no claim of a distinct Edge stencil.
+Unresolved configured origins use editable logical tags, not invented OCI icons.
+
+Managed data services: OpenSearch uses original library entry 49. PostgreSQL
+uses `postgresql.xml` entry 0, extracted from the SAME official Draw.io ZIP's
+`OCI Architecture Diagram Toolkit v24.2.drawio`, Icons page, symbol group
+`mREtu-c0wOV9HSzNNSta-1879` (10 native vector cells). The outer caption group is
+excluded; the vector stencils/geometry are retained with the root origin reset.
+Toolkit member SHA-256: `b544991da988625e147dbeb7623bacc1be96699e2415d7f4d548f0d2a532d59e`.
+PostgreSQL library SHA-256: `521a72a44ebbfd5c54f6268daf3a744d4edb5bb6e606a69c0d2d503596f540c8`.
+Oracle asset terms above also apply to this extracted geometry. No dedicated
+Cache/Redis-named entry was found in the downloaded bundle. Cache now reuses
+original library entry 46 (Database - NoSQL), matching the symbol used for
+OCI Cache: Managed Redis on page 29 of Oracle's official presentation:
+https://www.oracle.com/kr/a/ocom/docs/oracle-architecture-for-semantic-search-and-reliable-llm.pdf#page=29
+This is reuse of an existing official symbol, not a new dedicated Cache stencil.
+The distinct `nosql_table` kind also uses entry 46 for actual NoSQL table metadata.
+No image or shape is redrawn; the original library hash remains unchanged.
+
+## Regional storage and developer services
+Unmodified native entries from the pinned `library.xml`:
+- 11 — Storage - Object Storage → object_storage_bucket
+- 75 — Developer Services - Container Registry → container_repository
+- 85 — Developer Services - DevOps → project, code repository, build/deploy
+  pipeline and deploy environment cards (service-symbol reuse, no dedicated child artwork).

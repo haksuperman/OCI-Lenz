@@ -31,4 +31,12 @@ def diagram_graph(snapshot):
     # Preserve a readable tunnel chain rather than a redundant ownership triangle.
     via_tunnels={(e['source'],nodes[e['target']].get('ipsec_id')) for e in edges if e['kind']=='drg_network' and nodes[e['target']]['kind']=='ipsec_tunnel'}
     edges=[e for e in edges if not (e['kind']=='drg_id' and nodes[e['source']]['kind']=='ipsec' and (e['target'],e['source']) in via_tunnels)]
+    # Derived annotation only: canonical resources/endpoints remain untouched.
+    for key,r in nodes.items():
+        if r['kind']!='backend_set':continue
+        r.pop('backend_badge',None)
+        count=sum(e['source']==key and e['kind']=='backend' and nodes[e['target']]['kind']=='unknown' for e in edges)
+        if r.get('backends_status')=='unavailable':r['backend_badge']='백엔드 조회 불가'
+        elif count:r['backend_badge']='백엔드 대상 미확인 ('+str(count)+')'
+        elif not r.get('backends') and r.get('backends_status')!='ok':r['backend_badge']='백엔드 조회 상태 미확인'
     return nodes,edges

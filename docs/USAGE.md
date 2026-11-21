@@ -455,7 +455,7 @@ oci-lenz draw --snapshot "$HOME/oci-lenz-validation/fastconnect/snapshot.json" -
 `loss`는 같은 스냅샷/라벨의 후보끼리 비교하며 낮을수록 좋다. 다른 고객사나 다른
 리소스 개수의 결과를 이 값으로 비교하지 않는다.
 
-AI 수정본은 기존보다 점수가 낮아지고 교차·겹침·침범·비직각 구간이 늘지 않을 때만
+AI 수정본은 기존보다 점수가 낮아지고 모호한 교차·겹침·침범·비직각 구간이 늘지 않을 때만
 채택한다. 최초 캔버스 대비 면적 25% 초과 증가도 거절한다. `visual-review.json`에
 최초/최종 평가와 `decisions`의 채택·거절 이유가 남는다. 기본 수정 예산은 1회이며
 `--review-rounds 0/1/2`로 지정한다. 자동 AI 호출 횟수는 추가하지 않았다.
@@ -591,11 +591,132 @@ LB가 조회 범위 밖이면 `대상 미확인`으로 남기고 추가 조회�
 화살표는 WAF 보호 설정 관계이며 별도 프록시 홉이나 트래픽 검증 결과가 아니다.
 
 정책 ID는 최소 메타데이터로 보존한다. 규칙·로그·인증정보·정책 본문은 조회/저장하지
-않는다. Legacy WAAS의 도메인·Origin 기반 관계는 이번 범위에 포함하지 않으며
-coverage에 `waas: unsupported`로 구분한다. 도메인·IP·이름으로 LB를 추정하지 않는다.
+않는다. Edge WAF(WAAS)는 아래의 별도 수집 경로를 사용한다. Regional WAF에는
+도메인·IP·이름을 이용한 LB 추정 연결을 적용하지 않는다.
 
 ```sh
 oci-lenz sample --scenario regional-waf --output /tmp/oci-lenz-waf
 oci-lenz draw --snapshot /tmp/oci-lenz-waf/snapshot.json --output /tmp/oci-lenz-waf/diagrams
 python scripts/validate_scenarios.py --ai --case regional-waf --output /tmp/oci-lenz-waf-validation
 ```
+
+
+## Edge WAF (WAAS)
+
+`collect`는 지정한 리전 API와 컴파트먼트에서 Edge 정책 목록과 해당 정책의 상세를
+조회한다. Edge WAF는 전역 서비스이며, 그림의 리전 프레임은 조회 범위를 나타낼 뿐
+물리 배치 리전을 뜻하지 않는다. Edge WAF에는 VCN·Subnet 소속을 만들지 않는다.
+Regional WAF와 구분한 리소스로 실제 정책 이름과 Oracle 공식 WAF 아이콘을 표시한다.
+
+기본 `waf_config.origin`과 선택된 `origin_groups`의 Origin만 연결한다. 사용되지 않은
+Origin은 그리지 않는다. Origin의 IP가 수집된 공개 LB/NLB 또는 Compute IP와 유일하게
+일치하면 해당 리소스로 연결한다. Regional WAF의 직접 LB OCID 연결과 달리, 이는
+설정된 Origin과 관측 주소의 대조 결과다. DNS 조회·포트/헬스/도달성 검증은 하지 않는다.
+호스트명·비공개 IP·중복·범위 밖 대상은 `대상 미확인` 논리 Origin 태그에 설정된
+호스트만 표시한다. 도메인/CNAME이나 리소스 이름으로 대상 LB를 추정하지 않는다.
+
+상세 조회가 실패해도 정책은 보존하고 coverage와 Origin 상태에 미확인으로 기록한다.
+성공했지만 선택된 Origin이 없는 경우는 `not_configured`로 구분한다. URI의 사용자명·
+암호·경로·쿼리·fragment와 커스텀 헤더·인증서·규칙 본문은 저장하지 않는다.
+기존 `waas: unsupported` 스냅샷은 재수집해야 새 리소스가 추가된다.
+
+```sh
+oci-lenz sample --scenario edge-waf --output /tmp/oci-lenz-edge-waf
+oci-lenz draw --snapshot /tmp/oci-lenz-edge-waf/snapshot.json --output /tmp/oci-lenz-edge-waf/diagrams
+python scripts/validate_scenarios.py --ai --case edge-waf --output /tmp/oci-lenz-edge-waf-validation
+```
+
+### 연결선 규칙과 기존 배치
+
+새 생성에는 미확인 대상 근접 배치·병렬 분기 정렬 힌트와 전체 연결선의
+교차 회피가 공통 적용된다. 기존 저장 배치를 재사용하면 리소스 위치는
+유지하고 연결 경로만 다시 계산한다. 미확인 대상이 멀리 배치된 기존 결과의
+리소스 위치까지 개선하려면 새 AI 배치를 생성한다. 품질 결과의
+`remote_unknown_targets`, `fanout_misalignment`는 경계 제약을 고려해 검토할
+항목이며, 직각 연결이나 AI 검수 통과가 트래픽 도달성을 뜻하지 않는다.
+
+### 백엔드셋 하단 상태 표시
+
+- 백엔드 등록 0개(조회 성공): 백엔드셋만 표시한다.
+- 등록된 백엔드의 리소스를 식별하지 못함: Set 하단에 `백엔드 대상 미확인 (N)`.
+- 백엔드 목록 조회 실패: `백엔드 조회 불가`.
+- 기존 빈 스냅샷에 조회 상태가 없음: `백엔드 조회 상태 미확인`.
+
+표시는 백엔드셋 도형 자체의 네이티브 라벨에 포함되므로 외부에 별도 배치되지
+않는다. 알려진 대상의 화살표와 모든 원본 관계 근거는 보존한다. 이 변경은
+카드 높이와 배치 서명을 바꾸므로 이전 `skill-layout.json`을 재사용하지 말고
+같은 스냅샷에서 새 배치를 생성한다. 상태를 새로 확인하려는 경우에만 collect를
+재수행하며, 구성도 변경 자체에는 OCI 재조회가 필요하지 않다.
+
+### 짧은 경로와 점프 아치
+
+연결선은 열린 화살표와 일정한 굵기를 사용하며, 독립적인 선의 명확한 수직
+교차는 점프 아치로 구분한다. 아치는 연결 지점이 아니다. 같은 부모의 실제
+분기만 공통선을 사용한다. 리소스·글자 관통과 서로 다른 선의 겹침은 계속
+검토 대상이며, 끝점이나 꺾임 근처·밀집 교차는 아치 스타일만으로 통과하지 않는다.
+
+품질 v4에서 `edge_crossings`는 원래 교차 수, `bridged_crossings`는 아치를
+표시할 공간이 있는 교차 수, `unbridged_crossings`는 남은 모호한 교차 수다.
+안전하게 표시된 교차 수가 늘더라도 경로와 꺾임이 줄어 품질이 개선될 수 있다.
+기존 배치의 좌표는 그대로 두고 재렌더링해 새 연결선 규칙을 적용할 수 있다.
+이전 품질 버전과 새 점수의 숫자를 직접 비교하지 말고 길이·꺾임·침범 및
+모호한 교차 지표와 PNG를 함께 확인한다.
+
+### OCI Cache · PostgreSQL · OpenSearch
+
+기존 collect에 세 서비스가 자동 포함된다. 리전·컴파트먼트·프로필 입력과
+다이어그램 생성 명령은 동일하며, 서비스별 List/Get 실패는 coverage에 남는다.
+정상 목록 0건과 권한 부족/호출 실패를 구분한다. 상세 읽기에 실패하면 목록의
+이름과 ID는 유지하지만 Subnet이 확인되지 않은 리소스를 임의 배치하지 않는다.
+`network_status=unavailable|not_reported`는 정보 페이지에서 확인할 수 있다.
+
+| 서비스 | API/관계 | 기본 표시 |
+| --- | --- | --- |
+| OCI Cache | ListRedisClusters/GetRedisCluster의 subnet_id, nsg_ids 및 Primary/Replica/Discovery IP | 공식 심벌·클러스터 이름·대표 IP |
+| PostgreSQL | ListDbSystems/GetDbSystem의 network_details, GetConnectionDetails의 Primary/Reader/Instance IP | 공식 PostgreSQL 도형·System 이름·대표 IP |
+| OpenSearch | ListOpensearchClusters/GetOpensearchCluster의 subnet_id, vcn_id, nsg_id 및 Search/Dashboard IP | 공식 OpenSearch 도형·클러스터 이름·대표 IP |
+
+대표 IP 외 주소는 정보 페이지에 유지한다. PostgreSQL은 실제 연결 상세의
+Primary를 우선하고 연결 조회 실패 시 관측된 network_details 주소를 유지한다.
+FQDN을 DNS로 풀거나 개별 데이터 노드를 가상 Compute로 만들지 않는다.
+서로 다른 서비스 사이 연결은 API 근거 없이 추가하지 않는다.
+Cache는 Oracle 공식 발표자료에서 Cache 표현에 사용한 기존 NoSQL 심벌을 재사용한다. 전용 Cache 도형을 새로 만든 것은 아니며, Cache와 NoSQL 서비스의 kind·소속·관계는 별도로 유지한다.
+
+가상 예제는 `sample --scenario managed-data`, `oci-cache`, `postgresql`,
+`opensearch`로 생성한다. `scripts/validate_scenarios.py --case managed-data`
+등으로 실제 OCI 없이 동일 생성기와 PNG 내보내기를 검증할 수 있다.
+실제 환경은 권한과 해당 리소스가 준비되면 별도로 수/주소/관계를 대조한다.
+
+### OCI Cache 공식 심벌 · NoSQL
+
+Cache는 태그 대신 공식 library 46번 심벌을 사용한다. 기존 태그 배치와 크기가
+달라지므로 Cache가 포함된 이전 skill-layout.json은 새 배치로 생성한다.
+NoSQL도 같은 공식 심벌을 쓰며 테이블 이름만 표시한다. ListTables에 IP나
+Subnet 정보가 없으므로 주소를 만들어 표시하거나 DNS 조회를 하지 않는다.
+
+기존 collect에 NoSQL ListTables가 자동 포함된다. 필요한 추가 권한은
+`inspect nosql-tables`이며 앱이 정책을 적용하지 않는다. 테이블 OCID·이름·
+컴파트먼트·lifecycle만 저장하고 스키마·DDL·행·인덱스·사용량·리전 간 복제는
+조회하지 않는다. NoSQL 테이블은 실제 소유 컴파트먼트 안, VCN/Subnet 밖에
+표시한다. VCN이 없는 NoSQL 단독 컴파트먼트도 지원한다. SGW가 존재한다고
+테이블에 연결선을 추가하지 않으며 애플리케이션 사용 관계도 추론하지 않는다.
+
+가상 예제: `sample --scenario cache-nosql`, `nosql`, `nosql-only`와 --output을
+사용한다. 동일 이름의 `scripts/validate_scenarios.py --case ...`로 API 호출 없이
+Draw.io/PNG와 재생성을 검증한다. 운영용 collect/draw 명령은 기존과 동일하다.
+
+## Object Storage / Container Registry / DevOps
+기존 `oci-lenz collect` 명령에 자동 포함된다. Object Storage 버킷, OCIR 저장소,
+DevOps 프로젝트·코드 저장소·빌드/배포 파이프라인·배포 환경을 수집한다. 실제
+컴파트먼트 안·VCN 밖에 공식 아이콘과 이름으로 표시한다. 이 메타데이터에 IP는
+없으므로 임의 IP나 SGW 연결을 추가하지 않는다. DevOps 선은 API가 확인한 프로젝트
+소속이며 실행 순서가 아니다. 스테이지·실행 이력·배포 대상 상세는 이번 범위 밖이다.
+
+버킷 OCID 확인에는 GetBucket 권한이 필요하다. 실패하면 ListBuckets에서 확인한
+이름을 유지하고 `identity_status=list_summary`로 구분하며 coverage에 실패를 남긴다.
+GetNamespace 실패 시 ListBuckets는 `skipped`로 기록한다. 실제 조회 0건과 다르다.
+객체 내용·이미지·소스코드·파이프라인 변수·로그는 읽거나 저장하지 않는다.
+
+가상 검증 시나리오는 `regional-services`, `regional-services-only`이며 기존
+`python scripts/validate_scenarios.py --case regional-services --output PATH`와
+동일 경로로 재현한다. AI 배치/검토를 함께 검증하려면 `--ai`를 추가한다.

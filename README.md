@@ -95,7 +95,7 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 
 - 전체 환경을 한 아키텍처 페이지에 표시하고 그 안에서 VCN·Subnet을 구분
 - VCN별 별도 상세 페이지는 `--detail-pages`로 선택
-- Public/Private Subnet, Compute와 VNIC, Load Balancer·Network Load Balancer(NLB)와 Backend Set, Regional WAF의 보호 대상 LB 연결
+- Public/Private Subnet, Compute와 VNIC, Load Balancer·Network Load Balancer(NLB)와 Backend Set, Regional WAF의 보호 대상 LB 연결, Edge WAF(WAAS)의 선택된 Origin 연결
 - Internet/NAT/Service Gateway, Route 목적지·다음 홉, NSG 연결
 - VCN–DRG 직접 연결, 로컬 피어링(LPG)·원격 피어링 연결(RPC)
 - Attachment는 관계 확인에만 사용하고 구성도에서 생략
@@ -103,6 +103,8 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 - IPSec VPN 컨테이너 안에 소속 터널을 표시하고 DRG·CPE는 바깥에 연결 (공유 비밀·장비 설정은 조회하지 않음)
 - Oracle Base DB System: Display Name과 관측된 Node IP만 표시
 - MySQL·Autonomous DB, ExaCC·ExaCI의 인프라/VM Cluster, Exascale VM Cluster·Storage Vault와 관측된 네트워크 관계
+- OCI Cache·OCI Database with PostgreSQL·Search with OpenSearch의 이름·관측 IP·Subnet/NSG 관계
+- NoSQL 테이블 이름·OCID·컴파트먼트 메타데이터와 VCN 밖의 지역 서비스 배치
 - 범위 밖·모호한 관계의 `대상 미확인` 표시
 - `architecture.drawio`, `architecture.png`, `information-index.png`, `coverage.json`, `validation.json` (선택 시 `vcn-N.png` 추가)
 
@@ -119,3 +121,5 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 - [스킬 선정·출처](docs/SKILLS.md)
 - [공식 아이콘 출처·매핑](assets/oci/SOURCE.md)
 - [요구사항](docs/PRD.md) · [아키텍처](docs/ARCHITECTURE.md) · [설계 결정](docs/ADR.md)
+
+Object Storage 버킷, Container Registry 저장소와 DevOps 프로젝트·코드 저장소·빌드/배포 파이프라인·배포 환경의 메타데이터도 지원합니다. 지역 서비스는 실제 컴파트먼트 안·VCN 밖에 표시하며 콘텐츠나 실행 변수는 수집하지 않습니다. 자세한 범위와 권한은 [사용법](docs/USAGE.md)과 [IAM](docs/IAM.md)을 참고하세요.
