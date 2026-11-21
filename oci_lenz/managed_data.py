@@ -1,13 +1,15 @@
 """Read-only infrastructure metadata, never SQL/cache/search data or credentials."""
 from ipaddress import ip_address
 
-KINDS=('oci_cache','postgresql_db_system','opensearch_cluster')
+KINDS=('oci_cache','postgresql_db_system','opensearch_cluster','goldengate_deployment')
 ENDPOINT_FIELDS={
+    'goldengate_deployment':'Deployment.private_ip_address / DeploymentSummary.private_ip_address',
     'oci_cache':'RedisCluster.primary_endpoint_ip_address / replicas_endpoint_ip_address / discovery_endpoint_ip_address',
     'postgresql_db_system':'DbSystem.network_details.primary_db_endpoint_private_ip / ConnectionDetails.primary_db_endpoint.ip_address / reader_endpoint.ip_address / instance_endpoints[].endpoint.ip_address',
     'opensearch_cluster':'OpensearchCluster.opensearch_private_ip / opendashboard_private_ip',
 }
 EVIDENCE={
+    'goldengate_deployment':{'subnet_id':'Deployment.subnet_id','nsg_ids':'Deployment.nsg_ids[]'},
     'oci_cache':{'subnet_id':'RedisCluster.subnet_id','nsg_ids':'RedisCluster.nsg_ids[]'},
     'postgresql_db_system':{'subnet_id':'DbSystem.network_details.subnet_id','nsg_ids':'DbSystem.network_details.nsg_ids[]'},
     'opensearch_cluster':{'subnet_id':'OpensearchCluster.subnet_id','vcn_id':'OpensearchCluster.vcn_id','nsg_ids':'OpensearchCluster.nsg_id'},
@@ -24,9 +26,10 @@ def collect_managed_data(call,add,compartment):
     for service,list_api,get_api,kind in (
         ('redis','list_redis_clusters','get_redis_cluster','oci_cache'),
         ('psql','list_db_systems','get_db_system','postgresql_db_system'),
-        ('opensearch','list_opensearch_clusters','get_opensearch_cluster','opensearch_cluster')):
+        ('opensearch','list_opensearch_clusters','get_opensearch_cluster','opensearch_cluster'),
+        ('goldengate','list_deployments','get_deployment','goldengate_deployment')):
         for summary in call(service,list_api,compartment_id=compartment) or []:
-            key={'redis':'redis_cluster_id','psql':'db_system_id','opensearch':'opensearch_cluster_id'}[service]
+            key={'redis':'redis_cluster_id','psql':'db_system_id','opensearch':'opensearch_cluster_id','goldengate':'deployment_id'}[service]
             detail=call(service,get_api,**{key:summary.id});obj=detail or summary
             # Prefer observed detail fields, but preserve summary network data
             # when a denied/partial Get does not provide them.
@@ -56,6 +59,9 @@ def collect_managed_data(call,add,compartment):
                     for instance in connection.instance_endpoints or []:
                         endpoint('instance',getattr(instance.endpoint,'ip_address',None),instance.db_instance_id)
                 else:endpoint('primary',fallback_primary)
+            elif service=='goldengate':
+                subnet=observed('subnet_id');nsgs=observed('nsg_ids') or []
+                endpoint('primary',observed('private_ip_address'))
             else:
                 subnet=observed('subnet_id');nsgs=[observed('nsg_id')] if observed('nsg_id') else []
                 endpoint('search',observed('opensearch_private_ip'))
@@ -68,4 +74,8 @@ def collect_managed_data(call,add,compartment):
                   'network_status':'ok' if subnet else ('unavailable' if detail is None else 'not_reported'),
                   'lifecycle_state':observed('lifecycle_state')}
             if service=='opensearch' and observed('vcn_id'):data['vcn_id']=observed('vcn_id')
+            if service=='goldengate':
+                data['public_ip']=address(observed('public_ip_address'))
+                data['nsg_status']='unavailable' if detail is None else ('ok' if getattr(detail,'nsg_ids',None) is not None else 'not_reported')
+                data['network_evidence']={field:('Deployment' if getattr(detail,field,None) is not None else 'DeploymentSummary')+'.'+field+('[]' if field=='nsg_ids' else '') for field in ('subnet_id','nsg_ids') if observed(field) is not None}
             add(summary,kind,**data)

@@ -75,3 +75,9 @@ Cache는 Oracle 공식 자료의 사례에 따라 기존 NoSQL 심벌을 재사�
 리소스는 실제 컴파트먼트 안, VCN/Subnet 밖에 배치하고 API project_id만 프로젝트
 소속 관계로 연결한다. 실행 순서·아티팩트 전달·SGW 사용·배포 대상을 추정하지 않는다.
 객체·이미지·소스코드·빌드/배포 변수·연결 인증정보·로그·실행 이력은 수집하지 않는다.
+
+## OCI GoldenGate (OCIGG)
+GoldenGate 배포 이름·OCID·실제 컴파트먼트·관측 Private/Public IP·Private Endpoint
+Subnet과 NSG를 지원한다. 배포 도형은 서비스 자체의 내부 인프라 전체가 아니라
+API가 노출한 고객 VCN의 엔드포인트를 나타낸다. 이름·관측 IP를 기본 표시한다.
+복제 프로세스, 연결/접속 정보, 소스·타깃 DB와 데이터 흐름은 이번 범위 밖이다.

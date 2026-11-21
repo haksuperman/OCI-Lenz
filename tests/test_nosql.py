@@ -46,6 +46,7 @@ class NoSQLTests(unittest.TestCase):
         xml=render(d,detail_pages=True);validate(xml,d)
         cells={c.get('id'):c for c in E.fromstring(xml).find('diagram/mxGraphModel/root')}
         self.assertEqual(cells['nosql'].get('parent'),cells['v'].get('parent'))
+        self.assertNotIn('layout-osn',cells)
         self.assertIn('nosql-icon',cells);self.assertIn('Synthetic NoSQL Table',cells['nosql'].get('value'))
         self.assertEqual(render(d,detail_pages=True),xml);self.assertEqual(s,before)
         self.assertEqual(ICONS['oci_cache'],46);self.assertEqual(ICONS['nosql_table'],46)

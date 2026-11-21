@@ -4,14 +4,16 @@ from collections import Counter
 
 from .database_synthetic import CASES as DATABASE_CASES
 
-SCENARIOS=('regional-services','regional-services-only','cache-nosql','nosql','nosql-only','managed-data','oci-cache','postgresql','opensearch','backend-status','edge-waf','regional-waf','network-load-balancer','long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
+SCENARIOS=('goldengate','regional-services','regional-services-only','cache-nosql','nosql','nosql-only','managed-data','oci-cache','postgresql','opensearch','backend-status','edge-waf','regional-waf','network-load-balancer','long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
 
 
 def build_scenario(case):
     from .model import sample
     if case not in SCENARIOS:raise ValueError('unknown synthetic matrix case')
     s=sample('overview' if case in ('cross-compartment','network-peering') else 'basic')
-    if case in ('regional-services','regional-services-only'):
+    if case=='goldengate':
+        s['resources'].append({'id':'qa-goldengate','kind':'goldengate_deployment','name':'Synthetic OCI GoldenGate','subnet_id':'private','nsg_ids':['app-nsg'],'private_ips':['10.0.1.71'],'primary_private_ip':'10.0.1.71','public_ip':'192.0.2.71','detail_status':'ok','network_status':'ok','nsg_status':'ok','network_evidence':{'subnet_id':'Deployment.subnet_id','nsg_ids':'Deployment.nsg_ids[]'}})
+    elif case in ('regional-services','regional-services-only'):
         if case=='regional-services-only':s['resources']=[]
         for key,kind,name in [('bucket','object_storage_bucket','Object Storage Bucket'),('registry','container_repository','Container Registry'),('project','devops_project','DevOps Project'),('repo','devops_repository','Code Repository'),('build','devops_build_pipeline','Build Pipeline'),('deploy','devops_deploy_pipeline','Deploy Pipeline'),('environment','devops_deploy_environment','Deploy Environment')]:
             item={'id':'qa-regional-'+key,'kind':kind,'name':'Synthetic '+name,'compartment_id':'synthetic-compartment-1','deployment_scope':'regional'}

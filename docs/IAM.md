@@ -198,3 +198,16 @@ are performed. GetBucket metadata is immediately reduced to the bucket OCID.
 Sources: [Object Storage IAM](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/objectstoragepolicyreference.htm),
 [Registry IAM](https://docs.oracle.com/en-us/iaas/Content/Identity/policyreference/registrypolicyreference.htm),
 [DevOps IAM](https://docs.oracle.com/en-us/iaas/Content/devops/using/devops_iampolicies.htm).
+
+## OCI GoldenGate (OCIGG)
+| API | Minimum permission | Resource verb |
+| --- | --- | --- |
+| ListDeployments | GOLDENGATE_DEPLOYMENT_INSPECT | inspect goldengate-deployments in selected compartment |
+| GetDeployment | GOLDENGATE_DEPLOYMENT_READ | read goldengate-deployments in selected compartment |
+
+GetDeployment provides NSG metadata absent from DeploymentSummary. Its response is
+allowlisted immediately; ogg_data, usernames, URLs and settings are not stored. No
+connection/assignment/process/data API or deployment start/stop/update is called.
+No IAM policies are applied by OCI-Lenz.
+Source: [Oracle GoldenGate IAM](https://docs.oracle.com/en/cloud/paas/goldengate-service/ocigg/oracle-cloud-infrastructure-goldengate-policies.html),
+[DeploymentSummary fields](https://docs.oracle.com/en-us/iaas/tools/python/latest/api/golden_gate/models/oci.golden_gate.models.DeploymentSummary.html).
