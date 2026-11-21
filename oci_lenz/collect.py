@@ -5,18 +5,18 @@ def collect(profile,region,compartment,config_file=None):
     if any(c in compartment for c in ("'", '\n', '\r')): raise ValueError('invalid compartment')
     cfg=oci.config.from_file(config_file or oci.config.DEFAULT_LOCATION,profile);cfg['region']=region
     retry=oci.retry.RetryStrategyBuilder(max_attempts_check=True,max_attempts=3,total_elapsed_time_check=True,total_elapsed_time_seconds=30).get_retry_strategy()
-    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'nlb':oci.network_load_balancer.NetworkLoadBalancerClient,'waf':oci.waf.WafClient,'waas':oci.waas.WaasClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient,'mysql':oci.mysql.DbSystemClient,'redis':oci.redis.RedisClusterClient,'psql':oci.psql.PostgresqlClient,'opensearch':oci.opensearch.OpensearchClusterClient,'nosql':oci.nosql.NosqlClient,'object_storage':oci.object_storage.ObjectStorageClient,'artifacts':oci.artifacts.ArtifactsClient,'devops':oci.devops.DevopsClient}.items()}
+    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'nlb':oci.network_load_balancer.NetworkLoadBalancerClient,'waf':oci.waf.WafClient,'waas':oci.waas.WaasClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient,'mysql':oci.mysql.DbSystemClient,'redis':oci.redis.RedisClusterClient,'psql':oci.psql.PostgresqlClient,'opensearch':oci.opensearch.OpensearchClusterClient,'nosql':oci.nosql.NosqlClient,'object_storage':oci.object_storage.ObjectStorageClient,'artifacts':oci.artifacts.ArtifactsClient,'devops':oci.devops.DevopsClient,'goldengate':oci.golden_gate.GoldenGateClient}.items()}
     s={'version':1,'scope':{'region':region,'compartments':[compartment]},'resources':[],'coverage':[]}
     def call(service,method,*args,**kwargs):
         entry={'region':region,'compartment':compartment,'service':service,'api':method}
-        scoped={key:value for key,value in kwargs.items() if key in ('db_system_id','vm_cluster_id','exadata_infrastructure_id','waas_policy_id','redis_cluster_id','opensearch_cluster_id')}
+        scoped={key:value for key,value in kwargs.items() if key in ('db_system_id','vm_cluster_id','exadata_infrastructure_id','waas_policy_id','redis_cluster_id','opensearch_cluster_id','deployment_id')}
         if scoped:entry['request_scope']=scoped
         try:
             fn=getattr(clients[service],method)
             if method.startswith(('list_','search_')): data=oci.pagination.list_call_get_all_results(fn,*args,**kwargs).data
             else:data=fn(*args,**kwargs).data
             # NLB/WAF APIs use Collection wrappers; support raw and flattened paginator results.
-            if service in ('nlb','waf','redis','psql','opensearch','nosql','artifacts','devops') and method.startswith('list_') and not isinstance(data,list):data=data.items
+            if service in ('nlb','waf','redis','psql','opensearch','nosql','artifacts','devops','goldengate') and method.startswith('list_') and not isinstance(data,list):data=data.items
             count=len(data) if isinstance(data,list) else 1
             entry.update(status='ok',count=count)
             return data

@@ -307,3 +307,13 @@ No contents, source URLs, pipeline parameters, credentials or histories are save
 Reuse unchanged official service stencils, with shared DevOps artwork for its child
 resource kinds. Validate generated SDK pagination, privacy, denied/empty/dependency
 coverage, native ownership and deterministic XML/PNG before live collection.
+
+## 033 — GoldenGate endpoint placement without inferred replication
+Extend the shared managed-data collector with GoldenGate List/Get metadata rather
+than a separate renderer. Use the exact deployment private endpoint subnet, not
+its public frontend subnet. Preserve summary fields on denied details, explicitly
+distinguish unqueried NSG state and retain actual field provenance. Use official
+editable GoldenGate entry 51. Do not fetch connections, assignments, process/data
+state or synthesize source/target database relationships or managed LB internals.
+Retain unique same-VCN endpoint matching, privacy, redaction and deterministic
+replay. Actual customer inventory verification remains separate from synthetic QA.

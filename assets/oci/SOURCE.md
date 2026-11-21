@@ -74,3 +74,9 @@ Unmodified native entries from the pinned `library.xml`:
 - 75 — Developer Services - Container Registry → container_repository
 - 85 — Developer Services - DevOps → project, code repository, build/deploy
   pipeline and deploy environment cards (service-symbol reuse, no dedicated child artwork).
+
+OCI GoldenGate deployments use original library entry 51 — Database - GoldenGate.
+This is the existing editable OCI GoldenGate service symbol, not entry 50's
+on-premises product or a newly drawn raster image. The deployment card is placed
+by the observed private endpoint subnet; the symbol does not describe service
+internals or a replication relationship.

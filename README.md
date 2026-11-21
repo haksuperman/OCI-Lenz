@@ -103,6 +103,7 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 - IPSec VPN 컨테이너 안에 소속 터널을 표시하고 DRG·CPE는 바깥에 연결 (공유 비밀·장비 설정은 조회하지 않음)
 - Oracle Base DB System: Display Name과 관측된 Node IP만 표시
 - MySQL·Autonomous DB, ExaCC·ExaCI의 인프라/VM Cluster, Exascale VM Cluster·Storage Vault와 관측된 네트워크 관계
+- OCI GoldenGate(OCIGG) 배포의 이름·관측 IP·Private Endpoint Subnet/NSG 관계
 - OCI Cache·OCI Database with PostgreSQL·Search with OpenSearch의 이름·관측 IP·Subnet/NSG 관계
 - NoSQL 테이블 이름·OCID·컴파트먼트 메타데이터와 VCN 밖의 지역 서비스 배치
 - 범위 밖·모호한 관계의 `대상 미확인` 표시

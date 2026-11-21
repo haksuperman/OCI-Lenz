@@ -1,0 +1,31 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "57-restore-pre-osn",
+  "steps": [
+    {
+      "step": 0,
+      "name": "restore-resource-compartment-layout",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_nosql",
+          "tests.test_regional_services",
+          "tests.test_goldengate",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

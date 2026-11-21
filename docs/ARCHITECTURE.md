@@ -648,3 +648,20 @@ scope projects remain unknown. These lines express ownership, never execution or
 traffic. No inferred Subnet/NSG/SGW/client/image-pull/build-to-deploy links exist.
 Official library entries 11/75/85 provide editable native icons. DevOps children
 reuse its service symbol; they are separate API resource kinds, not new stencils.
+
+## GoldenGate deployments
+The managed-data adapter adds GoldenGateClient ListDeployments/GetDeployment in
+the selected region and compartment, using shared Collection pagination, bounded
+retries and per-call coverage. DeploymentSummary contains private endpoint subnet
+and IP fields but no NSG field; GetDeployment supplies nsg_ids. On detail failure,
+retain observed summary identity/subnet/IP and mark detail/nsg status unavailable.
+An observed empty NSG list is ok, while an omitted detail field is not_reported.
+Only ID/name/compartment/lifecycle/subnet/NSGs, validated private/public IPs and
+local collection/evidence statuses are stored. Do not serialize ogg_data, users,
+credentials, FQDN/URLs, tags, ingress/placement internals or deployment settings.
+`network_evidence` records Deployment versus DeploymentSummary field provenance.
+The private endpoint subnet controls placement; load_balancer_subnet_id is not a
+substitute. No managed public LB, source/target database or replication line is
+invented. IP-only backends can resolve to a unique observed GoldenGate private
+endpoint only in the same evidenced LB VCN, under existing ambiguity rules.
+Official library entry 51 supplies the unchanged editable GoldenGate symbol.

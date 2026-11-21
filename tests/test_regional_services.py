@@ -69,6 +69,7 @@ class RegionalServicesTests(unittest.TestCase):
         for key in ('bucket','registry','project','repo','build','deploy','environment'):
             self.assertEqual(cells[key].get('parent'),cells['v'].get('parent'))
             self.assertIn(key+'-icon',cells)
+        self.assertNotIn('layout-osn',cells)
         self.assertEqual(ICONS['object_storage_bucket'],11);self.assertEqual(ICONS['container_repository'],75)
         self.assertEqual(ICONS['devops_project'],85);self.assertEqual(render(d,detail_pages=True),xml)
         self.assertEqual(s,before)

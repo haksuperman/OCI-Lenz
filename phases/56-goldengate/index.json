@@ -1,0 +1,30 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "56-goldengate",
+  "steps": [
+    {
+      "step": 0,
+      "name": "goldengate-deployment-network-metadata",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_goldengate",
+          "tests.test_managed_data",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

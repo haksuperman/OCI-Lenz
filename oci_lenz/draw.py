@@ -9,7 +9,7 @@ from .load_balancers import subnet_ids
 from .regional_services import REGIONAL_KINDS
 ROOT=Path(__file__).resolve().parents[1]
 if not (ROOT/'assets/oci/library.xml').exists(): ROOT=Path(sys.prefix)/'share/oci-lenz'
-ICONS={'object_storage_bucket':11,'container_repository':75,'devops_project':85,'devops_repository':85,'devops_build_pipeline':85,'devops_deploy_pipeline':85,'devops_deploy_environment':85,'oci_cache':46,'nosql_table':46,'postgresql_db_system':0,'opensearch_cluster':49,'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'nlb':18,'waf':102,'edge_waf':102,'route':29,'service':31,'internet':32,'nat':33,'nsg':114,'cpe':21,'drg':30,'rpc':34,'db_system':36,'db_node':35,'virtual_circuit':210,'cross_connect':210,'mysql_db_system':47,'autonomous_database':37,'autonomous_container_database':38,'autonomous_exadata_infrastructure':43,'autonomous_vm_cluster':44,'cloud_autonomous_vm_cluster':38,'exadata_infrastructure':44,'vm_cluster':44,'cloud_exadata_infrastructure':43,'cloud_vm_cluster':43,'exadata_db_system':43,'exadb_vm_cluster':43}
+ICONS={'goldengate_deployment':51,'object_storage_bucket':11,'container_repository':75,'devops_project':85,'devops_repository':85,'devops_build_pipeline':85,'devops_deploy_pipeline':85,'devops_deploy_environment':85,'oci_cache':46,'nosql_table':46,'postgresql_db_system':0,'opensearch_cluster':49,'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'nlb':18,'waf':102,'edge_waf':102,'route':29,'service':31,'internet':32,'nat':33,'nsg':114,'cpe':21,'drg':30,'rpc':34,'db_system':36,'db_node':35,'virtual_circuit':210,'cross_connect':210,'mysql_db_system':47,'autonomous_database':37,'autonomous_container_database':38,'autonomous_exadata_infrastructure':43,'autonomous_vm_cluster':44,'cloud_autonomous_vm_cluster':38,'exadata_infrastructure':44,'vm_cluster':44,'cloud_exadata_infrastructure':43,'cloud_vm_cluster':43,'exadata_db_system':43,'exadb_vm_cluster':43}
 
 def edge_label(edge):
     return edge['label'] or {'waf_protection':'Protects','edge_protection':'Configured origin','nsg_ids':'NSG','route_table_id':'Route table','project_id':'Project','lb_id':'Backend set'}.get(edge['kind'],edge['kind'])
@@ -46,6 +46,7 @@ def icon(root, rid, kind, x,y):
     group=E.SubElement(root,'mxCell',id=rid+'-icon',value='',style='group',vertex='1',parent=rid)
     if kind in REGIONAL_KINDS:group.set('ociOfficialIcon','Oracle OCI Library.xml:'+str(ICONS[kind])+' '+item['title'])
     if kind in ('oci_cache','nosql_table'):group.set('ociOfficialIcon','Oracle OCI Library.xml:46 NoSQL'+(' (Cache reuse per Oracle reference)' if kind=='oci_cache' else ''))
+    if kind=='goldengate_deployment':group.set('ociOfficialIcon','Oracle OCI Library.xml:51 Database - GoldenGate')
     if kind=='postgresql_db_system':group.set('ociOfficialIcon','Oracle OCI Toolkit v24.2 PostgreSQL native stencil')
     if kind in ('virtual_circuit','cross_connect'):group.set('ociOfficialIcon','Oracle OCI Library.xml:210 FastConnect SVG')
     E.SubElement(group,'mxGeometry',x=str(x),y=str(y),width=str((right-ox)*scale),height=str((bottom-oy)*scale),**{'as':'geometry'})

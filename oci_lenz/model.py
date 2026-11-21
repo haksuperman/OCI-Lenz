@@ -108,6 +108,7 @@ def graph(snapshot):
             if r.get(field):
                 evidence=(MODELS[kind]+'.'+field) if kind in MODELS else field
                 if kind in EVIDENCE:evidence=EVIDENCE[kind].get(field,evidence)
+                if kind=='goldengate_deployment':evidence=r.get('network_evidence',{}).get(field,evidence)
                 if kind=='nlb' and field=='subnet_id':evidence='NetworkLoadBalancer.subnet_id'
                 if kind=='backend_set' and field=='lb_id':evidence=r.get('lb_id_evidence') or evidence
                 edge(rid,r[field],field,evidence)
@@ -115,6 +116,7 @@ def graph(snapshot):
             for target in r.get(field,[]):
                 evidence=(MODELS[kind]+'.'+field+'[]') if kind in MODELS else field
                 if kind in EVIDENCE:evidence=EVIDENCE[kind].get(field,evidence)
+                if kind=='goldengate_deployment':evidence=r.get('network_evidence',{}).get(field,evidence)
                 if kind=='nlb' and field=='nsg_ids':evidence='NetworkLoadBalancer.network_security_group_ids[]'
                 edge(rid,target,field,evidence)
         if kind in MODELS:

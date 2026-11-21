@@ -720,3 +720,21 @@ GetNamespace 실패 시 ListBuckets는 `skipped`로 기록한다. 실제 조회 
 가상 검증 시나리오는 `regional-services`, `regional-services-only`이며 기존
 `python scripts/validate_scenarios.py --case regional-services --output PATH`와
 동일 경로로 재현한다. AI 배치/검토를 함께 검증하려면 `--ai`를 추가한다.
+
+## OCI GoldenGate (OCIGG)
+기존 collect 명령으로 GoldenGate 배포도 수집한다. ListDeployments와 GetDeployment의
+최소 메타데이터만 저장하고 공식 아이콘 아래 실제 이름과 관측된 Private/Public IP를
+표시한다. 도형의 Subnet 소속은 고객 VCN Private Endpoint의 subnet_id 기준이다.
+공개 프런트엔드용 load_balancer_subnet_id로 대체하거나 내부 LB를 새로 그리지 않는다.
+
+상세 조회가 거부되어도 목록에서 확인한 이름·OCID·Subnet·IP는 유지한다.
+`detail_status=unavailable`, `nsg_status=unavailable`는 NSG가 없다는 뜻이 아니다.
+상세 응답에 NSG가 생략되면 not_reported, 성공한 빈 목록이면 ok로 구분한다.
+Subnet이 미확인일 때 이름·IP·공개 여부로 임의 Subnet을 찾거나 DNS 조회를 하지 않는다.
+DB 연결 설정·접속 계정·복제 프로세스·소스/타깃 흐름·데이터는 수집하지 않는다.
+
+```sh
+python scripts/validate_scenarios.py --ai --case goldengate --output /tmp/oci-lenz-goldengate
+```
+기존 스냅샷에는 자동으로 리소스가 추가되지 않으므로 실제 OCIGG 반영에는 collect를
+다시 수행한다. 구성도 재배치만 하려는 경우에는 기존 snapshot을 그대로 사용할 수 있다.

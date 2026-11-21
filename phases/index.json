@@ -223,6 +223,14 @@
     {
       "dir": "55-regional-storage-devops",
       "status": "pending"
+    },
+    {
+      "dir": "56-goldengate",
+      "status": "pending"
+    },
+    {
+      "dir": "57-restore-pre-osn",
+      "status": "pending"
     }
   ]
 }

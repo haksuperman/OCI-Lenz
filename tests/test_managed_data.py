@@ -114,7 +114,7 @@ class ManagedDataTests(unittest.TestCase):
         from unittest.mock import Mock
         from oci_lenz.managed_data import collect_managed_data
         clients={};requests=[];resources=[]
-        for service,cls in [('redis',oci.redis.RedisClusterClient),('psql',oci.psql.PostgresqlClient),('opensearch',oci.opensearch.OpensearchClusterClient)]:
+        for service,cls in [('redis',oci.redis.RedisClusterClient),('psql',oci.psql.PostgresqlClient),('opensearch',oci.opensearch.OpensearchClusterClient),('goldengate',oci.golden_gate.GoldenGateClient)]:
             client=cls.__new__(cls);client.retry_strategy=oci.retry.NoneRetryStrategy();client.circuit_breaker_callback=None
             client.base_client=Mock();client.base_client.get_preferred_retry_strategy.return_value=None
             def transport(service=service,**request):
@@ -122,8 +122,8 @@ class ManagedDataTests(unittest.TestCase):
                 if name.startswith('list_'):
                     query=request['query_params'];self.assertEqual(query['compartmentId'],'synthetic-compartment')
                     suffix='b' if query.get('page') else 'a'
-                    namespace=getattr(oci,service).models
-                    collection,summary={'redis':('RedisClusterCollection','RedisClusterSummary'),'psql':('DbSystemCollection','DbSystemSummary'),'opensearch':('OpensearchClusterCollection','OpensearchClusterSummary')}[service]
+                    namespace=getattr(oci,'golden_gate' if service=='goldengate' else service).models
+                    collection,summary={'redis':('RedisClusterCollection','RedisClusterSummary'),'psql':('DbSystemCollection','DbSystemSummary'),'opensearch':('OpensearchClusterCollection','OpensearchClusterSummary'),'goldengate':('DeploymentCollection','DeploymentSummary')}[service]
                     data=getattr(namespace,collection)(items=[getattr(namespace,summary)(id=service+'-'+suffix,display_name='Synthetic '+service)])
                     headers={} if query.get('page') else {'opc-next-page':'synthetic-next'}
                 else:
@@ -131,6 +131,7 @@ class ManagedDataTests(unittest.TestCase):
                     headers={}
                     if service=='redis':data=oci.redis.models.RedisCluster(subnet_id='s',primary_endpoint_ip_address='10.0.0.41')
                     elif service=='opensearch':data=oci.opensearch.models.OpensearchCluster(subnet_id='s',opensearch_private_ip='10.0.0.61')
+                    elif service=='goldengate':data=oci.golden_gate.models.Deployment(subnet_id='s',private_ip_address='10.0.0.71')
                     elif name=='get_db_system':data=oci.psql.models.DbSystem(network_details=oci.psql.models.NetworkDetails(subnet_id='s'))
                     else:data=oci.psql.models.ConnectionDetails(primary_db_endpoint=oci.psql.models.Endpoint(ip_address='10.0.0.51'))
                 return oci.response.Response(200,headers,data,None)
@@ -141,6 +142,6 @@ class ManagedDataTests(unittest.TestCase):
             return data if not api.startswith('list_') or isinstance(data,list) else data.items
         def add(obj,kind,**fields):resources.append(dict(id=obj.id,name=obj.display_name,kind=kind,**fields))
         collect_managed_data(call,add,'synthetic-compartment')
-        self.assertEqual(len(resources),6)
+        self.assertEqual(len(resources),8)
         for service,api in [('redis','list_redis_clusters'),('psql','list_db_systems'),('opensearch','list_opensearch_clusters')]:
             self.assertEqual(requests.count((service,api)),2)
