@@ -1,0 +1,30 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "55-regional-storage-devops",
+  "steps": [
+    {
+      "step": 0,
+      "name": "regional-storage-registry-devops",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_regional_services",
+          "tests.test_nosql",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

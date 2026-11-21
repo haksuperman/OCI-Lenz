@@ -76,9 +76,10 @@ class FlowDesignTests(unittest.TestCase):
         doc=E.fromstring(apply_design(s));cells={c.get('id'):c for c in doc.find('diagram').iter('mxCell')}
         for key,r in nodes.items():
             if r['kind']!='unknown':continue
-            self.assertTrue(key in detail['aliases'])
-            self.assertEqual(key in scene['aliases'],key in flow_targets)
-            self.assertEqual(cells[key].get('visible')=='0',key not in flow_targets)
+            backend_only=all(e['kind']=='backend' for e in edges if e['target']==key)
+            self.assertEqual(key in detail['aliases'],not backend_only)
+            self.assertEqual(key in scene['aliases'],key in flow_targets and not backend_only)
+            self.assertEqual(cells[key].get('visible')=='0',key not in flow_targets or backend_only)
         self.assertTrue(set(nodes)<=set(cells))
 
     def test_compartment_heading_uses_known_name_and_keeps_it_local(self):

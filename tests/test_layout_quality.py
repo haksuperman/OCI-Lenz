@@ -50,7 +50,7 @@ class LayoutQualityTests(unittest.TestCase):
 
     def test_crossings_and_intrusions_cannot_be_traded_for_compactness(self):
         initial=assess(self.snapshot,self.plan)
-        for field in ('edge_crossings','edge_overlap_length','resource_intersections','title_intersections','nonorthogonal_segments'):
+        for field in ('unbridged_crossings','edge_overlap_length','resource_intersections','title_intersections','nonorthogonal_segments'):
             worse=copy.deepcopy(initial);worse['metrics'][field]+=1;worse['loss']=0
             with self.subTest(field=field):self.assertFalse(revision_decision(initial,worse)['accepted'])
 
@@ -83,8 +83,20 @@ class LayoutQualityTests(unittest.TestCase):
                {'source':'app-nsg','target':'private','network':False,'points':[(50,0),(50,100)]}]
         with patch('oci_lenz.quality.native_paths',return_value=paths):report=assess(self.snapshot,self.plan)
         self.assertEqual(report['metrics']['edge_crossings'],1)
-        self.assertIn('edge_crossings',report['issues'])
+        self.assertIn('unbridged_crossings',report['issues'])
         self.assertNotIn('compute',json.dumps(report))
+
+    def test_clear_native_bridges_are_distinguished_from_unmarked_crossings(self):
+        paths=[{'source':'compute','target':'lb','network':False,'points':[(0,50),(100,50)]},
+               {'source':'app-nsg','target':'private','network':False,'points':[(50,0),(50,100)]}]
+        with patch('oci_lenz.quality.native_paths',return_value=paths):before=assess(self.snapshot,self.plan)
+        paths[1]['jump_style']='arc'
+        with patch('oci_lenz.quality.native_paths',return_value=paths):after=assess(self.snapshot,self.plan)
+        self.assertEqual(after['metrics']['edge_crossings'],1)
+        self.assertEqual(after['metrics']['bridged_crossings'],1)
+        self.assertEqual(after['metrics']['unbridged_crossings'],0)
+        self.assertNotIn('unbridged_crossings',after['issues'])
+        self.assertTrue(revision_decision(before,after)['accepted'])
 
     def test_native_invalid_labels_are_rejected_even_if_model_geometry_is_valid(self):
         import xml.etree.ElementTree as E

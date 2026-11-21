@@ -226,3 +226,84 @@ Policy ID is metadata only; do not query rules, address lists, logs, credentials
 or add policy cards that duplicate protection endpoints. Use official WAF art.
 Keep WAAS origin/domain mapping deferred rather than guessing LB relationships.
 No source topology, resource placement or traffic-reachability inference is added.
+
+
+## 026 — Evidence-limited Edge WAF origin support
+Supersede 025's deferred-WAAS scope by adding separate edge_waf resources and
+scoped List/Get WAAS metadata. Keep Regional WAF's exact LB OCID semantics intact.
+Use only explicitly selected default origins/groups. Public IP equality may map
+to a unique collected LB/NLB/Compute; never resolve DNS, match resource names or
+place globally scoped private addresses into guessed VCNs. Retain logical origin
+tags when identity is unknown, and retain policy-only data on detail failure.
+Do not persist raw policy bodies, headers, certificate material or URI credentials.
+Keep global service semantics explicit: the drawing region is query context.
+
+## 027 — Common readable connection corridors
+Apply conflict avoidance to all visible API relationships rather than a service
+allowlist. Use geometric branch order and the same fanout-aware conflict score for
+routing refinement and final quality. Preserve native endpoint normals and
+vertical backend flow; do not use a shared owner as permission to merge unrelated
+wires. Add alias-only proximity and fanout hints to new AI and review requests;
+measure them in quality v3 as soft constraints because immutable OCI containment
+can make perfect alignment impossible. Replay changes routes only, not stored
+resource geometry. Never infer service groups, invent endpoints or add customer
+coordinate exceptions. Test crossed ordinary backend wires, shared trunks,
+unknown proximity, unchanged parents, exact replay and all existing services.
+
+## 028 — Backend-owned annotations instead of floating unknown targets
+Fold unresolved backend presentation into its Set's measured editable native
+label, with count, while preserving canonical endpoints and hidden evidence
+cells. This supersedes the generic proximity-only guidance for these targets;
+other unknown types keep their own presentation. Distinguish empty success from
+failed collection using a minimal status flag in both LB adapters. Treat legacy
+empty data as unknown collection status; never retroactively claim success.
+Known backend arrows stay visible; failed reads never create target arrows.
+Do not reparent a guessed OCI resource into the Set's subnet or infer membership.
+
+## 029 — Prefer short readable paths with explicit independent crossovers
+Supersede 027's raw-crossing-first optimization with measured short paths and
+native arc jumps. Retain raw independent-wire counts, distinguish clean interior crossovers from
+unbridged contacts, and never relax resource/title intrusion or collinear overlap.
+Allow only the initial shared prefix of API-confirmed same-DRG branches, with later reconvergence and other owners still counted. Use common fixed styling at the existing icon scale, not customer-specific pixel
+coordinates. Keep API endpoints and same-owner branch evidence. Quality v4 guards
+ambiguous contacts while permitting marked crossovers to avoid excessive detours.
+Reference customer artwork stays outside the repository and supplies presentation
+conventions only. No topology, customer layout, OCI credentials or raw source is
+copied into examples. Validate a forced crossing PNG, existing saved layouts,
+strict unsafe-contact tests and deterministic replay.
+
+## 030 — Scoped managed data services without data-plane access
+Add Cache/PostgreSQL/OpenSearch as resource cards in their explicitly observed
+subnets. Use List/Get metadata and PostgreSQL GetConnectionDetails IP allowlists;
+never serialize its CA or access SQL, Redis/Valkey, indices/documents or credentials.
+Keep denied summary resources and unavailable network state distinct from empty
+successful lists. Canonical graph evidence preserves nested and singular SDK
+network fields. Endpoint uniqueness is scoped to an observed VCN; no DNS, name
+matching or service grouping inference. Retain official OpenSearch art, extract
+PostgreSQL native geometry from the newer official toolkit without altering the
+pinned library, and use an explicit logical Cache tag when no dedicated artwork
+exists in that bundle. Real-SDK pagination, denied/zero, privacy, native editing,
+redaction and synthetic PNG validation precede live customer verification.
+
+## 031 — Official Cache symbol reuse and regional NoSQL inventory
+Supersede 030's Cache-tag fallback with the existing official NoSQL symbol used
+for Cache in Oracle reference material. Do not claim a dedicated Cache stencil.
+Add NoSQL as actual table OCIDs with ListTables metadata only; avoid GetTable and
+its schema/DDL exposure and extra read permission. Regional tables belong to
+their observed compartment outside VCN/subnet boundaries, including compartments
+without VCNs. Do not synthesize endpoint IPs, backend matches, service gateway
+access or client usage links. Native validation enforces the compartment parent.
+Retain pagination/coverage/privacy, source artwork, exact replay and shared
+connector styling. Same glyph does not imply identical resource kinds or topology.
+
+## 032 — Regional storage and developer metadata without guessed flows
+Keep Object Storage buckets, OCIR repositories and DevOps control-plane resources
+in their API compartment outside network boundaries. Share the NoSQL regional
+placement contract rather than add another renderer. Preserve project_id ownership
+evidence only; never infer application/service groups or execution/image-pull paths.
+ListBuckets omits OCIDs, so obtain identity through GetBucket. If denied preserve
+the visible list summary with an explicit stable non-OCID identity and coverage.
+No contents, source URLs, pipeline parameters, credentials or histories are saved.
+Reuse unchanged official service stencils, with shared DevOps artwork for its child
+resource kinds. Validate generated SDK pagination, privacy, denied/empty/dependency
+coverage, native ownership and deterministic XML/PNG before live collection.

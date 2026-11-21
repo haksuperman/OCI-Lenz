@@ -67,7 +67,26 @@ class CollectorTests(unittest.TestCase):
                     if key==fail:raise oci.exceptions.ServiceError(403,'NotAuthorized',{},'sensitive error')
                     return N(data=responses.get(key,[]))
                 return run
-        with patch.object(oci.waf,'WafClient',WafClient),patch.object(oci.network_load_balancer,'NetworkLoadBalancerClient',NlbClient),patch.object(oci.mysql,'DbSystemClient',MysqlClient),patch.object(oci.config,'from_file',return_value={'tenancy':'t','region':'r'}),patch.object(oci.identity,'IdentityClient',Client),patch.object(oci.core,'ComputeClient',Client),patch.object(oci.database,'DatabaseClient',Client),patch.object(oci.core,'VirtualNetworkClient',Client),patch.object(oci.load_balancer,'LoadBalancerClient',Client),patch.object(oci.resource_search,'ResourceSearchClient',Client),patch.object(oci.pagination,'list_call_get_all_results',side_effect=lambda fn,*a,**kw:fn(*a,**kw)):
+        class WaasClient(Client):
+            def __getattr__(self,name):
+                def run(*a,**kw):
+                    key='waas_'+name
+                    if request_log is not None:request_log.append((key,a,kw))
+                    if key==fail:raise oci.exceptions.ServiceError(403,'NotAuthorized',{},'sensitive error')
+                    return N(data=responses.get(key,[]))
+                return run
+        def data_client(prefix):
+            class DataClient(Client):
+                def __getattr__(self,name):
+                    assert name.startswith(('list_','get_'))
+                    def run(*a,**kw):
+                        key=prefix+'_'+name
+                        if request_log is not None:request_log.append((key,a,kw))
+                        if key==fail:raise oci.exceptions.ServiceError(403,'NotAuthorized',{},'sensitive error')
+                        return N(data=responses.get(key,[]))
+                    return run
+            return DataClient
+        with patch.object(oci.object_storage,'ObjectStorageClient',data_client('object_storage')),patch.object(oci.artifacts,'ArtifactsClient',data_client('artifacts')),patch.object(oci.devops,'DevopsClient',data_client('devops')),patch.object(oci.nosql,'NosqlClient',data_client('nosql')),patch.object(oci.redis,'RedisClusterClient',data_client('redis')),patch.object(oci.psql,'PostgresqlClient',data_client('psql')),patch.object(oci.opensearch,'OpensearchClusterClient',data_client('opensearch')),patch.object(oci.waas,'WaasClient',WaasClient),patch.object(oci.waf,'WafClient',WafClient),patch.object(oci.network_load_balancer,'NetworkLoadBalancerClient',NlbClient),patch.object(oci.mysql,'DbSystemClient',MysqlClient),patch.object(oci.config,'from_file',return_value={'tenancy':'t','region':'r'}),patch.object(oci.identity,'IdentityClient',Client),patch.object(oci.core,'ComputeClient',Client),patch.object(oci.database,'DatabaseClient',Client),patch.object(oci.core,'VirtualNetworkClient',Client),patch.object(oci.load_balancer,'LoadBalancerClient',Client),patch.object(oci.resource_search,'ResourceSearchClient',Client),patch.object(oci.pagination,'list_call_get_all_results',side_effect=lambda fn,*a,**kw:fn(*a,**kw)):
             return collect('P','r','c'),calls
     def test_allowlist_secondary_vnics_and_zero_results(self):
         s,calls=self.run_collect()

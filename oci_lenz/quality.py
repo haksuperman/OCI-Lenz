@@ -11,16 +11,20 @@ from .routing import native_paths,path_quality,visible_rectangle,intersects
 from .typography import text_width
 from .composition import measure
 from .database_services import DB_SYSTEMS
+from .managed_data import KINDS as MANAGED_KINDS
 
 
-def edge_conflicts(paths,nodes):
-    """Count real ambiguity, excluding only an evidenced fanout's shared prefix."""
+def conflict_pairs(paths,nodes):
+    """Normalize only evidenced same-owner shared prefixes for comparison."""
     def owner(path):
         source,target=path['source'],path['target']
-        if nodes.get(source,{}).get('kind')!='backend_set':return None
+        sk=nodes.get(source,{}).get('kind');tk=nodes.get(target,{}).get('kind')
+        if sk=='drg' and tk in ('ipsec_tunnel','vcn','rpc','virtual_circuit'):return source
+        if tk=='drg' and sk in ('rpc','virtual_circuit','ipsec_tunnel'):return target
+        if sk!='backend_set':return None
         kind=nodes.get(target,{}).get('kind')
         if kind in ('lb','nlb'):return target  # Native ownership arrow is reversed.
-        if kind in ('compute','vnic','db_node','unknown','mysql_db_system','autonomous_database',*DB_SYSTEMS):return source
+        if kind in ('compute','vnic','db_node','unknown','mysql_db_system','autonomous_database',*DB_SYSTEMS,*MANAGED_KINDS):return source
         return None
     def orient(path,key):
         points=path['points'] if path['source']==key else list(reversed(path['points']))
@@ -45,15 +49,19 @@ def edge_conflicts(paths,nodes):
                 if math.dist(point,seq[1])<1e-6:seq.pop(0)
                 seq[0]=point
         return {**left,'points':a},{**right,'points':b}
-    crossings=0;overlap=0
     for i,left in enumerate(paths):
         for right in paths[i+1:]:
             key=owner(left)
-            if key is not None and key==owner(right):
-                pair=trim(orient(left,key),orient(right,key))
-            else:pair=({**left,'network':True},{**right,'network':True})
-            result=path_quality(pair)
-            crossings+=result['network_edge_crossings'];overlap+=result['network_overlap_length']
+            if key is not None and key==owner(right):yield trim(orient(left,key),orient(right,key))
+            else:yield ({**left,'network':True},{**right,'network':True})
+
+
+def edge_conflicts(paths,nodes):
+    """Keep raw crossings and overlaps measurable, even with visible bridges."""
+    crossings=0;overlap=0
+    for pair in conflict_pairs(paths,nodes):
+        result=path_quality(pair)
+        crossings+=result['network_edge_crossings'];overlap+=result['network_overlap_length']
     return {'edge_crossings':crossings,'edge_overlap_length':round(overlap,3)}
 
 
@@ -87,9 +95,10 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
     # Snap sub-micropixel noise before orthogonal intersection measurement.
     paths=[{**p,'points':[(round(x,6),round(y,6)) for x,y in p['points']]}
            for p in native_paths(root,nodes)]
-    # The router metric counts network/DB-involved pairs only.
-    # Quality selection must also count unrelated LB/backend/compute crossings.
+    # Use the same fanout-aware conflict metric as native routing refinement.
     conflicts=edge_conflicts(paths,nodes)
+    from .line_jumps import crossing_report
+    bridges=crossing_report(paths,nodes,[*cards.values(),*(r for _,r in titles)])
     intrusions=touched_titles=diagonal=bends=0;length=distance=0
     for path in paths:
         points=path['points'];endpoints={path['source'],path['target']}
@@ -131,7 +140,7 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
     region=boxes[scene['region']];area=region['width']*region['height']
     leaf_area=sum(item['min_width']*item['min_height'] for key,item in items.items() if key not in siblings)
     scale=math.sqrt(max(1,leaf_area));edge_count=max(1,len(paths))
-    metrics={'edge_crossings':conflicts['edge_crossings'],
+    metrics={**bridges,'edge_crossings':conflicts['edge_crossings'],
              'edge_overlap_length':conflicts['edge_overlap_length'],
              'resource_intersections':intrusions,'title_intersections':touched_titles,
              'nonorthogonal_segments':diagonal,'spacing_violations':spacing_violations,
@@ -139,20 +148,26 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
              'route_detour_ratio':round(max(0,length/max(distance,1)-1),6),
              'canvas_area':round(area,3),'canvas_area_ratio':round(area/max(1,leaf_area),6),
              'container_slack_ratio':round(slack/max(1,container_area),6)}
-    loss=(1000*(intrusions+touched_titles+diagonal)+100*metrics['edge_crossings']+
+    loss=(1000*(intrusions+touched_titles+diagonal)+100*metrics['unbridged_crossings']+.15*metrics['bridged_crossings']+
           20*metrics['edge_overlap_length']/scale+5*shortfall+
-          4*metrics['route_detour_ratio']+.5*bends/edge_count+
+          12*metrics['route_detour_ratio']+2*bends/edge_count+
           .5*metrics['canvas_area_ratio']+2*metrics['container_slack_ratio'])
-    issues=[k for k in ('resource_intersections','title_intersections','nonorthogonal_segments','edge_crossings','edge_overlap_length','spacing_violations') if metrics[k]>0]
+    issues=[k for k in ('resource_intersections','title_intersections','nonorthogonal_segments','unbridged_crossings','edge_overlap_length','spacing_violations') if metrics[k]>0]
     if metrics['container_slack_ratio']>.35:issues.append('excessive_whitespace')
     if metrics['route_detour_ratio']>1:issues.append('route_detours')
-    if metrics['edge_crossings'] or metrics['edge_overlap_length']:
+    if metrics['unbridged_crossings'] or metrics['edge_overlap_length']:
         for i,left in enumerate(paths):
             for right in paths[i+1:]:
                 pair=edge_conflicts((left,right),nodes)
                 if pair['edge_crossings'] or pair['edge_overlap_length']:
                     focus.update(p[k] for p in (left,right) for k in ('source','target'))
     design=measure(scene,boxes);metrics.update(design['metrics']);loss+=design['loss']
+    from .connector_rules import readability
+    connections=readability(scene['request'].get('connection_readability',{}),boxes)
+    metrics.update(connections['metrics']);loss+=8*metrics['unknown_target_distance']+4*metrics['fanout_misalignment']
+    design['feedback'].extend(connections['feedback'])
+    if metrics['remote_unknown_targets']:issues.append('remote_unknown_targets')
+    if metrics['fanout_misalignment']>.2:issues.append('fanout_misalignment')
     from .connector_rules import alignment_issues
     connector_issues=alignment_issues(scene['request'].get('connector_guides',[]),overview)
     metrics['connector_alignment_errors']=len(connector_issues);loss+=1000*len(connector_issues)
@@ -162,18 +177,18 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
                       ('flow_alignment_error',.20),('flow_reversals',0),
                       ('network_alignment_error',.15),('worst_network_alignment_error',.20)):
         if metrics[key]>limit:issues.append(key)
-    return {'version':2,'scene_signature':scene['signature'],'status':'needs_review' if issues else 'clear','loss':round(loss,6),
+    return {'version':4,'scene_signature':scene['signature'],'status':'needs_review' if issues else 'clear','loss':round(loss,6),
             'metrics':metrics,'issues':issues,'focus':sorted(set(aliases[k] for k in focus if k in aliases)|{f['id'] for f in design['feedback']}),
             'design_feedback':design['feedback'],'connector_feedback':connector_issues}
 
 
 def revision_decision(current,candidate,*,initial=None):
-    """Never trade safety/crossing regressions or unbounded canvas growth for loss."""
+    """Never trade safety/ambiguous-contact regressions or unbounded canvas growth for loss."""
     before,after=current['metrics'],candidate['metrics']
     if current['scene_signature']!=candidate['scene_signature']:
         return {'accepted':False,'reason':'different_inventory'}
     if current['version']!=candidate['version']:return {'accepted':False,'reason':'different_quality_version'}
-    protected=('resource_intersections','title_intersections','nonorthogonal_segments','edge_crossings','edge_overlap_length','flow_reversals','connector_alignment_errors')
+    protected=('resource_intersections','title_intersections','nonorthogonal_segments','unbridged_crossings','edge_overlap_length','flow_reversals','connector_alignment_errors')
     for field in protected:
         if after[field]>before[field]+1e-6:return {'accepted':False,'reason':'regression_'+field}
     reference=(initial or current)['metrics']['canvas_area']

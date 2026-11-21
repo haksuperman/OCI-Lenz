@@ -127,5 +127,74 @@ SQL, wallet 다운로드, Autonomous 접속 문자열 조회, SSH/DB 암호, MyS
 목록의 LoadBalancer summary subtype에 있는 보호 대상 ID만 사용하므로
 GetWebAppFirewall(`WEB_APP_FIREWALL_READ`)이나 정책 Get/List·규칙/로그 API는
 필요하지 않다. 보호 대상 LB는 기존 선택 범위의 LB 목록에서 확인한다. IAM 정책은
-앱이 생성/수정하지 않는다. Legacy WAAS 권한은 이번 기능에서 요청하지 않는다.
+앱이 생성/수정하지 않는다. Regional WAF 자체에는 WAAS 권한이 필요하지 않으며 Edge WAF 권한은 아래에서 설명한다.
 공식 근거: [Oracle WAF IAM 권한표](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/wafpolicyreference_topic-Details_for_WAF_Policies.htm).
+
+
+## Edge WAF / WAAS
+
+| API | 필요 권한 | IAM verb/resource |
+| --- | --- | --- |
+| ListWaasPolicies | WAAS_POLICY_INSPECT | inspect waas-policy |
+| GetWaasPolicy | WAAS_POLICY_READ | read waas-policy |
+
+선택한 컴파트먼트 목록에서 반환된 정책 ID만 상세 조회한다. 위 권한은 Edge 정책
+수집용으로 Regional WAF의 직접 LB 연결 권한과 별도다. 앱은 IAM을 변경하지 않으며,
+DNS·외부 Origin·인증서·로그·규칙 전용 API를 호출하지 않는다. Get 응답에서도 필요한
+Origin 필드만 보존한다. 정책 본문과 헤더는 원문으로 저장하지 않는다.
+공식 근거: [Oracle Edge policy IAM](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/wafpolicyreference_topic-Details_for_Edge_Policies.htm).
+
+## OCI Cache · OCI Database with PostgreSQL · Search with OpenSearch
+
+| SDK API | 필요 권한 | IAM verb/resource |
+| --- | --- | --- |
+| ListRedisClusters | REDIS_CLUSTER_INSPECT | inspect redis-clusters |
+| GetRedisCluster | REDIS_CLUSTER_READ | read redis-clusters |
+| PostgreSQL ListDbSystems | POSTGRES_DB_SYSTEM_INSPECT | inspect postgres-db-systems |
+| PostgreSQL GetDbSystem, GetConnectionDetails | POSTGRES_DB_SYSTEM_READ | read postgres-db-systems |
+| ListOpensearchClusters, GetOpensearchCluster | OPENSEARCH_CLUSTER_INSPECT (Oracle 공개 표의 List/GetElasticsearchCluster 명칭) | inspect opensearch-clusters |
+
+Oracle OpenSearch 권한표는 List/Get 동작을 기존 Elasticsearch 명칭으로 표기한다.
+OCI-Lenz는 현재 SDK의 List/GetOpensearchCluster만 호출한다. 실제 테넌시에서의
+거부는 coverage에 남기며, 권한을 자동 상향하거나 manage 정책을 적용하지 않는다.
+네트워크 목록/상세 조회는 기존 network read 권한으로 별도 수행한다. 생성·갱신용
+VCN/VNIC 관리 권한, Redis 사용자/토큰 권한, DB 인증/SQL 권한, OpenSearch
+인덱스/문서 접근 권한은 이 수집기에 필요하지 않다. GetConnectionDetails의
+CA 인증서가 응답에 포함되더라도 주소 필드만 추출하고 인증서는 저장하지 않는다.
+
+공식 근거: [OCI Cache IAM](https://docs.oracle.com/en-us/iaas/Content/ocicache/permissions.htm),
+[PostgreSQL IAM](https://docs.oracle.com/en-us/iaas/Content/postgresql/policies.htm),
+[OpenSearch IAM](https://docs.oracle.com/en-us/iaas/Content/search-opensearch/Concepts/ocisearchpermissions.htm).
+
+## Oracle NoSQL Database Cloud Service
+
+| API | 필요 권한 | IAM verb/resource |
+| --- | --- | --- |
+| ListTables | NOSQL_TABLE_INSPECT | inspect nosql-tables |
+
+현재 수집기는 ListTables의 ID·이름·컴파트먼트·lifecycle만 사용한다.
+GetTable(`NOSQL_TABLE_READ`), Query/GetRow, 인덱스·사용량·복제 API는 호출하지
+않으므로 nosql-rows 접근 권한은 필요하지 않다. 스키마·DDL·태그·행 데이터도
+저장하지 않는다. IAM 정책은 사용자가 준비하며 앱은 생성/변경하지 않는다.
+공식 근거: [Oracle NoSQL 정책 참조](https://docs.oracle.com/en/cloud/paas/nosql-cloud/odsql/).
+
+## Object Storage · Container Registry · DevOps metadata
+| Service / API | Minimum permission | Resource verb |
+| --- | --- | --- |
+| Object Storage GetNamespace | No additional IAM permission for caller namespace | Authenticated caller; no compartment_id parameter |
+| Object Storage ListBuckets | BUCKET_INSPECT | inspect buckets in selected compartment |
+| Object Storage GetBucket (OCID only) | BUCKET_READ | read buckets in selected compartment |
+| Registry ListContainerRepositories | REPOSITORY_INSPECT | inspect repos in selected compartment |
+| DevOps ListProjects | DEVOPS_PROJECT_INSPECT | inspect devops-project |
+| DevOps ListRepositories | DEVOPS_REPOSITORY_INSPECT | inspect devops-repository |
+| DevOps ListBuildPipelines | DEVOPS_BUILD_PIPELINE_INSPECT | inspect devops-build-pipeline |
+| DevOps ListDeployPipelines | DEVOPS_DEPLOY_PIPELINE_INSPECT | inspect devops-deploy-pipeline |
+| DevOps ListDeployEnvironments | DEVOPS_DEPLOY_ENVIRONMENT_INSPECT | inspect devops-deploy-environment |
+
+DevOps permissions are scoped to the selected compartment. Namespace lookup is
+only a routing prerequisite for its buckets, not tenancy-wide bucket enumeration.
+No object read/list, image pull, code fetch, build/deploy execution or IAM changes
+are performed. GetBucket metadata is immediately reduced to the bucket OCID.
+Sources: [Object Storage IAM](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/objectstoragepolicyreference.htm),
+[Registry IAM](https://docs.oracle.com/en-us/iaas/Content/Identity/policyreference/registrypolicyreference.htm),
+[DevOps IAM](https://docs.oracle.com/en-us/iaas/Content/devops/using/devops_iampolicies.htm).

@@ -7,10 +7,11 @@ from .diagram_model import diagram_graph as graph
 from .display import scope_title
 from .typography import card_metrics,style_card,header_metrics,wrap_text,text_width
 
+from .regional_services import REGIONAL_KINDS
 from .database_services import DB_SYSTEMS,node_owner,REFERENCES
 
 GATEWAY_KINDS=('internet','nat','service')
-OVERVIEW_EDGE_KINDS=('waf_protection','backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id','vm_cluster_id',*REFERENCES)
+OVERVIEW_EDGE_KINDS=('project_id','edge_protection','waf_protection','backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id','vm_cluster_id',*REFERENCES)
 
 
 class LayoutFormatError(ValueError):
@@ -45,6 +46,8 @@ def make_scene(snapshot,view='detail'):
     nodes,edges=graph(snapshot)
     compact_nodes,_=graph(compact)
     hidden={k for k,r in nodes.items() if view=='overview' and (r['kind'] in ('vnic','route','nsg') or (r['kind']=='db_node' and nodes.get(node_owner(r),{}).get('kind') in DB_SYSTEMS))}
+    backend_unknowns={e['target'] for e in edges if e['kind']=='backend' and nodes[e['target']]['kind']=='unknown'}
+    hidden|={k for k in backend_unknowns if all(e['kind']=='backend' for e in edges if e['target']==k)}
     display_targets={}
     if view=='overview':
         for i,e in enumerate(edges):
@@ -80,7 +83,7 @@ def make_scene(snapshot,view='detail'):
                   'min_width':220 if container else width,
                   'min_height':64 if container else card_metrics(compact_nodes[key],width)['height'],
                   'container':container}
-        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','lpg','ipsec_tunnel','exascale_db_storage_vault','vm_cluster_network') else 'icon_label'
+        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','lpg','ipsec_tunnel','exascale_db_storage_vault','vm_cluster_network','edge_origin') else 'icon_label'
         if container:
             header=header_metrics(c.get('value',''),220,container_font(kind))
             items[a]['header_height']=header['header_height']
@@ -95,6 +98,8 @@ def make_scene(snapshot,view='detail'):
     request={'view':view,'items':items,'edges':[{'id':'e'+str(i),'source':aliases[e['source']],'target':aliases[display_targets.get(i,e['target'])],'kind':e['kind']} for i,e in enumerate(edges) if e['source'] in aliases and display_targets.get(i,e['target']) in aliases and not ((e['kind']=='ipsec_id' and nodes[e['target']]['kind']=='ipsec') or (e['kind']=='cross_connect_group_id' and nodes[e['target']]['kind']=='cross_connect_group'))],'gateway_groups':gateway_groups,'target_aspect_ratio':1.7}
     from .composition import policy
     request['design_policy']=policy()
+    from .connector_rules import readability_groups
+    request['connection_readability']=readability_groups(request)
     from .network_layout import network_groups
     networks=network_groups(nodes,edges,aliases)
     signature_data=(keys,items,request['edges'],gateway_groups)
@@ -246,7 +251,7 @@ def apply_plan(snapshot,scene,plan,region_only=False):
             right=24;bottom=100
             for key,c in cells.items():
                 if not key.startswith('layout-compartment-'):continue
-                children=[v for k,v in cells.items() if v.get('parent')==key and k in nodes and nodes[k]['kind']=='vcn']
+                children=[v for k,v in cells.items() if v.get('parent')==key and k in nodes and nodes[k]['kind'] in ({'vcn'} | REGIONAL_KINDS)]
                 if not children:continue
                 geometries=[v.find('mxGeometry') for v in children]
                 dx=min(float(g.get('x')) for g in geometries)-24
@@ -268,7 +273,7 @@ def apply_plan(snapshot,scene,plan,region_only=False):
         for i,e in enumerate(edges):
             c=cells.get('edge-'+str(i))
             if c is None:continue
-            if page.get('id')=='region' and (e['kind'] not in OVERVIEW_EDGE_KINDS or cells[e['source']].get('visible')=='0' or cells[c.get('target')].get('visible')=='0'):
+            if ((e['kind']=='backend' and nodes[e['target']]['kind']=='unknown') or cells[e['source']].get('visible')=='0' or cells[c.get('target')].get('visible')=='0' or (page.get('id')=='region' and e['kind'] not in OVERVIEW_EDGE_KINDS)):
                 c.set('visible','0')
             if e['kind'] in ('route','route_table_id','nsg_ids'):
                 c.set('style',c.get('style')+'textOpacity=0;')
@@ -276,7 +281,7 @@ def apply_plan(snapshot,scene,plan,region_only=False):
                 c.set('visible','0')
             if e['kind'] in ('lb_id','db_system_id'):c.set('style',c.get('style')+'startArrow=block;endArrow=none;textOpacity=0;')
             if e['kind'] in REFERENCES or e['kind']=='vm_cluster_id':c.set('style',c.get('style')+'textOpacity=0;')
-            if e['kind'] in ('backend','waf_protection'):c.set('style',c.get('style')+'textOpacity=0;')
+            if e['kind'] in ('backend','waf_protection','edge_protection'):c.set('style',c.get('style')+'textOpacity=0;')
             if e['kind'] in ('drg_id','drg_network','peer_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id'):
                 c.set('style',c.get('style')+'textOpacity=0;')
                 if e['kind']=='peer_id':c.set('style',c.get('style')+'dashed=1;')
@@ -305,7 +310,7 @@ def append_information_index(doc,snapshot,nodes):
     y=30
     for i,r in enumerate(sorted(resources,key=lambda r:(r['kind'],r['id']))):
         lines=[r['name']+' / '+r['kind'],*r.get('display_details',[])]
-        if r['kind']=='vcn' and r.get('compartment_id') and not snapshot.get('presentation',{}).get('redacted'):
+        if r['kind'] in ({'vcn'} | REGIONAL_KINDS) and r.get('compartment_id') and not snapshot.get('presentation',{}).get('redacted'):
             lines.append('Compartment: '+r['compartment_id'])
         for rule in r.get('rules',[]):lines.append(rule.get('destination','')+' → '+nodes.get(rule.get('network_entity_id'),{}).get('name','대상 미확인'))
         for key in r.get('nsg_ids',[]):lines.append('NSG: '+nodes.get(key,{}).get('name','대상 미확인'))

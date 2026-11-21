@@ -46,8 +46,11 @@ def card_metrics(resource,width):
     detail_height=0 if not details else 13*len(details.splitlines())
     iw,ih=icon_extent(resource['kind'])
     top=8+ih+3 if ih else 6
-    label_height=name_height+(2+detail_height if details else 0)
-    return {'name':name,'details':details,'name_height':name_height,'detail_height':detail_height,
+    badge=wrap_text(resource.get('backend_badge',''),width-16,10)
+    badge_connector=bool(badge) and resource.get('backend_badge','').startswith('백엔드 대상 미확인')
+    badge_height=(10 if badge_connector else 2)+14*len(badge.splitlines()) if badge else 0
+    label_height=name_height+(2+detail_height if details else 0)+badge_height
+    return {'name':name,'details':details,'badge':badge,'badge_height':badge_height,'badge_connector':badge_connector,'name_height':name_height,'detail_height':detail_height,
             'label_top':top,'label_height':label_height,'icon_width':iw,'icon_height':ih,
             'height':math.ceil(top+label_height+(8 if ih else 6))}
 
@@ -58,17 +61,21 @@ def style_card(root,cell,resource,width):
     g=icon.find('mxGeometry') if icon is not None else None
     if g is not None:
         g.set('x',str((width-float(g.get('width')))/2));g.set('y','8')
-    logical=resource['kind'] in ('backend_set','lpg','ipsec_tunnel','exascale_db_storage_vault','vm_cluster_network')
+    logical=resource['kind'] in ('backend_set','lpg','ipsec_tunnel','exascale_db_storage_vault','vm_cluster_network','edge_origin')
     height=float(cell.find('mxGeometry').get('height'))
     top=(height-metrics['label_height'])/2 if logical else metrics['label_top']
     def value(text):return escape(text).replace('\n','<br>')
     name_size=11 if resource['kind'] in ('internet','nat','service') else 12
     label=f'<div style="font-size:{name_size}px;line-height:16px;color:#213A44"><b>'+value(metrics['name'])+'</b></div>'
     if metrics['details']:label+='<div style="font-size:10px;line-height:13px;color:#52646C;margin-top:2px">'+value(metrics['details'])+'</div>'
+    if metrics['badge']:
+        if metrics['badge_connector']:label+='<div style="font-size:10px;line-height:10px;color:#7C6A50">↓</div>'
+        label+='<div style="font-size:10px;line-height:14px;color:#7C6A50">'+value(metrics['badge'])+'</div>'
     cell.set('value',label)
     text_widths=[text_width(line,12) for line in metrics['name'].split('\n')]
     text_widths.extend(text_width(line,10) for line in metrics['details'].split('\n'))
     content_width=min(width,max(metrics['icon_width'],*text_widths)+4)
     x,y,w,h=(0,0,width,height) if logical else ((width-content_width)/2,8 if g is not None else top,content_width,top+metrics['label_height']-(8 if g is not None else top))
     shape='rounded=1;arcSize=12;fillColor=#F1F5F5;strokeColor=#B5C5C9;' if logical else 'group;fillColor=none;strokeColor=none;'
+    if metrics['badge']:shape+='ociBackendBadge=1;'
     cell.set('style',shape+f'ociNativeLabel=1;ociContentX={x};ociContentY={y};ociContentW={w};ociContentH={h};html=1;whiteSpace=wrap;align=center;verticalAlign=top;spacing=0;spacingTop={top};spacingLeft=8;spacingRight=8;')

@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "51-backend-status-badges",
+  "steps": [
+    {
+      "step": 0,
+      "name": "backend-status-and-owned-annotation",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_backend_badges",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

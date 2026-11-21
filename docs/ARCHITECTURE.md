@@ -127,7 +127,7 @@ stubs lead to a clear corridor above the caption; obstacle avoidance uses visibl
 content bounds and title lines. API source/target direction remains unchanged.
 VCN/subnet boundaries use distinct weights and heading sizes. The overview omits
 unknown targets that participate only in hidden technical relations, while
-unresolved LB/backend endpoints remain visible. All unknown cells and evidence
+unresolved LB ownership endpoints remain visible; unresolved backend targets are now folded into Set-owned status (see below). All unknown cells and evidence
 remain editable in XML and available in the complete network-detail scene.
 
 Internet/NAT/Service Gateway cards use narrow measured captions and alias-only
@@ -217,7 +217,7 @@ geometry; non-network scene signatures/current example replays are unchanged.
 
 The native router keeps model rectangles and actual projected endpoints fixed.
 It penalizes crossings/collinear overlap, evaluates alternative network target
-ports and makes at most two refinement passes, retaining only better conflict
+ports and makes at most two refinement passes, retaining only better overlap/path-complexity
 scores. Resource/title avoidance stays mandatory. Genuine shared endpoint stubs
 and reciprocal pairs are exempted from ambiguity counts; unrelated connections
 are never joined. `validation.json.routing_quality` reports residual network
@@ -282,18 +282,20 @@ before intersection tests. Reports contain numeric measurements, fixed issue
 codes and scene aliases only. Optional detail pages retain structural validation
 but are not scored by this overview selector.
 
-The base loss terms (introduced in quality version 1) are lower-is-better for the SAME scene signature:
-1000 × (card/title intrusions + diagonals), 100 × crossings,
-20 × overlap / sqrt(measured leaf area), 5 × normalized spacing shortfall,
-4 × excess route-length ratio, 0.5 × bends / visible-edge count,
-0.5 × canvas-area / measured-leaf-area, and 2 × container-slack ratio.
+Quality version 4 keeps raw crossings observable and classifies safe native
+bridges separately. Its base loss is lower-is-better for the SAME scene signature:
+1000 × (card/title intrusions + diagonals), 100 × unbridged crossings,
+0.15 × bridged crossings, 20 × overlap / sqrt(measured leaf area),
+5 × normalized spacing shortfall, 12 × excess route-length ratio,
+2 × bends / visible-edge count, 0.5 × canvas-area / measured-leaf-area,
+and 2 × container-slack ratio, plus composition/alignment/status-distance terms.
 Spacing targets are 16px for ordinary siblings, 24px when a container is involved
 and 8px within API-owned gateway clusters. Slack above 35% or route detours above
-100% produce warnings alongside any crossing/overlap/intrusion/spacing violation.
+100% produce warnings alongside any unbridged-crossing/overlap/intrusion/spacing violation.
 These are geometry heuristics, not an absolute aesthetic score.
 
 Visual review receives objective metrics and affected aliases. Candidates must
-pass native/scene validation, strictly reduce loss, never increase crossing,
+pass native/scene validation, strictly reduce loss, never increase unbridged crossing,
 overlap, intrusion or diagonal metrics, and stay within 125% of INITIAL canvas
 area across the entire review budget. Equal, regressing or invalid proposals
 leave the incumbent unchanged. Existing review budgets remain unchanged; no
@@ -475,5 +477,174 @@ guided to place it beside the referenced LB on the same icon row (or above with 
 endpoints stay fixed independently of position. It uses official WAF stencil 102
 and the common orthogonal conflict-aware routing, without joining physical DRG
 layout groups. The arrow means protection association, not a tested traffic hop.
-Legacy WAAS is explicitly unsupported in coverage: its domain/origin configuration
-cannot establish the same direct LB OCID evidence and is never inferred here.
+Edge WAF (WAAS) is collected separately below; its origin relationship has weaker
+IP-based evidence and never substitutes for this regional LB OCID association.
+
+
+## Edge WAF / WAAS
+ListWaasPolicies uses the selected control-plane region and compartment; each
+returned policy ID is passed to GetWaasPolicy through the shared bounded retry,
+pagination and coverage adapter. Retain only summary identity/name/lifecycle,
+origin read status, and origins referenced by waf_config.origin or selected
+waf_config.origin_groups → origin_groups[].origins[].origin. No other origins are
+shown. Policy domains/CNAMEs, custom headers, certificates, rule bodies and full
+URIs are not serialized. Normalize URI host only; discard userinfo/path/query/
+fragment, preserve validated port integers and static selection-field evidence.
+
+Edge WAF is a global edge service: the selected region frame is inventory query
+context, not evidence of physical regional placement. Never assign VCN/Subnet
+membership. Reuse the official WAF icon as a distinct edge_waf resource. An IP
+literal may resolve only to ONE observed public LB/NLB or Compute resource across
+the explicitly selected scope. Hostnames use no DNS lookup; private/missing/
+ambiguous/unobserved targets remain editable logical edge_origin tags with
+unknown resource identity. Arrows mean configured origin selection plus observed
+address matching, not an OCI attachment or tested traffic path. Repeated origins
+to the same resource share one edge while source metadata retains all references.
+
+Get denial keeps the policy and an unavailable origin tag; successful empty
+selection stays not_configured, separate from unavailable reads or a 0-item List.
+Synthetic logical-origin IDs hash keys to avoid leaking names into identifiers
+and to keep quotes/slashes safe in native cell lookups. Redaction and alias-only
+visual previews mask configured hosts too. No external origin is contacted.
+
+## Common connection readability
+
+`connector_rules.readability_groups` derives alias-only single-owner unresolved
+endpoint proximity and fanout alignment hints from the visible exact API graph.
+Every fresh AI request and visual revision receives these hints. Quality v3
+measures remote unknown targets and fanout misalignment as soft constraints:
+parent boundaries can prevent ideal proximity. No coordinates or parents are
+silently moved, including when replaying older saved plans.
+
+All visible edges now participate in occupied-corridor routing, including ordinary
+LB/NLB/backend/unknown relationships. Branches are routed in geometric target
+order with deterministic ID tie breaks. Fanout branches avoid occupied corridors,
+and bounded refinement uses the same evidenced-fanout-aware conflict measurement
+as quality acceptance. Existing normal endpoint stubs, orthogonal segments,
+container-title obstacles and immutable API endpoints remain mandatory. Routing
+costs still balance length, bends and conflicts; this does not promise zero
+crossings on every graph. Saved layouts gain routing fixes on replay; new resource
+placement needs a fresh AI layout, not a hidden local repacking pass.
+
+## Backend-owned unresolved status
+
+LB/NLB collectors persist `backends_status=ok|unavailable` independently from the
+allowlisted backend list. A successful empty list creates no invented endpoint.
+Legacy empty lists without status cannot establish successful zero collection.
+`diagram_graph` derives a local `backend_badge` without mutating canonical graph
+or inventory. Count unresolved configured backend entries per Set, including
+mixed known/unknown sets. Overview and optional detail scenes omit backend-only
+unknown targets from AI placement and hide unresolved backend edges in native XML.
+Other uses of an unknown node, such as peering, remain independently represented.
+
+The badge is part of the Set's one editable native label and measured footprint:
+its proximity is guaranteed locally, not an AI distance suggestion. A short down
+marker inside the label associates unresolved configured targets with the Set;
+failed/unknown collection status uses plain text without an invented target arrow.
+No extra resource, OCI parent membership, or API relationship is created. Hidden
+native endpoints/edges and original backend fields remain intact. Changed label
+footprints require a new AI layout; old signed plans are rejected normally.
+
+## Short routes and explicit line jumps
+
+All visible native edges use `jumpStyle=arc;jumpSize=8`, 1.4px strokes and 8px
+open arrowheads, including reversed LB ownership arrows. Resource/title avoidance,
+normal endpoint stubs and actual native source/target remain unchanged. Short
+collinear routes stay straight across an independent perpendicular wire. A proper
+crossing costs 16 route units, bends cost 26, collinear overlap costs 24 per unit;
+contacts near an existing end/bend and turns close to another wire cost 400.
+Occupied parallel lanes use 16px offsets so an 8px arc has room.
+
+The same-owner fanout exemption remains exact and evidence-based: LB/Backend Set branches and API-confirmed branches on the same DRG may share their initial prefix. Only the initial DRG face bus and a 16px junction clearance are exempted from occupied routing; later reconvergence and other DRGs remain conflicts. Raw independent-wire crossing
+counts are never rewritten. `line_jumps.crossing_report` classifies a crossing as
+bridged only when the later native wire has arc styling, the intersection is at
+least 10px from all segment ends/bends, the arc envelope clears resource/title
+bounds, and neighboring crossing clusters do not crowd it. All other crossings
+remain `unbridged_crossings`; unrelated collinear overlap always remains an issue.
+A bridge is a display convention, not a junction or reachability evidence.
+Quality v4 permits an increase in clean bridged crossings when total readability
+loss improves, while protecting ambiguous crossings, overlap, intrusion, diagonal,
+flow reversals and native alignment from regression. Existing AI rectangles and
+source snapshots are not moved or edited on replay. Fresh AI/review prompts ask
+for compact evidenced branches and short monotone flow, with no invented service
+membership. Exported crossing PNGs require visual inspection as well as XML flags.
+
+## Managed Cache, PostgreSQL and OpenSearch
+
+`managed_data.collect_managed_data` uses the same explicit compartment, central
+pagination/3-attempt retry/coverage boundary as existing services. `redis`, `psql`
+and `opensearch` clients list their resources and get only returned IDs. PostgreSQL
+also calls GetConnectionDetails for observed endpoint IPs; CA certificate, FQDN,
+ports, usernames, hashes, auth settings, tags and raw bodies are not serialized.
+Primary connection data takes precedence over a preliminary NetworkDetails IP.
+Failed connection reads keep an observed primary from NetworkDetails.
+
+Canonical kinds are `oci_cache`, `postgresql_db_system`, `opensearch_cluster`.
+Persist identity/name/compartment, lifecycle, observed subnet and NSG IDs, validated
+literal IPs with endpoint role/instance ID and collection/network status only.
+Invalid IP strings never cause DNS resolution. A denied Get retains the summary;
+missing network data stays unavailable, never mapped by IP/name to a guessed
+subnet. Known out-of-scope network IDs remain unresolved and resolve normally
+when explicitly selected snapshots are merged. NSG evidence uses the actual
+RedisCluster.nsg_ids, DbSystem.network_details.nsg_ids or OpensearchCluster.nsg_id.
+No individual service nodes are invented from counts or endpoints.
+
+New service IP-only LB backends resolve only to a unique observed endpoint in the
+same LB VCN, with endpoint API fields in the evidence. FQDN/name guessing and
+cross-compartment crawling are excluded. Default captions are name/representative
+IP; the information appendix keeps all observed addresses and read statuses.
+Redis/psql/OpenSearch Collection wrappers use the shared unwrap boundary and
+real generated SDK methods are tested with two pages and detail calls.
+
+OpenSearch uses official library entry 49. PostgreSQL's 10 native vector cells
+come from Oracle's official v24.2 toolkit, separately bundled in postgresql.xml;
+the original 224-entry library is unchanged. No dedicated Cache-named entry was found
+in the referenced bundle; Cache now uses its original NoSQL entry 46, consistent
+with Oracle's official Cache illustration (see assets/oci/SOURCE.md). Both fresh AI and replay keep exact parents;
+existing signature protection, line-jump rules and redaction remain shared.
+
+## Regional NoSQL metadata and Cache symbol reuse
+
+`nosql.collect_nosql` calls ListTables only in the explicitly selected compartment.
+The shared paginator unwraps TableCollection, records zero/denied/failed states
+and retains bounded retry behavior. Store TableSummary.id/name/compartment_id,
+lifecycle_state and fixed regional deployment scope only. List summaries are
+sufficient; GetTable, schema/DDL, indexes, rows, queries, usage and replicas are
+not fetched. The common add helper supports SDK `name` as well as display_name.
+
+`nosql_table` is a regional card under its API compartment, outside every VCN and
+subnet, including NoSQL-only compartments without VCNs. The native scaffold and
+validator derive compartment frames from VCN and NoSQL owners; optional detail
+cropping preserves direct compartment children. NoSQL never participates in
+subnet/NSG edges or IP-only backend resolution, and no Service Gateway/client
+connection is inferred. Compartment membership is not a traffic relationship.
+
+Cache keeps its existing subnet/NSG/IP semantics but changes from a logical tag
+to official icon 46, matching Oracle's published Cache presentation. NoSQL uses
+the same official artwork with its own kind and regional placement. Cache's
+changed caption/icon footprint invalidates old saved geometry normally. Native
+editing, alias-only AI input, redaction, deterministic replay and the common
+line-jump rules stay unchanged. Reference art/source URLs are recorded without
+copying private/customer examples or altering the pinned library.
+
+## Regional storage and developer services
+`regional_services.py` collects Object Storage `GetNamespace`, `ListBuckets`,
+`GetBucket`; Artifacts `ListContainerRepositories`; DevOps `ListProjects`,
+`ListRepositories`, `ListBuildPipelines`, `ListDeployPipelines`, `ListDeployEnvironments`.
+Lists always use the selected compartment and central pagination/retry/coverage.
+DevOps kinds are queried independently even when project enumeration is denied.
+Only IDs, names, actual compartment, lifecycle, project_id and environment type are
+allowlisted. No object/image/source contents, URLs, parameters, tags or connection
+credentials leave the adapter. Bucket detail is used solely to obtain its OCID.
+On detail denial the visible summary retains a deterministic SHA256 identity under
+`bucket-summary:` with `identity_status=list_summary`, never a fabricated OCID.
+A failed namespace prerequisite produces explicit `list_buckets: skipped`, distinct
+from successful zero results; namespace is used in memory and not stored.
+
+`REGIONAL_KINDS` shares compartment-only native placement and parent validation
+with NoSQL, including compartments without VCNs and optional detail-page cropping.
+DevOps child-to-project lines retain `*Summary.project_id` evidence; missing/out-of-
+scope projects remain unknown. These lines express ownership, never execution or
+traffic. No inferred Subnet/NSG/SGW/client/image-pull/build-to-deploy links exist.
+Official library entries 11/75/85 provide editable native icons. DevOps children
+reuse its service symbol; they are separate API resource kinds, not new stencils.

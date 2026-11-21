@@ -80,7 +80,7 @@ class WAFDiagramTests(unittest.TestCase):
         self.assertEqual(cells['waf'].get('parent'),'layout-region');self.assertIn('waf-icon',cells)
         edge=next(c for c in cells.values() if c.get('edge')=='1' and c.get('source')=='waf')
         self.assertEqual(edge.get('target'),'lb');self.assertNotEqual(edge.get('visible'),'0')
-        self.assertIn('endArrow=block;',edge.get('style'));self.assertNotIn('startArrow=block;',edge.get('style'))
+        self.assertIn('endArrow=open;',edge.get('style'));self.assertNotIn('startArrow=open;',edge.get('style'))
         self.assertEqual(graph(s),original);self.assertEqual(render(s),xml)
         scene=make_scene(s,view='overview');self.assertEqual(scene['items'][scene['aliases']['waf']]['parent'],scene['region'])
         self.assertNotIn('Synthetic WAF',json.dumps(scene['request']))

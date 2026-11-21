@@ -5,18 +5,18 @@ def collect(profile,region,compartment,config_file=None):
     if any(c in compartment for c in ("'", '\n', '\r')): raise ValueError('invalid compartment')
     cfg=oci.config.from_file(config_file or oci.config.DEFAULT_LOCATION,profile);cfg['region']=region
     retry=oci.retry.RetryStrategyBuilder(max_attempts_check=True,max_attempts=3,total_elapsed_time_check=True,total_elapsed_time_seconds=30).get_retry_strategy()
-    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'nlb':oci.network_load_balancer.NetworkLoadBalancerClient,'waf':oci.waf.WafClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient,'mysql':oci.mysql.DbSystemClient}.items()}
+    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'nlb':oci.network_load_balancer.NetworkLoadBalancerClient,'waf':oci.waf.WafClient,'waas':oci.waas.WaasClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient,'mysql':oci.mysql.DbSystemClient,'redis':oci.redis.RedisClusterClient,'psql':oci.psql.PostgresqlClient,'opensearch':oci.opensearch.OpensearchClusterClient,'nosql':oci.nosql.NosqlClient,'object_storage':oci.object_storage.ObjectStorageClient,'artifacts':oci.artifacts.ArtifactsClient,'devops':oci.devops.DevopsClient}.items()}
     s={'version':1,'scope':{'region':region,'compartments':[compartment]},'resources':[],'coverage':[]}
     def call(service,method,*args,**kwargs):
         entry={'region':region,'compartment':compartment,'service':service,'api':method}
-        scoped={key:value for key,value in kwargs.items() if key in ('db_system_id','vm_cluster_id','exadata_infrastructure_id')}
+        scoped={key:value for key,value in kwargs.items() if key in ('db_system_id','vm_cluster_id','exadata_infrastructure_id','waas_policy_id','redis_cluster_id','opensearch_cluster_id')}
         if scoped:entry['request_scope']=scoped
         try:
             fn=getattr(clients[service],method)
             if method.startswith(('list_','search_')): data=oci.pagination.list_call_get_all_results(fn,*args,**kwargs).data
             else:data=fn(*args,**kwargs).data
             # NLB/WAF APIs use Collection wrappers; support raw and flattened paginator results.
-            if service in ('nlb','waf') and method.startswith('list_') and not isinstance(data,list):data=data.items
+            if service in ('nlb','waf','redis','psql','opensearch','nosql','artifacts','devops') and method.startswith('list_') and not isinstance(data,list):data=data.items
             count=len(data) if isinstance(data,list) else 1
             entry.update(status='ok',count=count)
             return data
@@ -27,7 +27,7 @@ def collect(profile,region,compartment,config_file=None):
     def add(obj,kind,**fields):
         if obj is not None:
             if getattr(obj,'compartment_id',None):fields.setdefault('compartment_id',obj.compartment_id)
-            s['resources'].append(dict(id=obj.id,kind=kind,name=getattr(obj,'display_name',None) or kind,**fields))
+            s['resources'].append(dict(id=obj.id,kind=kind,name=getattr(obj,'display_name',None) or getattr(obj,'name',None) or kind,**fields))
     call('identity','list_region_subscriptions',cfg['tenancy'])
     tenancy=call('identity','get_tenancy',cfg['tenancy'])
     if getattr(tenancy,'name',None):s['scope']['tenancy_name']=tenancy.name
@@ -69,11 +69,13 @@ def collect(profile,region,compartment,config_file=None):
         sets=call('lb','list_backend_sets',lb.id)
         for bs in sets or []:
             backends=call('lb','list_backends',lb.id,bs.name)
-            s['resources'].append({'id':lb.id+'/backend-set/'+bs.name,'kind':'backend_set','name':bs.name,'lb_id':lb.id,'backends':[{'ip_address':b.ip_address,'port':b.port} for b in backends or []]})
+            s['resources'].append({'id':lb.id+'/backend-set/'+bs.name,'kind':'backend_set','name':bs.name,'lb_id':lb.id,'backends_status':'ok' if backends is not None else 'unavailable','backends':[{'ip_address':b.ip_address,'port':b.port} for b in backends or []]})
     from .load_balancers import collect_nlb
     collect_nlb(call,add,s,compartment)
     from .waf import collect_waf
     collect_waf(call,add,s,compartment)
+    from .edge_waf import collect_edge_waf
+    collect_edge_waf(call,add,s,compartment)
     from .network import collect_network
     collect_network(call,add,s,compartment)
     from .vpn import collect_vpn
@@ -88,6 +90,12 @@ def collect(profile,region,compartment,config_file=None):
     collect_exacc(call,add,s,compartment)
     collect_exaci(call,add,s,compartment)
     collect_exascale(call,add,s,compartment)
+    from .managed_data import collect_managed_data
+    collect_managed_data(call,add,compartment)
+    from .nosql import collect_nosql
+    collect_nosql(call,add,compartment)
+    from .regional_services import collect_regional_services
+    collect_regional_services(call,add,s,compartment)
     # Search counts are inventory evidence only, never inferred graph relationships.
     query=oci.resource_search.models.StructuredSearchDetails(query=f"query all resources where compartmentId = '{compartment}'")
     inventory=call('search','search_resources',query)
@@ -95,6 +103,6 @@ def collect(profile,region,compartment,config_file=None):
         mapping={'Vcn':'vcn','Subnet':'subnet','Instance':'compute','LoadBalancer':'lb','NetworkLoadBalancer':'nlb','NatGateway':'nat','InternetGateway':'internet','ServiceGateway':'service','NetworkSecurityGroup':'nsg','RouteTable':'route'}
         s['coverage'][-1]['inventory_comparison']={kind:{'search':sum(getattr(r,'resource_type',None)==api_type for r in inventory),'collected':sum(r['kind']==kind for r in s['resources'])} for api_type,kind in mapping.items()}
         s['coverage'][-1]['comparison_note']='Search visibility/indexing may differ; differences do not establish missing resources.'
-    for kind in ('database_catalog','oke','drg_routing','waas'):
+    for kind in ('database_catalog','oke','drg_routing'):
         s['coverage'].append({'region':region,'compartment':compartment,'service':kind,'status':'unsupported'})
     return s

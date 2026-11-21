@@ -21,4 +21,5 @@ def collect_nlb(call,add,snapshot,compartment):
             snapshot['resources'].append({'id':nlb.id+'/backend-set/'+bs.name,
                 'kind':'backend_set','name':bs.name,'lb_id':nlb.id,
                 'lb_id_evidence':'NetworkLoadBalancer BackendSet owner request network_load_balancer_id',
+                'backends_status':'ok' if backends is not None else 'unavailable',
                 'backends':[{'ip_address':b.ip_address,'target_id':b.target_id,'port':b.port} for b in backends or []]})

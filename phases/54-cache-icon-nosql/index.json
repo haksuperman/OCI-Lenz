@@ -1,0 +1,30 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "54-cache-icon-nosql",
+  "steps": [
+    {
+      "step": 0,
+      "name": "official-cache-symbol-and-regional-nosql-inventory",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_nosql",
+          "tests.test_managed_data",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}
