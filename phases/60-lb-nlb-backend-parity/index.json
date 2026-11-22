@@ -1,0 +1,31 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "60-lb-nlb-backend-parity",
+  "steps": [
+    {
+      "step": 0,
+      "name": "shared-configured-backend-ip-relations",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_lb_nlb_parity",
+          "tests.test_nlb_resolution",
+          "tests.test_network_load_balancer",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

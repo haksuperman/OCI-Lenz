@@ -6,6 +6,24 @@ def subnet_ids(resource):
     return resource.get('subnet_ids',[]) or ([resource['subnet_id']] if resource.get('subnet_id') else [])
 
 
+def match_backend_ip(backend,resources,nodes,vcns):
+    """Shared LB/NLB configured-address relation, independent of OCID lookups."""
+    from .managed_data import address,KINDS,ENDPOINT_FIELDS
+    ip=address(backend.get('ip_address'))
+    matches=[r for r in resources if r['kind']=='vnic' and ip and
+             (r.get('vcn_id') or nodes.get(r.get('subnet_id'),{}).get('vcn_id')) in vcns and
+             ip in {address(value) for value in r.get('private_ips',[])}]
+    endpoints=[r for r in resources if r['kind'] in ('mysql_db_system','autonomous_database','cloud_vm_cluster','exadb_vm_cluster',*KINDS) and ip and
+               nodes.get(r.get('subnet_id'),{}).get('vcn_id') in vcns and ip in {address(value) for value in r.get('private_ips',[])}]
+    candidates=matches+endpoints
+    evidence='BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN'
+    if endpoints:evidence='BackendSet.backends[].ip_address → unique observed VNIC or database endpoint / managed-service endpoint in LB VCN'
+    if len(candidates)!=1:return None,evidence
+    chosen=candidates[0]
+    if chosen['kind'] in ENDPOINT_FIELDS:evidence='BackendSet.backends[].ip_address → unique same-VCN '+ENDPOINT_FIELDS[chosen['kind']]
+    return chosen.get('instance_id') or chosen.get('db_node_id') or chosen['id'],evidence
+
+
 def collect_nlb(call,add,snapshot,compartment):
     for nlb in call('nlb','list_network_load_balancers',compartment_id=compartment) or []:
         listeners=call('nlb','list_listeners',nlb.id)

@@ -75,8 +75,10 @@ def _sample(scenario):
 
 def graph(snapshot):
     from .database_services import MODELS,REFERENCES
-    from .load_balancers import subnet_ids
-    from .managed_data import EVIDENCE,ENDPOINT_FIELDS,address as endpoint_address,KINDS as MANAGED_KINDS
+    from .load_balancers import subnet_ids,match_backend_ip
+    from .managed_data import EVIDENCE
+    from .application_services import NETWORK_EVIDENCE,api_backend_targets
+    EVIDENCE={**EVIDENCE,**NETWORK_EVIDENCE}
     resources = snapshot['resources']
     nodes={r['id']:dict(r) for r in resources}
     if len(nodes)!=len(resources): raise ValueError('duplicate resource IDs')
@@ -94,6 +96,15 @@ def graph(snapshot):
             if kind in DEVOPS_MODELS and r.get('project_id'):
                 edge(rid,r['project_id'],'project_id',DEVOPS_MODELS[kind]+'.project_id')
             continue  # Regional metadata has no subnet/VNIC/NSG relationships.
+        if kind=='file_export' and r.get('file_system_id'):edge(rid,r['file_system_id'],'file_system_id','ExportSummary.file_system_id')
+        if kind=='mount_target' and r.get('export_set_id'):
+            for export in resources:
+                if export['kind']=='file_export' and export.get('export_set_id')==r['export_set_id']:
+                    edge(rid,export['id'],'mount_export','MountTargetSummary.export_set_id → ExportSummary.export_set_id')
+        if kind=='function' and r.get('application_id'):edge(rid,r['application_id'],'application_id',r.get('application_evidence') or 'FunctionSummary.application_id')
+        if kind=='api_deployment':
+            if r.get('api_gateway_id'):edge(rid,r['api_gateway_id'],'api_gateway_id',r.get('gateway_evidence') or 'DeploymentSummary.gateway_id / Deployment.gateway_id')
+            for target,evidence in api_backend_targets(r,resources):edge(rid,target,'api_backend',evidence)
         if kind=='edge_waf':
             from .edge_waf import origin_targets
             extra,relations=origin_targets(r,resources,snapshot.get('presentation',{}).get('redacted',False))
@@ -108,7 +119,7 @@ def graph(snapshot):
             if r.get(field):
                 evidence=(MODELS[kind]+'.'+field) if kind in MODELS else field
                 if kind in EVIDENCE:evidence=EVIDENCE[kind].get(field,evidence)
-                if kind=='goldengate_deployment':evidence=r.get('network_evidence',{}).get(field,evidence)
+                if kind in ('goldengate_deployment','api_gateway'):evidence=r.get('network_evidence',{}).get(field,evidence)
                 if kind=='nlb' and field=='subnet_id':evidence='NetworkLoadBalancer.subnet_id'
                 if kind=='backend_set' and field=='lb_id':evidence=r.get('lb_id_evidence') or evidence
                 edge(rid,r[field],field,evidence)
@@ -116,7 +127,7 @@ def graph(snapshot):
             for target in r.get(field,[]):
                 evidence=(MODELS[kind]+'.'+field+'[]') if kind in MODELS else field
                 if kind in EVIDENCE:evidence=EVIDENCE[kind].get(field,evidence)
-                if kind=='goldengate_deployment':evidence=r.get('network_evidence',{}).get(field,evidence)
+                if kind in ('goldengate_deployment','api_gateway'):evidence=r.get('network_evidence',{}).get(field,evidence)
                 if kind=='nlb' and field=='nsg_ids':evidence='NetworkLoadBalancer.network_security_group_ids[]'
                 edge(rid,target,field,evidence)
         if kind in MODELS:
@@ -162,21 +173,15 @@ def graph(snapshot):
         if kind=='backend_set':
             lb=nodes.get(r.get('lb_id'),{})
             vcns={nodes.get(s,{}).get('vcn_id') for s in subnet_ids(lb)}-{None}
-            for backend in r.get('backends',[]):
+            for backend_index,backend in enumerate(r.get('backends',[])):
                 explicit=backend.get('target_id') if lb.get('kind')=='nlb' else None
+                target,evidence=None,None
                 if explicit:
-                    direct=nodes.get(explicit,{})
-                    matches=[n for n in resources if n['kind']=='vnic' and explicit in n.get('private_ip_ids',[])]
-                    target=explicit if direct.get('kind')=='compute' else ((matches[0].get('instance_id') or matches[0].get('db_node_id') or matches[0]['id']) if len(matches)==1 else explicit)
-                    if direct and direct.get('kind')!='compute' and len(matches)!=1:target='unresolved-nlb-target:'+explicit
-                    edge(rid,target,'backend','NetworkLoadBalancer Backend.target_id → Instance.id or unique observed PrivateIp.id/VNIC',f"Backend :{backend['port']}")
-                    continue
-                matches=[n for n in resources if n['kind']=='vnic' and (n.get('vcn_id') or nodes.get(n.get('subnet_id'),{}).get('vcn_id')) in vcns and backend.get('ip_address') and backend['ip_address'] in n.get('private_ips',[])]
-                endpoints=[n for n in resources if n['kind'] in ('mysql_db_system','autonomous_database','cloud_vm_cluster','exadb_vm_cluster',*MANAGED_KINDS) and nodes.get(n.get('subnet_id'),{}).get('vcn_id') in vcns and endpoint_address(backend.get('ip_address')) is not None and endpoint_address(backend['ip_address']) in {endpoint_address(ip) for ip in n.get('private_ips',[])}]
-                candidates=matches+endpoints
-                target=(candidates[0].get('instance_id') or candidates[0].get('db_node_id') or candidates[0]['id']) if len(candidates)==1 else 'backend:'+rid+':'+str(len(edges))
-                evidence='BackendSet.backends[].ip_address → unique VNIC/PrivateIp in LB VCN'
-                if endpoints:evidence='BackendSet.backends[].ip_address → unique observed VNIC or database endpoint / managed-service endpoint in LB VCN'
-                if len(candidates)==1 and candidates[0]['kind'] in ENDPOINT_FIELDS:evidence='BackendSet.backends[].ip_address → unique same-VCN '+ENDPOINT_FIELDS[candidates[0]['kind']]
+                    from .nlb_backends import explicit_target
+                    target,evidence=explicit_target(backend,resources)
+                if target is None:target,evidence=match_backend_ip(backend,resources,nodes,vcns)
+                if target is None:
+                    target=('unresolved-nlb-target:'+rid+':'+str(backend_index)) if explicit else 'backend:'+rid+':'+str(len(edges))
                 edge(rid,target,'backend',evidence,f"Backend :{backend['port']}")
+                if lb.get('kind')=='nlb':edges[-1].update(registered_ip=backend.get('ip_address') or backend.get('target_ip_address'),registered_target_id=explicit,resolution_status=backend.get('target_resolution_status','ip_registration'))
     return nodes,edges

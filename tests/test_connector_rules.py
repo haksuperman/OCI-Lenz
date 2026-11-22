@@ -2,7 +2,7 @@
 import copy
 import unittest
 import xml.etree.ElementTree as E
-from oci_lenz.connector_rules import guides,alignment_issues
+from oci_lenz.connector_rules import guides,alignment_issues,VERSION
 from oci_lenz.routing import route_native_edges,native_paths
 
 
@@ -87,7 +87,7 @@ class ConnectorRuleTests(unittest.TestCase):
             result=design(scene,[])
         self.assertEqual(request.call_count,2)
         self.assertIn('connector glyph row',request.call_args.args[0])
-        self.assertEqual(result['connector_rule_version'],1)
+        self.assertEqual(result['connector_rule_version'],VERSION)
         self.assertEqual(check_plan(scene,result),[])
 
     def test_old_saved_geometry_is_flagged_instead_of_silently_claimed_compliant(self):

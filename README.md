@@ -93,21 +93,51 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 
 ## 표시 범위와 결과
 
-- 전체 환경을 한 아키텍처 페이지에 표시하고 그 안에서 VCN·Subnet을 구분
-- VCN별 별도 상세 페이지는 `--detail-pages`로 선택
-- Public/Private Subnet, Compute와 VNIC, Load Balancer·Network Load Balancer(NLB)와 Backend Set, Regional WAF의 보호 대상 LB 연결, Edge WAF(WAAS)의 선택된 Origin 연결
-- Internet/NAT/Service Gateway, Route 목적지·다음 홉, NSG 연결
-- VCN–DRG 직접 연결, 로컬 피어링(LPG)·원격 피어링 연결(RPC)
-- Attachment는 관계 확인에만 사용하고 구성도에서 생략
-- FastConnect Virtual Circuit·물리 Cross-Connect·그룹과 DRG 연결 (Oracle 공식 FastConnect 심볼 사용)
-- IPSec VPN 컨테이너 안에 소속 터널을 표시하고 DRG·CPE는 바깥에 연결 (공유 비밀·장비 설정은 조회하지 않음)
-- Oracle Base DB System: Display Name과 관측된 Node IP만 표시
-- MySQL·Autonomous DB, ExaCC·ExaCI의 인프라/VM Cluster, Exascale VM Cluster·Storage Vault와 관측된 네트워크 관계
-- OCI GoldenGate(OCIGG) 배포의 이름·관측 IP·Private Endpoint Subnet/NSG 관계
-- OCI Cache·OCI Database with PostgreSQL·Search with OpenSearch의 이름·관측 IP·Subnet/NSG 관계
-- NoSQL 테이블 이름·OCID·컴파트먼트 메타데이터와 VCN 밖의 지역 서비스 배치
-- 범위 밖·모호한 관계의 `대상 미확인` 표시
-- `architecture.drawio`, `architecture.png`, `information-index.png`, `coverage.json`, `validation.json` (선택 시 `vcn-N.png` 추가)
+선택한 리전·컴파트먼트의 지원 대상 리소스를 하나의 아키텍처 페이지에 표시합니다. VCN·Subnet 경계는 유지하며, VCN별 상세 페이지는 `--detail-pages`로 추가할 수 있습니다.
+
+### OCI 서비스별 지원 범위
+
+OCI 콘솔의 메뉴 대분류를 기준으로 정리했습니다. 아래 표는 서비스 전체 기능이 아닌, OCI-Lenz가 수집·표시하는 리소스와 관계의 범위입니다.
+
+| OCI 콘솔 대분류 | 지원 서비스·리소스 | 수집·표시 내용 |
+| --- | --- | --- |
+| Networking | VCN · Public/Private Subnet · Internet Gateway(IGW) · NAT Gateway(NGW) · Service Gateway(SGW) | 네트워크 경계·CIDR과 게이트웨이 소속 |
+| Networking | Route Table · Network Security Group(NSG) | Route 목적지·다음 홉, NSG 연결 정보 |
+| Networking | Load Balancer(LB) · Network Load Balancer(NLB) | 이름·IP, Backend Set과 등록 백엔드·관측된 VM의 연결 |
+| Networking | DRG · Local Peering Gateway(LPG) · Remote Peering Connection(RPC) | VCN–DRG 직접 연결과 로컬·원격 피어링 관계 |
+| Networking | Site-to-Site VPN(IPSec) · CPE · FastConnect | VPN 내부 터널과 DRG·CPE 연결, Virtual Circuit·Cross-Connect·그룹의 구성 관계 |
+| Compute | Compute Instance · VNIC | 인스턴스 이름·관측 IP, 기본·보조 VNIC를 통한 Subnet 관계 |
+| Storage | File Storage | File System·Export·Mount Target과 실제 Subnet·NSG·IP |
+| Storage | Object Storage | 버킷 이름·컴파트먼트 메타데이터; VCN 밖에 표시 |
+| Oracle AI Database | Oracle Base Database Service(Base DB/DBCS) | DB System의 Display Name과 관측된 Node IP |
+| Oracle AI Database | Exadata: Cloud@Customer(ExaCC) · Dedicated Infrastructure(ExaCI/ExaCS) · Exascale Infrastructure(ExaDB-XS) | 인프라·VM Cluster·관측된 네트워크 관계; Exascale의 Storage Vault 포함 |
+| Oracle AI Database | Autonomous AI Database(ADB) | Serverless·Dedicated의 DB와 관측된 네트워크 관계, Dedicated의 관련 인프라·VM Cluster·Container DB |
+| Oracle AI Database | GoldenGate(OCIGG) | 배포 이름·관측 IP·Private Endpoint의 Subnet·NSG 관계 |
+| Databases | MySQL HeatWave · OCI Database with PostgreSQL | DB System 이름·관측 IP·Subnet·NSG 관계 |
+| Databases | OCI Cache · Search with OpenSearch | 클러스터 이름·관측 IP·Subnet·NSG 관계 |
+| Databases | NoSQL Database | 테이블 이름·OCID·컴파트먼트 메타데이터; VCN 밖에 표시 |
+| Developer Services | API Gateway | Gateway·Deployment와 설정된 Function 또는 유일하게 일치하는 관측 HTTP IP 백엔드 |
+| Developer Services | OCI Functions | Application·Function 소속과 Application의 Subnet·NSG 관계 |
+| Developer Services | Container Registry · DevOps | 컨테이너 저장소, 프로젝트·코드 저장소·빌드/배포 파이프라인·배포 환경과 프로젝트 소속; VCN 밖에 표시 |
+| Identity & Security | Regional WAF · Edge WAF(WAAS) | Regional WAF → 보호 대상 LB, Edge WAF → 선택된 Origin 연결 |
+
+메뉴 분류는 Oracle 공식 안내의 [Oracle AI Database](https://docs.oracle.com/en-us/iaas/database-overview/overview.html), [GoldenGate](https://docs.oracle.com/en/cloud/paas/goldengate-service/ocigg/access-oracle-cloud-infrastructure-goldengate.html), [Databases](https://docs.oracle.com/en-us/iaas/mysql-database/doc/listing-db-systems.html), [Developer Services](https://docs.oracle.com/en-us/iaas/Content/APIGateway/Tasks/apigatewayquickstartsetupcreatedeploy.htm), [WAF](https://docs.oracle.com/en-us/iaas/Content/WAF/Policies/list_waf-policy.htm)를 참고했습니다. 이 분류는 지원 범위 안내용이며, 실제 구성도는 API로 확인된 컴파트먼트·VCN·Subnet과 관계를 따라 배치합니다.
+
+기본 페이지는 주요 리소스와 흐름을 중심으로 표시합니다. VNIC·Route Table·NSG의 기술 도형은 기본 페이지에서 생략하고 상세 페이지·정보 부록·편집 가능한 XML에 보존합니다. Attachment도 연결 근거로 유지하되 도형·이름·경계는 표시하지 않습니다. 범위 밖·모호한 대상은 `대상 미확인`으로 구분하며, VM이 확인되지 않은 NLB 등록 백엔드는 해당 Backend Set 근처에 등록 IP 태그로 표시합니다.
+
+### 생성 파일
+
+| 파일 | 내용 |
+| --- | --- |
+| `architecture.drawio` | 리소스·라벨·연결선을 편집할 수 있는 원본 |
+| `architecture.png` | 전체 아키텍처 이미지 |
+| `information-index.png` | 수집 정보 부록 |
+| `coverage.json` | 서비스/API별 조회 상태와 건수 |
+| `skill-layout.json` | AI 배치 좌표와 경로; `--reuse-layout`으로 재사용 |
+| `validation.json` · `visual-review.json` | 관계·배치 품질 검증과 AI 시각 검토 결과 |
+| `vcn-N.png` | `--detail-pages`를 지정한 경우의 VCN별 상세 이미지 |
+
+서비스별 상세 범위와 권한은 [사용 문서](docs/USAGE.md)와 [IAM 문서](docs/IAM.md)를 참고하세요. 버킷·컨테이너 이미지·파일의 콘텐츠, 실행 변수, VPN 공유 비밀·장비 설정은 수집하지 않습니다.
 
 예시 사진은 시각적 기준입니다. 리소스나 연결의 존재는 OCI 응답을 기준으로 판단하며 실제 트래픽 도달성을 보장하지 않습니다. DB Home·일반 Database/PDB 카탈로그·Data Guard, OKE, DRG 내부 라우팅 정책은 후속 범위입니다. DB 서비스별 범위와 가상 예제는 [사용 문서](docs/USAGE.md#확장-db-서비스)를 참고하세요. 피어가 지정 범위 밖이면 자동 조회하지 않고 `대상 미확인`으로 표시합니다.
 
@@ -122,5 +152,3 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 - [스킬 선정·출처](docs/SKILLS.md)
 - [공식 아이콘 출처·매핑](assets/oci/SOURCE.md)
 - [요구사항](docs/PRD.md) · [아키텍처](docs/ARCHITECTURE.md) · [설계 결정](docs/ADR.md)
-
-Object Storage 버킷, Container Registry 저장소와 DevOps 프로젝트·코드 저장소·빌드/배포 파이프라인·배포 환경의 메타데이터도 지원합니다. 지역 서비스는 실제 컴파트먼트 안·VCN 밖에 표시하며 콘텐츠나 실행 변수는 수집하지 않습니다. 자세한 범위와 권한은 [사용법](docs/USAGE.md)과 [IAM](docs/IAM.md)을 참고하세요.

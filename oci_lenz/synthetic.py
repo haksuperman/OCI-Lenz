@@ -4,14 +4,30 @@ from collections import Counter
 
 from .database_synthetic import CASES as DATABASE_CASES
 
-SCENARIOS=('goldengate','regional-services','regional-services-only','cache-nosql','nosql','nosql-only','managed-data','oci-cache','postgresql','opensearch','backend-status','edge-waf','regional-waf','network-load-balancer','long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
+SCENARIOS=('nlb-backends','application-services','file-storage','api-gateway','functions','goldengate','regional-services','regional-services-only','cache-nosql','nosql','nosql-only','managed-data','oci-cache','postgresql','opensearch','backend-status','edge-waf','regional-waf','network-load-balancer','long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
 
 
 def build_scenario(case):
     from .model import sample
     if case not in SCENARIOS:raise ValueError('unknown synthetic matrix case')
     s=sample('overview' if case in ('cross-compartment','network-peering') else 'basic')
-    if case=='goldengate':
+    if case in ('application-services','file-storage','api-gateway','functions'):
+        if case in ('application-services','file-storage'):
+            s['resources'].extend([
+                {'id':'qa-files','kind':'file_system','name':'Synthetic Shared Files','availability_domain':'Synthetic AD'},
+                {'id':'qa-mount','kind':'mount_target','name':'Synthetic Mount Target','subnet_id':'private','nsg_ids':['app-nsg'],'export_set_id':'qa-export-set','private_ips':['10.0.1.81'],'primary_private_ip':'10.0.1.81'},
+                {'id':'qa-export','kind':'file_export','name':'Export','file_system_id':'qa-files','export_set_id':'qa-export-set'}])
+        if case in ('application-services','functions'):
+            s['resources'].extend([
+                {'id':'qa-app','kind':'functions_application','name':'Synthetic Functions Application','subnet_ids':['private'],'nsg_ids':['app-nsg']},
+                {'id':'qa-function','kind':'function','name':'Synthetic Request Handler','application_id':'qa-app'}])
+        if case in ('application-services','api-gateway'):
+            s['resources'].extend([
+                {'id':'qa-api','kind':'api_gateway','name':'Synthetic API Gateway','subnet_id':'public','endpoint_type':'PUBLIC','ip_addresses':[{'ip_address':'192.0.2.91','is_public':True}]},
+                {'id':'qa-deployment','kind':'api_deployment','name':'Synthetic API Deployment','api_gateway_id':'qa-api','backends_status':'ok','backends':[
+                    {'type':'HTTP_BACKEND','host':'10.0.1.10','port':8080,'evidence':'Deployment.specification.routes[].backend.url (sanitized host only)'},
+                    *([{'type':'ORACLE_FUNCTIONS_BACKEND','function_id':'qa-function','evidence':'Deployment.specification.routes[].backend.function_id'}] if case=='application-services' else [])]}])
+    elif case=='goldengate':
         s['resources'].append({'id':'qa-goldengate','kind':'goldengate_deployment','name':'Synthetic OCI GoldenGate','subnet_id':'private','nsg_ids':['app-nsg'],'private_ips':['10.0.1.71'],'primary_private_ip':'10.0.1.71','public_ip':'192.0.2.71','detail_status':'ok','network_status':'ok','nsg_status':'ok','network_evidence':{'subnet_id':'Deployment.subnet_id','nsg_ids':'Deployment.nsg_ids[]'}})
     elif case in ('regional-services','regional-services-only'):
         if case=='regional-services-only':s['resources']=[]
@@ -54,13 +70,16 @@ def build_scenario(case):
         s['resources'].append({'id':'synthetic-waf','kind':'waf','name':'Synthetic Regional WAF',
             'compartment_id':'synthetic-compartment-1','backend_type':'LOAD_BALANCER',
             'load_balancer_id':'lb','web_app_firewall_policy_id':'synthetic-waf-policy'})
-    elif case=='network-load-balancer':
+    elif case in ('network-load-balancer','nlb-backends'):
         lb=next(r for r in s['resources'] if r['kind']=='lb')
         lb.update(kind='nlb',name='Synthetic Network Load Balancer',subnet_id='public')
         lb.pop('subnet_ids')
         lb['ip_addresses']=[{'ip_address':'192.0.2.30','is_public':True}]
         backend=next(r for r in s['resources'] if r['kind']=='backend_set')
         backend['backends'][0]['target_id']='compute'
+        if case=='nlb-backends':
+            backend['backends_status']='ok'
+            backend['backends'].extend([{'target_id':'ocid1.privateip.oc1.synthetic.unavailable-'+str(i),'ip_address':'10.0.1.'+str(210+i),'port':443,'target_resolution_status':'not_found_or_not_authorized'} for i in range(2)])
         vnic=next(r for r in s['resources'] if r['kind']=='vnic')
         vnic['private_ip_ids']=['synthetic-private-ip']
         s['resources'].append({'id':'synthetic-private-nlb','kind':'nlb','name':'Synthetic Private NLB',

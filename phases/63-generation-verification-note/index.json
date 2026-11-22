@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "63-generation-verification-note",
+  "steps": [
+    {
+      "step": 0,
+      "name": "editable-output-verification-note",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_generation_notice",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

@@ -8,10 +8,11 @@ from .display import scope_title
 from .typography import card_metrics,style_card,header_metrics,wrap_text,text_width
 
 from .regional_services import REGIONAL_KINDS
+from .application_services import KINDS as APPLICATION_KINDS
 from .database_services import DB_SYSTEMS,node_owner,REFERENCES
 
 GATEWAY_KINDS=('internet','nat','service')
-OVERVIEW_EDGE_KINDS=('project_id','edge_protection','waf_protection','backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id','vm_cluster_id',*REFERENCES)
+OVERVIEW_EDGE_KINDS=('api_backend','api_gateway_id','application_id','mount_export','file_system_id','project_id','edge_protection','waf_protection','backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id','vm_cluster_id',*REFERENCES)
 
 
 class LayoutFormatError(ValueError):
@@ -83,7 +84,7 @@ def make_scene(snapshot,view='detail'):
                   'min_width':220 if container else width,
                   'min_height':64 if container else card_metrics(compact_nodes[key],width)['height'],
                   'container':container}
-        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','lpg','ipsec_tunnel','exascale_db_storage_vault','vm_cluster_network','edge_origin') else 'icon_label'
+        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','lpg','ipsec_tunnel','exascale_db_storage_vault','vm_cluster_network','edge_origin','file_export','api_deployment','backend_endpoint') else 'icon_label'
         if container:
             header=header_metrics(c.get('value',''),220,container_font(kind))
             items[a]['header_height']=header['header_height']
@@ -199,7 +200,7 @@ def check_plan(scene,plan):
     from .network_layout import direction_issues
     issues.extend(direction_issues(scene,boxes))
     from .connector_rules import alignment_issues,VERSION
-    if plan.get('connector_rule_version')==VERSION:
+    if plan.get('connector_rule_version') in (1,VERSION):
         issues.extend(alignment_issues(scene['request'].get('connector_guides',[]),plan))
     elif plan.get('connector_rule_version') is not None:issues.append('unsupported connector rule version')
     edge_ids={e['id'] for e in scene['request']['edges']}
@@ -251,7 +252,7 @@ def apply_plan(snapshot,scene,plan,region_only=False):
             right=24;bottom=100
             for key,c in cells.items():
                 if not key.startswith('layout-compartment-'):continue
-                children=[v for k,v in cells.items() if v.get('parent')==key and k in nodes and nodes[k]['kind'] in ({'vcn'} | REGIONAL_KINDS)]
+                children=[v for k,v in cells.items() if v.get('parent')==key and k in nodes and nodes[k]['kind'] in ({'vcn'} | REGIONAL_KINDS | APPLICATION_KINDS)]
                 if not children:continue
                 geometries=[v.find('mxGeometry') for v in children]
                 dx=min(float(g.get('x')) for g in geometries)-24
@@ -310,7 +311,7 @@ def append_information_index(doc,snapshot,nodes):
     y=30
     for i,r in enumerate(sorted(resources,key=lambda r:(r['kind'],r['id']))):
         lines=[r['name']+' / '+r['kind'],*r.get('display_details',[])]
-        if r['kind'] in ({'vcn'} | REGIONAL_KINDS) and r.get('compartment_id') and not snapshot.get('presentation',{}).get('redacted'):
+        if r['kind'] in ({'vcn'} | REGIONAL_KINDS | APPLICATION_KINDS) and r.get('compartment_id') and not snapshot.get('presentation',{}).get('redacted'):
             lines.append('Compartment: '+r['compartment_id'])
         for rule in r.get('rules',[]):lines.append(rule.get('destination','')+' → '+nodes.get(rule.get('network_entity_id'),{}).get('name','대상 미확인'))
         for key in r.get('nsg_ids',[]):lines.append('NSG: '+nodes.get(key,{}).get('name','대상 미확인'))
@@ -335,6 +336,7 @@ def apply_design(snapshot,plan=None,detail_pages=False):
         append_information_index(doc,snapshot,graph(snapshot)[0])
     doc.set('pageMode','split' if detail_pages else 'single')
     apply_scope_heading(doc,snapshot)
+    apply_generation_notices(doc,plan)
     return E.tostring(doc,encoding='unicode')
 
 
@@ -348,13 +350,61 @@ def apply_scope_heading(doc,snapshot):
         notice.set('value',text)
         notice.set('style','text;whiteSpace=wrap;html=0;fontSize=14;align=left;verticalAlign=top;spacing=0;')
         g=notice.find('mxGeometry');g.set('x',region.get('x','20'));g.set('width',str(width));g.set('height',str(height))
-        # Long/multi-compartment titles grow upward; AI geometry is unchanged.
-        g.set('y',str(min(10,float(region.get('y'))-height-16)))
+        # Follow the frame after boundary cropping instead of leaving a blank
+        # page band. Long headings still grow upward; AI geometry is unchanged.
+        g.set('y',str(float(region.get('y'))-height-16))
+
+
+def apply_generation_notices(doc,plan):
+    """Local editable footer, outside model geometry and all OCI boundaries."""
+    ai=any(isinstance(view,dict) and view.get('provider') in ('codex','openai') for view in plan.values())
+    text=('AI를 활용해 생성한 구성도입니다.' if ai else '자동 생성된 구성도입니다.')
+    text+=' 실제 OCI 리소스 및 설정과 대조·검증한 후 사용해 주세요.'
+    for page in doc.findall('diagram'):
+        root=page.find('mxGraphModel/root')
+        frame=root.find("mxCell[@id='layout-region']/mxGeometry")
+        if frame is not None:
+            x=float(frame.get('x'));width=float(frame.get('width'))
+            bottom=float(frame.get('y'))+float(frame.get('height'))
+        else:
+            x=30;width=1100
+            bottom=max((float(g.get('y'))+float(g.get('height')) for g in root.findall("mxCell[@vertex='1']/mxGeometry")),default=30)
+        value=wrap_text(text,width,12);height=16*len(value.split('\n'))+4
+        c=E.SubElement(root,'mxCell',id='generation-notice',value=value,vertex='1',parent='1',
+                       style='text;whiteSpace=wrap;html=0;fontSize=12;fontColor=#666666;align=left;verticalAlign=top;spacing=0;')
+        E.SubElement(c,'mxGeometry',x=str(x),y=str(bottom+16),width=str(width),height=str(height),**{'as':'geometry'})
+
+
+def validate_generation_notices(doc):
+    """Validate presentation-only footers after the resource graph checks.
+
+    Older XML without a footer remains readable. This never relaxes the resource
+    or information-index identity checks for other vertices.
+    """
+    for page in doc.findall('diagram'):
+        root=page.find('mxGraphModel/root');notes=root.findall("mxCell[@id='generation-notice']")
+        if len(notes)>1:raise ValueError('duplicate generation notice')
+        for c in notes:
+            if c.get('vertex')!='1' or c.get('parent')!='1':raise ValueError('invalid generation notice')
+            g=c.find('mxGeometry')
+            if g is None:raise ValueError('missing generation notice geometry')
+            x,y,w,h=(float(g.get(k,0)) for k in ('x','y','width','height'))
+            required=16*len(wrap_text(c.get('value',''),max(1,w),12).split('\n'))+4
+            frame=root.find("mxCell[@id='layout-region']/mxGeometry")
+            bottom=(float(frame.get('y'))+float(frame.get('height')) if frame is not None else
+                    max((float(v.get('y'))+float(v.get('height')) for cell in root.findall("mxCell[@vertex='1']") if cell is not c for v in cell.findall('mxGeometry')),default=30))
+            if not all(math.isfinite(v) for v in (x,y,w,h)) or w<=0 or h<required or y<bottom+16:
+                raise ValueError('generation notice clipping or overlap')
 
 
 def validate_architecture(xml,snapshot):
     from .draw import validate
-    doc=E.fromstring(xml);index=doc.find("diagram[@id='information-index']")
+    doc=E.fromstring(xml)
+    # Keep graph/membership errors primary. Footer positions cannot hide an
+    # invalid resource parent even if that edit also changes frame dimensions.
+    for root in doc.findall('diagram/mxGraphModel/root'):
+        for note in root.findall("mxCell[@id='generation-notice']"):root.remove(note)
+    index=doc.find("diagram[@id='information-index']")
     if index is None:raise ValueError('missing information index')
     doc.remove(index);doc.attrib.pop('style',None)
     validate(E.tostring(doc,encoding='unicode'),compact_snapshot(snapshot))
@@ -371,4 +421,5 @@ def validate_architecture(xml,snapshot):
             raise ValueError('information index clipping or overlap')
         bottom=y+h
 
+    validate_generation_notices(E.fromstring(xml))
     return True

@@ -231,6 +231,34 @@
     {
       "dir": "57-restore-pre-osn",
       "status": "pending"
+    },
+    {
+      "dir": "58-application-services",
+      "status": "pending"
+    },
+    {
+      "dir": "59-nlb-backend-resolution",
+      "status": "pending"
+    },
+    {
+      "dir": "60-lb-nlb-backend-parity",
+      "status": "pending"
+    },
+    {
+      "dir": "61-readable-arrow-corridors",
+      "status": "pending"
+    },
+    {
+      "dir": "62-connection-safe-whitespace",
+      "status": "pending"
+    },
+    {
+      "dir": "63-generation-verification-note",
+      "status": "pending"
+    },
+    {
+      "dir": "64-readme-service-catalog",
+      "status": "pending"
     }
   ]
 }

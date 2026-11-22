@@ -112,8 +112,9 @@ SQL, wallet 다운로드, Autonomous 접속 문자열 조회, SSH/DB 암호, MyS
 | ListListeners, ListBackendSets, ListBackends | NETWORK_LOAD_BALANCER_READ | read network-load-balancers |
 
 모든 요청은 선택한 컴파트먼트의 NLB 및 해당 NLB/Backend Set으로 한정한다.
-추가 Private IP ID는 기존 ListPrivateIps 결과에서만 보존하며 범위 밖 대상을
-추적 조회하지 않는다. GetNetworkLoadBalancer/헬스/인증/쓰기 API는 호출하지 않는다.
+IP가 제공되지 않은 OCID 등록만 아래 읽기 전용 API로 주소/대상을 보완한다.
+IP가 제공된 항목은 LB와 공통 규칙으로 연결하며 이 API의 성공을 요구하지 않는다.
+반환 ID·컴파트먼트·Subnet을 검증하고 범위 밖 대상을 자동 수집하지 않는다. GetNetworkLoadBalancer/헬스/인증/쓰기 API는 호출하지 않는다.
 정책은 사용자가 준비하며 앱은 IAM 정책을 생성하거나 수정하지 않는다.
 공식 근거: [Oracle NLB IAM 권한표](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/nlbpolicyreference.htm).
 
@@ -211,3 +212,52 @@ connection/assignment/process/data API or deployment start/stop/update is called
 No IAM policies are applied by OCI-Lenz.
 Source: [Oracle GoldenGate IAM](https://docs.oracle.com/en/cloud/paas/goldengate-service/ocigg/oracle-cloud-infrastructure-goldengate-policies.html),
 [DeploymentSummary fields](https://docs.oracle.com/en-us/iaas/tools/python/latest/api/golden_gate/models/oci.golden_gate.models.DeploymentSummary.html).
+
+
+## File Storage · API Gateway · OCI Functions
+| API | Minimum permission | IAM verb/resource |
+| --- | --- | --- |
+| ListAvailabilityDomains | COMPARTMENT_INSPECT | inspect compartments (selected compartment request scope) |
+| ListFileSystems | FILE_SYSTEM_INSPECT | inspect file-systems |
+| ListMountTargets | MOUNT_TARGET_INSPECT | inspect mount-targets |
+| ListExports | EXPORT_SET_READ | read export-sets |
+| GetPrivateIp (only Mount Target references) | PRIVATE_IP_READ | inspect private-ips |
+| GetIpv6 (only Mount Target references) | IPV6_READ | read ipv6s |
+| ListApplications | FN_APP_LIST | inspect fn-app |
+| ListFunctions (application_id scoped) | FN_FUNCTION_LIST | inspect fn-function |
+| ListGateways | API_GATEWAY_LIST | inspect api-gateways |
+| GetGateway | API_GATEWAY_READ | read api-gateways |
+| ListDeployments | API_DEPLOYMENT_LIST | inspect api-deployments |
+| GetDeployment | API_DEPLOYMENT_READ and API_GATEWAY_READ | read api-deployments AND read api-gateways |
+
+Service permissions apply in the selected resource compartments; referenced network
+addresses may require access in their actual compartment. Missing AD discovery
+skips dependent FSS lists without fabricating a zero count. GetDeployment requires
+both resource reads even if the gateway is outside the selected inventory scope.
+This does not authorize automatically listing that other compartment.
+No GetExport/GetMountTarget, GetApplication/GetFunction, invocation, file content,
+code/image/environment/configuration or IAM writes are performed. Gateway detail
+and Deployment specifications are reduced immediately to allowlisted network IDs,
+IPs and configured backend references. Full specifications and URLs are never saved.
+
+Sources: [File Storage IAM](https://docs.oracle.com/en-us/iaas/Content/Identity/policyreference/filestoragepolicyreference.htm),
+[Functions IAM](https://docs.oracle.com/en-us/iaas/Content/Identity/policyreference/functionspolicyreference.htm),
+[API Gateway IAM](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/apigatewaypolicyreference.htm),
+[Networking verbs](https://docs.oracle.com/en-us/iaas/Content/Identity/policyreference/corepolicyreference_topic-Details_for_Verb__ResourceType_Combinations.htm),
+[IAM discovery permissions](https://docs.oracle.com/en-us/iaas/Content/Identity/policyreference/iampolicyreference.htm).
+
+
+### NLB 백엔드 보완 조회
+| API | IAM verb/resource | 용도 |
+| --- | --- | --- |
+| GetPrivateIp | inspect private-ips (PRIVATE_IP_READ) | 관측된 Backend.target_id가 가리키는 Private IP만 |
+| GetVnic | read vnics | 확인된 PrivateIp.vnic_id만 |
+| ListVnicAttachments | 기존 수집과 동일한 vnic-attachments/instances 읽기 권한 | 선택 compartment_id 및 정확한 vnic_id 필터 |
+| GetInstance | read instances (INSTANCE_READ) | 명시 Instance OCID 또는 확인된 Attachment.instance_id만 |
+
+테넌시 전체 read 권한이면 위 읽기 권한을 포함하며 추가 쓰기 권한은 필요 없다.
+Health 상태로 조회 성공/실패를 판단하지 않으며 수집기는 Health API를 호출하지 않는다.
+404는 not_found_or_not_authorized로 기록한다. 등록 IP 매칭은 별도의 구성 근거이며
+보완 API의 실패/과거 상태나 미확인 OCID 때문에 차단하지 않는다. 알려진 정확한
+ID 관계는 우선 유지한다. 등록 IP가 있다면 보완 조회는 필요하지 않다.
+공식 근거: [Core API permissions](https://docs.oracle.com/en-us/iaas/Content/Identity/policyreference/corepolicyreference_topic-Permissions_Required_for_Each_API_Operation.htm).

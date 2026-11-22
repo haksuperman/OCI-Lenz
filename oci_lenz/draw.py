@@ -7,12 +7,13 @@ from .diagram_model import diagram_graph as graph
 from .display import resource_label,network_label
 from .load_balancers import subnet_ids
 from .regional_services import REGIONAL_KINDS
+from .application_services import KINDS as APPLICATION_KINDS,primary_subnet,compartment_resource
 ROOT=Path(__file__).resolve().parents[1]
 if not (ROOT/'assets/oci/library.xml').exists(): ROOT=Path(sys.prefix)/'share/oci-lenz'
-ICONS={'goldengate_deployment':51,'object_storage_bucket':11,'container_repository':75,'devops_project':85,'devops_repository':85,'devops_build_pipeline':85,'devops_deploy_pipeline':85,'devops_deploy_environment':85,'oci_cache':46,'nosql_table':46,'postgresql_db_system':0,'opensearch_cluster':49,'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'nlb':18,'waf':102,'edge_waf':102,'route':29,'service':31,'internet':32,'nat':33,'nsg':114,'cpe':21,'drg':30,'rpc':34,'db_system':36,'db_node':35,'virtual_circuit':210,'cross_connect':210,'mysql_db_system':47,'autonomous_database':37,'autonomous_container_database':38,'autonomous_exadata_infrastructure':43,'autonomous_vm_cluster':44,'cloud_autonomous_vm_cluster':38,'exadata_infrastructure':44,'vm_cluster':44,'cloud_exadata_infrastructure':43,'cloud_vm_cluster':43,'exadata_db_system':43,'exadb_vm_cluster':43}
+ICONS={'file_system':10,'mount_target':10,'functions_application':2,'function':2,'api_gateway':79,'goldengate_deployment':51,'object_storage_bucket':11,'container_repository':75,'devops_project':85,'devops_repository':85,'devops_build_pipeline':85,'devops_deploy_pipeline':85,'devops_deploy_environment':85,'oci_cache':46,'nosql_table':46,'postgresql_db_system':0,'opensearch_cluster':49,'compute':3,'vnic':78,'vcn':17,'subnet':17,'lb':18,'nlb':18,'waf':102,'edge_waf':102,'route':29,'service':31,'internet':32,'nat':33,'nsg':114,'cpe':21,'drg':30,'rpc':34,'db_system':36,'db_node':35,'virtual_circuit':210,'cross_connect':210,'mysql_db_system':47,'autonomous_database':37,'autonomous_container_database':38,'autonomous_exadata_infrastructure':43,'autonomous_vm_cluster':44,'cloud_autonomous_vm_cluster':38,'exadata_infrastructure':44,'vm_cluster':44,'cloud_exadata_infrastructure':43,'cloud_vm_cluster':43,'exadata_db_system':43,'exadb_vm_cluster':43}
 
 def edge_label(edge):
-    return edge['label'] or {'waf_protection':'Protects','edge_protection':'Configured origin','nsg_ids':'NSG','route_table_id':'Route table','project_id':'Project','lb_id':'Backend set'}.get(edge['kind'],edge['kind'])
+    return edge['label'] or {'waf_protection':'Protects','edge_protection':'Configured origin','nsg_ids':'NSG','route_table_id':'Route table','api_backend':'Configured backend','api_gateway_id':'Deployment','application_id':'Application','mount_export':'Export','file_system_id':'File system','project_id':'Project','lb_id':'Backend set'}.get(edge['kind'],edge['kind'])
 
 def icon(root, rid, kind, x,y):
     if kind not in ICONS: return
@@ -44,6 +45,7 @@ def icon(root, rid, kind, x,y):
     ox=min(r[0] for r in painted.values());oy=min(r[1] for r in painted.values())
     right=max(r[0]+r[2] for r in painted.values());bottom=max(r[1]+r[3] for r in painted.values())
     group=E.SubElement(root,'mxCell',id=rid+'-icon',value='',style='group',vertex='1',parent=rid)
+    if kind in APPLICATION_KINDS and kind in ICONS:group.set('ociOfficialIcon','Oracle OCI Library.xml:'+str(ICONS[kind])+' '+item['title'])
     if kind in REGIONAL_KINDS:group.set('ociOfficialIcon','Oracle OCI Library.xml:'+str(ICONS[kind])+' '+item['title'])
     if kind in ('oci_cache','nosql_table'):group.set('ociOfficialIcon','Oracle OCI Library.xml:46 NoSQL'+(' (Cache reuse per Oracle reference)' if kind=='oci_cache' else ''))
     if kind=='goldengate_deployment':group.set('ociOfficialIcon','Oracle OCI Library.xml:51 Database - GoldenGate')
@@ -115,7 +117,10 @@ def build_document(snapshot,detail_pages=False):
         children={s:[] for s in subnets}
         for k in ordered:
             r=nodes[k]; sub=r.get('subnet_id') or next(iter(r.get('subnet_ids',[])),None)
+            if r['kind'] in APPLICATION_KINDS:sub=primary_subnet(r,nodes)
             if r['kind'] in REGIONAL_KINDS:sub=None
+            if r['kind']=='backend_endpoint':
+                owner=nodes.get(r.get('backend_set_id'),{});sub=next(iter(subnet_ids(nodes.get(owner.get('lb_id'),{}))),None)
             if r['kind']=='backend_set':
                 sub=next(iter(subnet_ids(nodes.get(r.get('lb_id'),{}))),None)
             if r['kind']=='compute':
@@ -139,7 +144,7 @@ def build_document(snapshot,detail_pages=False):
         extras={v:[] for v in vcns}; unplaced=[]
         for k in ordered:
             if k in attached or nodes[k]['kind'] in ('vcn','subnet'): continue
-            v=None if nodes[k]['kind'] in REGIONAL_KINDS else nodes[k].get('vcn_id')
+            v=None if compartment_resource(nodes[k],nodes) else nodes[k].get('vcn_id')
             if v in extras: extras[v].append(k)
             else: unplaced.append(k)
         # Pack siblings into shelves; each row grows to its tallest container.
@@ -169,11 +174,11 @@ def build_document(snapshot,detail_pages=False):
         for v in vcns: compartments.setdefault(nodes[v].get('compartment_id') or 'unspecified',[]).append(v)
         regional={}
         for key in unplaced:
-            if nodes[key]['kind'] in REGIONAL_KINDS:
+            if compartment_resource(nodes[key],nodes):
                 comp=nodes[key].get('compartment_id') or 'unspecified'
                 regional.setdefault(comp,[]).append(key);compartments.setdefault(comp,[])
                 sizes[key]=(170,cardheight)
-        unplaced=[key for key in unplaced if nodes[key]['kind'] not in REGIONAL_KINDS]
+        unplaced=[key for key in unplaced if not compartment_resource(nodes[key],nodes)]
         compkeys=[]
         for i,(comp,vs) in enumerate(sorted(compartments.items())):
             ck='layout-compartment-'+str(i);compkeys.append(ck);width,bottom=0,0
@@ -236,6 +241,7 @@ def build_document(snapshot,detail_pages=False):
         for i,e in enumerate(edges):
             if e['source'] not in ids or e['target'] not in ids: continue
             c=E.SubElement(root,'mxCell',id='edge-'+str(i),source=e['source'],target=e['target'],value=edge_label(e),edge='1',parent=common_parent(e['source'],e['target']),style='edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;fontSize=10;labelBackgroundColor=#F7F6F3;endArrow=block;strokeColor=#424242;')
+            c.set('ociRelationKind',e['kind'])
             if e.get('attachment_ids'):
                 c.set('ociAttachmentIds',json.dumps(e['attachment_ids'],separators=(',',':')))
                 c.set('ociEvidence',e['evidence'])
@@ -259,7 +265,7 @@ def validate(xml,snapshot):
         cells=list(page.iter('mxCell')); ids={c.get('id') for c in cells}
         if len(ids)!=len(cells):raise ValueError('duplicate cell')
         vertices={c.get('id') for c in cells if c.get('vertex')=='1' and c.get('id')!='notice' and not any(c.get('id').startswith(k+'-i-') or c.get('id')==k+'-icon' for k in nodes)}
-        present_owners=[k for k in vertices if k in nodes and nodes[k]['kind'] in ({'vcn'} | REGIONAL_KINDS)]
+        present_owners=[k for k in vertices if k in nodes and (nodes[k]['kind']=='vcn' or compartment_resource(nodes[k],nodes))]
         compartment_ids=sorted({nodes[k].get('compartment_id') or 'unspecified' for k in present_owners})
         compartment_count=len(compartment_ids)
         structural={'layout-region'}|{'layout-compartment-'+str(i) for i in range(compartment_count)}
@@ -269,9 +275,13 @@ def validate(xml,snapshot):
         cellmap={c.get('id'):c for c in cells}
         for rid in nodes:
             native=cellmap.get(rid)
-            if native is not None and nodes[rid]['kind'] in REGIONAL_KINDS:
+            if native is not None and compartment_resource(nodes[rid],nodes):
                 comp=nodes[rid].get('compartment_id') or 'unspecified'
                 if native.get('parent')!='layout-compartment-'+str(compartment_ids.index(comp)):raise ValueError(('NoSQL table' if nodes[rid]['kind']=='nosql_table' else 'Regional resource')+' must remain in its compartment outside VCNs')
+            if native is not None and nodes[rid]['kind'] in APPLICATION_KINDS and not compartment_resource(nodes[rid],nodes) and native.get('parent')!=primary_subnet(nodes[rid],nodes):raise ValueError('Application service visual anchor mismatch')
+            if native is not None and nodes[rid]['kind']=='backend_endpoint':
+                owner=cellmap.get(nodes[rid].get('backend_set_id'))
+                if owner is None or native.get('parent')!=owner.get('parent'):raise ValueError('Backend registration annotation must follow its Set visual anchor')
             if native is not None and nodes[rid]['kind'] in ('drg','cpe') and native.get('parent')!='layout-region':
                 raise ValueError('DRG/CPE must remain outside VPN containers')
             if native is not None and nodes[rid]['kind']=='cross_connect':

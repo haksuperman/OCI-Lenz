@@ -9,7 +9,7 @@ from .architecture import make_scene,seed_plan,check_plan,apply_design
 from .diagram_model import diagram_graph
 from .routing import native_paths,path_quality,visible_rectangle,intersects
 from .typography import text_width
-from .composition import measure
+from .composition import measure,boundary_space
 from .database_services import DB_SYSTEMS
 from .managed_data import KINDS as MANAGED_KINDS
 
@@ -24,7 +24,7 @@ def conflict_pairs(paths,nodes):
         if sk!='backend_set':return None
         kind=nodes.get(target,{}).get('kind')
         if kind in ('lb','nlb'):return target  # Native ownership arrow is reversed.
-        if kind in ('compute','vnic','db_node','unknown','mysql_db_system','autonomous_database',*DB_SYSTEMS,*MANAGED_KINDS):return source
+        if kind in ('compute','vnic','db_node','backend_endpoint','unknown','mysql_db_system','autonomous_database',*DB_SYSTEMS,*MANAGED_KINDS):return source
         return None
     def orient(path,key):
         points=path['points'] if path['source']==key else list(reversed(path['points']))
@@ -99,6 +99,8 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
     conflicts=edge_conflicts(paths,nodes)
     from .line_jumps import crossing_report
     bridges=crossing_report(paths,nodes,[*cards.values(),*(r for _,r in titles)])
+    from .connector_rules import arrow_visibility
+    visibility,head_focus=arrow_visibility(paths);focus.update(head_focus)
     intrusions=touched_titles=diagonal=bends=0;length=distance=0
     for path in paths:
         points=path['points'];endpoints={path['source'],path['target']}
@@ -140,7 +142,7 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
     region=boxes[scene['region']];area=region['width']*region['height']
     leaf_area=sum(item['min_width']*item['min_height'] for key,item in items.items() if key not in siblings)
     scale=math.sqrt(max(1,leaf_area));edge_count=max(1,len(paths))
-    metrics={**bridges,'edge_crossings':conflicts['edge_crossings'],
+    metrics={**visibility,**bridges,'edge_crossings':conflicts['edge_crossings'],
              'edge_overlap_length':conflicts['edge_overlap_length'],
              'resource_intersections':intrusions,'title_intersections':touched_titles,
              'nonorthogonal_segments':diagonal,'spacing_violations':spacing_violations,
@@ -152,7 +154,8 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
           20*metrics['edge_overlap_length']/scale+5*shortfall+
           12*metrics['route_detour_ratio']+2*bends/edge_count+
           .5*metrics['canvas_area_ratio']+2*metrics['container_slack_ratio'])
-    issues=[k for k in ('resource_intersections','title_intersections','nonorthogonal_segments','unbridged_crossings','edge_overlap_length','spacing_violations') if metrics[k]>0]
+    loss+=100*visibility['crowded_arrowheads']+10*visibility['short_arrow_shafts']
+    issues=[k for k in ('crowded_arrowheads','short_arrow_shafts','resource_intersections','title_intersections','nonorthogonal_segments','unbridged_crossings','edge_overlap_length','spacing_violations') if metrics[k]>0]
     if metrics['container_slack_ratio']>.35:issues.append('excessive_whitespace')
     if metrics['route_detour_ratio']>1:issues.append('route_detours')
     if metrics['unbridged_crossings'] or metrics['edge_overlap_length']:
@@ -162,10 +165,18 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
                 if pair['edge_crossings'] or pair['edge_overlap_length']:
                     focus.update(p[k] for p in (left,right) for k in ('source','target'))
     design=measure(scene,boxes);metrics.update(design['metrics']);loss+=design['loss']
+    boundary=boundary_space(scene,boxes,paths)
+    metrics.update(boundary['metrics'])
+    loss+=6*metrics['unused_boundary_area_ratio']+2*metrics['worst_boundary_slack_ratio']
+    # Boundary hints are actionable first. Projection feedback can also identify
+    # internal gaps, but must not override actual branch/shaft space.
+    design['feedback']=boundary['feedback']+design['feedback']
     from .connector_rules import readability
     connections=readability(scene['request'].get('connection_readability',{}),boxes)
-    metrics.update(connections['metrics']);loss+=8*metrics['unknown_target_distance']+4*metrics['fanout_misalignment']
+    metrics.update(connections['metrics']);loss+=8*metrics['unknown_target_distance']+4*metrics['fanout_misalignment']+30*metrics['connector_clearance_shortfall']+8*metrics['fanout_row_obstructions']
     design['feedback'].extend(connections['feedback'])
+    if metrics['connector_clearance_shortfall']>.001:issues.append('connector_clearance_shortfall')
+    if metrics['fanout_row_obstructions']:issues.append('fanout_row_obstructions')
     if metrics['remote_unknown_targets']:issues.append('remote_unknown_targets')
     if metrics['fanout_misalignment']>.2:issues.append('fanout_misalignment')
     from .connector_rules import alignment_issues
@@ -177,20 +188,29 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
                       ('flow_alignment_error',.20),('flow_reversals',0),
                       ('network_alignment_error',.15),('worst_network_alignment_error',.20)):
         if metrics[key]>limit:issues.append(key)
-    return {'version':4,'scene_signature':scene['signature'],'status':'needs_review' if issues else 'clear','loss':round(loss,6),
+    if metrics['unused_boundary_area_ratio']>.20:issues.append('unused_boundary_space')
+    return {'version':6,'scene_signature':scene['signature'],'status':'needs_review' if issues else 'clear','loss':round(loss,6),
             'metrics':metrics,'issues':issues,'focus':sorted(set(aliases[k] for k in focus if k in aliases)|{f['id'] for f in design['feedback']}),
             'design_feedback':design['feedback'],'connector_feedback':connector_issues}
 
 
 def revision_decision(current,candidate,*,initial=None):
-    """Never trade safety/ambiguous-contact regressions or unbounded canvas growth for loss."""
+    """Prefer measured readable connections over area; never trade protected safety."""
     before,after=current['metrics'],candidate['metrics']
     if current['scene_signature']!=candidate['scene_signature']:
         return {'accepted':False,'reason':'different_inventory'}
     if current['version']!=candidate['version']:return {'accepted':False,'reason':'different_quality_version'}
-    protected=('resource_intersections','title_intersections','nonorthogonal_segments','unbridged_crossings','edge_overlap_length','flow_reversals','connector_alignment_errors')
+    protected=('resource_intersections','title_intersections','nonorthogonal_segments','unbridged_crossings','edge_overlap_length','flow_reversals','connector_alignment_errors','crowded_arrowheads','short_arrow_shafts','connector_clearance_shortfall','fanout_row_obstructions')
     for field in protected:
-        if after[field]>before[field]+1e-6:return {'accepted':False,'reason':'regression_'+field}
+        if after.get(field,0)>before.get(field,0)+1e-6:return {'accepted':False,'reason':'regression_'+field}
+    readable=any(after.get(k,0)<before.get(k,0)-1e-6 for k in ('crowded_arrowheads','short_arrow_shafts','connector_clearance_shortfall','fanout_row_obstructions'))
+    if readable:
+        if after.get('worst_container_whitespace_ratio',0)>max(.5,before.get('worst_container_whitespace_ratio',0)+.1):return {'accepted':False,'reason':'unnecessary_canvas_growth'}
+        return {'accepted':True,'reason':'clearer_connections'}
+    # Compactness alone must not undo the accepted short orthogonal branches.
+    # Keep readability repairs free to resolve genuine pre-existing deficits.
+    for field in ('edge_bends','route_detour_ratio'):
+        if after.get(field,0)>before.get(field,0)+1e-6:return {'accepted':False,'reason':'regression_'+field}
     reference=(initial or current)['metrics']['canvas_area']
     if after['canvas_area']>reference*1.25:return {'accepted':False,'reason':'canvas_growth'}
     if candidate['loss']>=current['loss']-1e-6:return {'accepted':False,'reason':'not_improved'}

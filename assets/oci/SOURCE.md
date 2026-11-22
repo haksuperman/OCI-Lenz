@@ -80,3 +80,11 @@ This is the existing editable OCI GoldenGate service symbol, not entry 50's
 on-premises product or a newly drawn raster image. The deployment card is placed
 by the observed private endpoint subnet; the symbol does not describe service
 internals or a replication relationship.
+
+
+File Storage uses official entry 10 (Storage - File Storage). Mount Target reuses
+that service glyph; the bundle does not provide a dedicated Mount Target stencil.
+Exports are native editable logical tags. Functions Application and Function use
+entry 2 (Compute - Functions), and API Gateway uses entry 79 (Developer Services -
+API Gateway). API Deployments use logical tags, not a fabricated resource icon.
+All resource labels, stencils and relationship edges remain editable separately.

@@ -6,9 +6,9 @@ import xml.etree.ElementTree as E
 from .typography import text_width
 from .load_balancers import LOAD_BALANCER_KINDS
 from .managed_data import KINDS as MANAGED_KINDS
-from .connector_rules import JUMP_SIZE,CROSSING_CLEARANCE,LANE_GAP,STROKE_WIDTH,ARROW_SIZE
+from .connector_rules import JUMP_SIZE,CROSSING_CLEARANCE,LANE_GAP,STROKE_WIDTH,ARROW_SIZE,TERMINAL_LENGTH,CONNECTOR_CORRIDOR
 
-BEND_COST=26
+BEND_COST=48
 CROSS_COST=16
 OVERLAP_COST=24
 CONTACT_COST=400
@@ -27,9 +27,9 @@ def visible_rectangle(cell,rectangle):
 
 
 def intersects(a,b,rect):
-    x,y,w,h=rect
-    if a[0]==b[0]:return x<a[0]<x+w and max(min(a[1],b[1]),y)<min(max(a[1],b[1]),y+h)
-    if a[1]==b[1]:return y<a[1]<y+h and max(min(a[0],b[0]),x)<min(max(a[0],b[0]),x+w)
+    x,y,w,h=rect;eps=1e-6
+    if abs(a[0]-b[0])<eps:return x+eps<a[0]<x+w-eps and max(min(a[1],b[1]),y)+eps<min(max(a[1],b[1]),y+h)
+    if abs(a[1]-b[1])<eps:return y+eps<a[1]<y+h-eps and max(min(a[0],b[0]),x)+eps<min(max(a[0],b[0]),x+w)
     return True
 
 
@@ -109,7 +109,7 @@ def native_paths(root,nodes):
         px,py,_,_=box(parent) if parent in cells and cells[parent].find('mxGeometry') is not None else (0,0,0,0)
         points=[endpoint(source,'exit'),*[(float(p.get('x'))+px,float(p.get('y'))+py) for p in c.findall('mxGeometry/Array/mxPoint')],endpoint(target,'entry')]
         paths.append({'source':source,'target':target,'network':any(nodes.get(k,{}).get('kind') in NETWORK_KINDS for k in (source,target)),
-                      'conflict_aware':conflict_aware(nodes,source,target),'jump_style':st.get('jumpStyle','none'),'points':points})
+                      'conflict_aware':conflict_aware(nodes,source,target),'jump_style':st.get('jumpStyle','none'),'start_arrow':st.get('startArrow','none'),'end_arrow':st.get('endArrow','none'),'points':points})
     return paths
 
 
@@ -120,6 +120,14 @@ def path_cost(points):
 
 
 def route(start,end,obstacles,occupied=()):
+    # A wire must not hug another resource's label/border. Preserve legacy
+    # endpoints already inside a clearance band, but reserve 8px when feasible.
+    padded=[]
+    for x,y,w,h in obstacles:
+        r=(x-8,y-8,w+16,h+16)
+        inside=lambda p:r[0]<p[0]<r[0]+r[2] and r[1]<p[1]<r[1]+r[3]
+        padded.append((x,y,w,h) if inside(start) or inside(end) else r)
+    obstacles=padded
     xs=sorted({start[0],end[0],*[v for x,y,w,h in obstacles for v in (max(0,x-12),x+w+12)]})
     ys=sorted({start[1],end[1],*[v for x,y,w,h in obstacles for v in (max(0,y-12),y+h+12)]})
     if occupied:
@@ -229,14 +237,14 @@ def _route_native_edges(root,nodes,future=()):
         alternatives=sorted(((0.5,1),(1,0.5),(0,0.5),(0.5,0)),key=lambda p:abs(x+w*p[0]-tx-tw/2)+abs(y+h*p[1]-ty-th/2))
         glyph=rectangle(key+'-icon') if key+'-icon' in cells and 'ociNativeLabel=1;' in cells[key].get('style','') else None
         candidates=[(preferred,aligned_y),(preferred,None),*((a,None) for a in alternatives)]
-        for anchor,aligned in candidates:
+        for anchor,aligned,clearance in [(a,b,n) for n in (TERMINAL_LENGTH,12) for a,b in candidates]:
             point=(x+w*anchor[0],y+h*anchor[1])
             corridor=point
             if glyph is not None:
                 gx,gy,gw,gh=glyph
                 if anchor[0] in (0,1):
-                    point=(gx+gw*anchor[0],gy+gh/2);corridor=(x+w*anchor[0],point[1])
-                elif anchor[1]==0:point=(gx+gw/2,gy);corridor=point
+                    point=(gx+gw*anchor[0],gy+gh*anchor[1]);corridor=(x+w*anchor[0],point[1])
+                elif anchor[1]==0:point=(gx+gw*anchor[0],gy);corridor=point
             elif key not in rectangles and anchor[0] in (0,1) and aligned is not None:
                 st=dict(p.split('=',1) for p in cells[key].get('style','').split(';') if '=' in p)
                 font=float(st.get('fontSize',12))
@@ -246,9 +254,9 @@ def _route_native_edges(root,nodes,future=()):
             # A port alone does not constrain the last segment. Approach the
             # face normally from a short OUTSIDE stub, including logical tags.
             # Glyph-side stubs first clear the full caption/content width.
-            if anchor[0] in (0,1):corridor=(x-12 if anchor[0]==0 else x+w+12,point[1])
-            elif anchor[1]==0:corridor=(point[0],min(y,point[1])-12)
-            else:corridor=(point[0],max(y+h,point[1])+12)
+            if anchor[0] in (0,1):corridor=(x-clearance if anchor[0]==0 else x+w+clearance,point[1])
+            elif anchor[1]==0:corridor=(point[0],min(y,point[1])-clearance)
+            else:corridor=(point[0],max(y+h,point[1])+clearance)
             if not any(inside(point,r) or inside(corridor,r) for r in titles) and not any(inside(corridor,r) for other_key,r in rectangles.items() if other_key!=key):
                 relative=((point[0]-full[0])/full[2],(point[1]-full[1])/full[3])
                 return point,relative,corridor
@@ -266,8 +274,53 @@ def _route_native_edges(root,nodes,future=()):
         if reverse:source,target=target,source
         connections[edge.get('id')]=(source,target,reverse)
         sk=nodes.get(source,{}).get('kind');tk=nodes.get(target,{}).get('kind')
-        if (sk in LOAD_BALANCER_KINDS and tk=='backend_set') or (sk=='backend_set' and tk in ('compute','vnic','unknown',*MANAGED_KINDS)):
+        if edge.get('ociRelationKind') in ('api_backend','mount_export','edge_protection','drg_network') or (sk in LOAD_BALANCER_KINDS and tk=='backend_set') or (sk=='backend_set' and tk in ('compute','vnic','backend_endpoint','unknown',*MANAGED_KINDS)):
             fanouts.setdefault(source,[]).append(edge)
+    # Homogeneous configured relations share the same rule regardless of service
+    # names. Heterogeneous roles retain their distinct family/lanes above.
+    homogeneous={}
+    for edge in root:
+        key=edge.get('id')
+        if key in connections:homogeneous.setdefault(connections[key][0],[]).append(edge)
+    for source,group in homogeneous.items():
+        kinds={edge.get('ociRelationKind') for edge in group}
+        if len(kinds)==1 and None not in kinds and len(group)>1:fanouts[source]=group
+    incoming={}
+    for source,target,_ in connections.values():incoming.setdefault(target,set()).add(source)
+    def landing(target,source,face):
+        owners=sorted(incoming.get(target,{source}),key=lambda k:(rectangle(k)[0],rectangle(k)[1],k))
+        if len(owners)<2:return face
+        x,y,w,h=rectangles.get(target,rectangle(target));a=rectangle(source)
+        if face is None:
+            dx=a[0]+a[2]/2-x-w/2;dy=a[1]+a[3]/2-y-h/2
+            face=(1 if dx>=0 else 0,.5) if abs(dx)/max(w,1)>abs(dy)/max(h,1) else (.5,1 if dy>=0 else 0)
+        rank=owners.index(source)
+        if len(owners)>3:
+            faces=((.5,0),(0,.5),(1,.5),(.5,1));face=faces[rank%4]
+            same=[i for i in range(len(owners)) if i%4==rank%4];fraction=(same.index(rank)+1)/(len(same)+1)
+        else:fraction=(.25,.75)[rank] if len(owners)==2 else (.15,.5,.85)[rank]
+        return (face[0],fraction) if face[0] in (0,1) else (fraction,face[1])
+    from .branch_routes import branch_tree
+    trees={}
+    for source,group in fanouts.items():
+        if len(group)<2:continue
+        x,y,w,h=rectangles.get(source,rectangle(source));targets=[rectangles.get(connections[e.get('id')][1],rectangle(connections[e.get('id')][1])) for e in group]
+        options=[('down',(.5,1),(.5,0),all(ty>=y+h+CONNECTOR_CORRIDOR for tx,ty,tw,th in targets)),
+                 ('up',(.5,0),(.5,1),all(ty+th+CONNECTOR_CORRIDOR<=y for tx,ty,tw,th in targets)),
+                 ('right',(1,.5),(0,.5),all(tx>=x+w+CONNECTOR_CORRIDOR for tx,ty,tw,th in targets)),
+                 ('left',(0,.5),(1,.5),all(tx+tw+CONNECTOR_CORRIDOR<=x for tx,ty,tw,th in targets))]
+        for direction,outface,inface,eligible in options:
+            if not eligible:continue
+            first_target=targets[0];start,outport,out=port(source,first_target,outface)
+            ends=[];inports={}
+            for edge in group:
+                key=edge.get('id');target=connections[key][1]
+                end,inport,approach=port(target,(x,y,w,h),landing(target,source,inface))
+                ends.append((key,end,approach));inports[key]=inport
+            parent=group[0].get('parent');bounds=rectangle(parent) if parent in cells and cells[parent].find('mxGeometry') is not None else None
+            paths=branch_tree(start,out,ends,obstacles,bounds,direction)
+            if paths:
+                trees.update({key:(points,outport,inports[key]) for key,points in paths.items()});break
     trunks={}
     for source,group in fanouts.items():
         if len(group)<2:continue
@@ -296,7 +349,7 @@ def _route_native_edges(root,nodes,future=()):
         if c.get('edge')!='1' or c.get('visible')=='0' or 'opacity=0;' in style:continue
         source,target,reverse=connections[c.get('id')]
         a,b=rectangles.get(source,rectangle(source)),rectangles.get(target,rectangle(target))
-        flow=(nodes.get(source,{}).get('kind') in (*LOAD_BALANCER_KINDS,'backend_set') and nodes.get(target,{}).get('kind') in ('backend_set','compute','vnic','unknown',*MANAGED_KINDS))
+        flow=(nodes.get(source,{}).get('kind') in (*LOAD_BALANCER_KINDS,'backend_set') and nodes.get(target,{}).get('kind') in ('backend_set','compute','vnic','backend_endpoint','unknown',*MANAGED_KINDS))
         downward=flow and a[1]+a[3]+8<=b[1]
         upward=flow and b[1]+b[3]+8<=a[1]
         exit_face=(0.5,1) if downward else ((0.5,0) if upward else None)
@@ -307,6 +360,7 @@ def _route_native_edges(root,nodes,future=()):
             if a[0]+a[2]+8<=b[0]:exit_face,entry_face=(1,0.5),(0,0.5)
             elif b[0]+b[2]+8<=a[0]:exit_face,entry_face=(0,0.5),(1,0.5)
         start,exit_port,start_corridor=port(source,b,exit_face,aligned_y=side_height(target))
+        entry_face=landing(target,source,entry_face)
         end,entry_port,end_corridor=port(target,a,entry_face,aligned_y=start[1])
         g=c.find('mxGeometry');parent=rectangle(c.get('parent')) if c.get('parent') in cells and cells[c.get('parent')].find('mxGeometry') is not None else (0,0,0,0)
         existing=g.find("Array[@as='points']")
@@ -338,12 +392,15 @@ def _route_native_edges(root,nodes,future=()):
                 segments=[branch_clearance.get((p,q),(p,q)) for p,q in zip(previous_points,previous_points[1:]) if (p,q) not in allowed_prefix and not any(point in (p,q) for point in shared)]
                 occupied.extend(segments)
                 if previous_source!=source:foreign_occupied.extend(segments)
-        if source in trunks and c in fanouts[source]:
+        tree=trees.get(c.get('id'))
+        if tree and not any(contact_conflict(p,q,u,v) for p,q in zip(tree[0],tree[0][1:]) for u,v in foreign_occupied):
+            points,exit_port,entry_port=tree
+        elif source in trunks and c in fanouts[source]:
             trunk_start,branch=trunks[source]
             if source not in trunk_routes:trunk_routes[source]=route(trunk_start,branch,obstacles,occupied=foreign_occupied)
             trunk=trunk_routes[source]
             start,exit_port,_=port(source,b,(0.5,1))
-            end,entry_port,approach=port(target,a,(0.5,0))
+            end,entry_port,approach=port(target,a,landing(target,source,(0.5,0)))
             points=trunk+route(branch,approach,obstacles,occupied=occupied)[1:]+[end]
         else:
             collinear=(abs(start[1]-end[1])<1e-6 and all(abs(p[1]-start[1])<1e-6 for p in (start_corridor,end_corridor))) or (abs(start[0]-end[0])<1e-6 and all(abs(p[0]-start[0])<1e-6 for p in (start_corridor,end_corridor)))
