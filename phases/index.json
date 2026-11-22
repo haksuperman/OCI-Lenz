@@ -255,6 +255,10 @@
     {
       "dir": "63-generation-verification-note",
       "status": "pending"
+    },
+    {
+      "dir": "64-readme-service-catalog",
+      "status": "pending"
     }
   ]
 }
