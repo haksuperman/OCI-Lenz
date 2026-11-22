@@ -1,0 +1,31 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "61-readable-arrow-corridors",
+  "steps": [
+    {
+      "step": 0,
+      "name": "shared-arrow-corridors-branches-and-head-clearance",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_arrow_legibility",
+          "tests.test_connection_readability",
+          "tests.test_layout_quality",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

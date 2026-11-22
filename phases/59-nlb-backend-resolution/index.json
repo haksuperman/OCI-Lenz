@@ -1,0 +1,31 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "59-nlb-backend-resolution",
+  "steps": [
+    {
+      "step": 0,
+      "name": "resolve-nlb-targets-and-show-owned-ip-tags",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_nlb_resolution",
+          "tests.test_network_load_balancer",
+          "tests.test_backend_badges",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

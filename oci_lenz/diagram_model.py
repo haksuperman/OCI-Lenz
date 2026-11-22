@@ -31,6 +31,18 @@ def diagram_graph(snapshot):
     # Preserve a readable tunnel chain rather than a redundant ownership triangle.
     via_tunnels={(e['source'],nodes[e['target']].get('ipsec_id')) for e in edges if e['kind']=='drg_network' and nodes[e['target']]['kind']=='ipsec_tunnel'}
     edges=[e for e in edges if not (e['kind']=='drg_id' and nodes[e['source']]['kind']=='ipsec' and (e['target'],e['source']) in via_tunnels)]
+    # NLB unresolved endpoints are owned registration annotations, not OCI VMs.
+    # Canonical targets/evidence remain unchanged; each registration has its own ID.
+    from .managed_data import address
+    for e in edges:
+        if e['kind']!='backend' or nodes[e['target']]['kind']!='unknown':continue
+        owner=nodes.get(e['source'],{});lb=nodes.get(owner.get('lb_id'),{})
+        if lb.get('kind')!='nlb':continue
+        r=nodes[e['target']];ip=address(e.get('registered_ip'))
+        hidden=snapshot.get('presentation',{}).get('redacted',False)
+        r.update(kind='backend_endpoint',name='등록 백엔드',backend_set_id=e['source'],
+                 display_details=[('IP 숨김' if hidden else 'IP: '+ip) if ip else 'IP 미확인'],
+                 resolution_status=e.get('resolution_status','not_recorded'))
     # Derived annotation only: canonical resources/endpoints remain untouched.
     for key,r in nodes.items():
         if r['kind']!='backend_set':continue

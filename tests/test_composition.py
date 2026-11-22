@@ -50,7 +50,7 @@ class CompositionTests(unittest.TestCase):
         report=measure(scene,boxes)
         self.assertEqual(report['metrics']['avoidable_whitespace_ratio'],0)
         self.assertEqual(report['metrics']['alignment_error'],0)
-        self.assertEqual(policy()['network_corridor'],64)
+        self.assertEqual(policy()['network_corridor'],96)
 
     def test_alignment_only_follows_evidenced_one_to_one_flow_in_same_vcn(self):
         scene,boxes=self.fixture()

@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "58-application-services",
+  "steps": [
+    {
+      "step": 0,
+      "name": "scoped-file-storage-functions-api-gateway",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_application_services",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

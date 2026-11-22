@@ -1,0 +1,30 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "62-connection-safe-whitespace",
+  "steps": [
+    {
+      "step": 0,
+      "name": "wire-aware-boundary-space-guidance",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_boundary_space",
+          "tests.test_arrow_legibility",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

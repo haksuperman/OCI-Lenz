@@ -133,7 +133,7 @@ class NLBGraphTests(unittest.TestCase):
         backend['target_id']='synthetic-private-ip'
         self.assertEqual(self.target(s),'compute')
         backend.update(target_id='outside-target',ip_address='10.0.1.10')
-        self.assertTrue(self.target(s).startswith('unknown:'))
+        self.assertEqual(self.target(s),'compute')
 
     def test_cross_scope_targets_remain_unknown_and_private_ip_ambiguity_is_not_guessed(self):
         s=self.snapshot();backend=next(r for r in s['resources'] if r['kind']=='backend_set')['backends'][0]

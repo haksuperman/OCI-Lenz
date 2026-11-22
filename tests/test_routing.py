@@ -1,6 +1,7 @@
 import unittest
 import xml.etree.ElementTree as E
 from oci_lenz.routing import route,intersects,route_native_edges
+from oci_lenz.connector_rules import TERMINAL_LENGTH
 
 
 class RoutingTests(unittest.TestCase):
@@ -23,8 +24,8 @@ class RoutingTests(unittest.TestCase):
         self.assertEqual(points[0][0],points[1][0])
         self.assertEqual(points[0][0][0],210)
         self.assertGreater(points[0][0][1],100)
-        self.assertEqual(points[0][-1],(70,288))
-        self.assertEqual(points[1][-1],(350,408))
+        self.assertEqual(points[0][-1],(70,300-TERMINAL_LENGTH))
+        self.assertEqual(points[1][-1],(350,420-TERMINAL_LENGTH))
 
     def test_orthogonal_path_avoids_intervening_resource(self):
         obstacle=(80,20,70,100)

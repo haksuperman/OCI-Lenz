@@ -8,10 +8,11 @@ from .display import scope_title
 from .typography import card_metrics,style_card,header_metrics,wrap_text,text_width
 
 from .regional_services import REGIONAL_KINDS
+from .application_services import KINDS as APPLICATION_KINDS
 from .database_services import DB_SYSTEMS,node_owner,REFERENCES
 
 GATEWAY_KINDS=('internet','nat','service')
-OVERVIEW_EDGE_KINDS=('project_id','edge_protection','waf_protection','backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id','vm_cluster_id',*REFERENCES)
+OVERVIEW_EDGE_KINDS=('api_backend','api_gateway_id','application_id','mount_export','file_system_id','project_id','edge_protection','waf_protection','backend','lb_id','drg_id','drg_network','peer_id','db_system_id','cpe_id','ipsec_id','gateway_id','cross_connect_mapping','cross_connect_group_id','vm_cluster_id',*REFERENCES)
 
 
 class LayoutFormatError(ValueError):
@@ -83,7 +84,7 @@ def make_scene(snapshot,view='detail'):
                   'min_width':220 if container else width,
                   'min_height':64 if container else card_metrics(compact_nodes[key],width)['height'],
                   'container':container}
-        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','lpg','ipsec_tunnel','exascale_db_storage_vault','vm_cluster_network','edge_origin') else 'icon_label'
+        if not container:items[a]['representation']='name_tag' if kind in ('backend_set','lpg','ipsec_tunnel','exascale_db_storage_vault','vm_cluster_network','edge_origin','file_export','api_deployment','backend_endpoint') else 'icon_label'
         if container:
             header=header_metrics(c.get('value',''),220,container_font(kind))
             items[a]['header_height']=header['header_height']
@@ -199,7 +200,7 @@ def check_plan(scene,plan):
     from .network_layout import direction_issues
     issues.extend(direction_issues(scene,boxes))
     from .connector_rules import alignment_issues,VERSION
-    if plan.get('connector_rule_version')==VERSION:
+    if plan.get('connector_rule_version') in (1,VERSION):
         issues.extend(alignment_issues(scene['request'].get('connector_guides',[]),plan))
     elif plan.get('connector_rule_version') is not None:issues.append('unsupported connector rule version')
     edge_ids={e['id'] for e in scene['request']['edges']}
@@ -251,7 +252,7 @@ def apply_plan(snapshot,scene,plan,region_only=False):
             right=24;bottom=100
             for key,c in cells.items():
                 if not key.startswith('layout-compartment-'):continue
-                children=[v for k,v in cells.items() if v.get('parent')==key and k in nodes and nodes[k]['kind'] in ({'vcn'} | REGIONAL_KINDS)]
+                children=[v for k,v in cells.items() if v.get('parent')==key and k in nodes and nodes[k]['kind'] in ({'vcn'} | REGIONAL_KINDS | APPLICATION_KINDS)]
                 if not children:continue
                 geometries=[v.find('mxGeometry') for v in children]
                 dx=min(float(g.get('x')) for g in geometries)-24
@@ -310,7 +311,7 @@ def append_information_index(doc,snapshot,nodes):
     y=30
     for i,r in enumerate(sorted(resources,key=lambda r:(r['kind'],r['id']))):
         lines=[r['name']+' / '+r['kind'],*r.get('display_details',[])]
-        if r['kind'] in ({'vcn'} | REGIONAL_KINDS) and r.get('compartment_id') and not snapshot.get('presentation',{}).get('redacted'):
+        if r['kind'] in ({'vcn'} | REGIONAL_KINDS | APPLICATION_KINDS) and r.get('compartment_id') and not snapshot.get('presentation',{}).get('redacted'):
             lines.append('Compartment: '+r['compartment_id'])
         for rule in r.get('rules',[]):lines.append(rule.get('destination','')+' → '+nodes.get(rule.get('network_entity_id'),{}).get('name','대상 미확인'))
         for key in r.get('nsg_ids',[]):lines.append('NSG: '+nodes.get(key,{}).get('name','대상 미확인'))
@@ -348,8 +349,9 @@ def apply_scope_heading(doc,snapshot):
         notice.set('value',text)
         notice.set('style','text;whiteSpace=wrap;html=0;fontSize=14;align=left;verticalAlign=top;spacing=0;')
         g=notice.find('mxGeometry');g.set('x',region.get('x','20'));g.set('width',str(width));g.set('height',str(height))
-        # Long/multi-compartment titles grow upward; AI geometry is unchanged.
-        g.set('y',str(min(10,float(region.get('y'))-height-16)))
+        # Follow the frame after boundary cropping instead of leaving a blank
+        # page band. Long headings still grow upward; AI geometry is unchanged.
+        g.set('y',str(float(region.get('y'))-height-16))
 
 
 def validate_architecture(xml,snapshot):

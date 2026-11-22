@@ -79,16 +79,18 @@ class BackendBadgeTests(unittest.TestCase):
             if key in cells:self.assertIn('백엔드 대상 미확인',cells[key].get('value'))
             if 'compute' in cells:self.assertNotEqual(cells['compute'].get('visible'),'0')
 
-    def test_nlb_explicit_unresolved_targets_use_the_same_owned_annotation(self):
+    def test_nlb_explicit_unresolved_targets_use_owned_address_tags(self):
         s,key=self.snapshot([{'target_id':'compute','port':80},
                              {'target_id':'outside-scope','port':443}])
         lb=next(r for r in s['resources'] if r['kind']=='lb')
         lb['kind']='nlb';lb['subnet_id']=lb.pop('subnet_ids')[0]
         nodes,edges=diagram_graph(s)
-        self.assertEqual(nodes[key]['backend_badge'],'백엔드 대상 미확인 (1)')
+        self.assertFalse(nodes[key].get('backend_badge'))
+        self.assertEqual(sum(r['kind']=='backend_endpoint' for r in nodes.values()),1)
         self.assertTrue(any(e['source']==key and e['target']=='compute' and e['kind']=='backend' for e in edges))
         display=prepare_display(s);xml=render(display);validate(xml,display)
-        self.assertIn('백엔드 대상 미확인 (1)',xml)
+        self.assertNotIn('VM 확인 불가',xml)
+        self.assertIn('IP 미확인',xml)
 
     def test_status_footprint_change_rejects_old_saved_layout(self):
         from oci_lenz.architecture import seed_plan

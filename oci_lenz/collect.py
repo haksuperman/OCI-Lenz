@@ -5,18 +5,18 @@ def collect(profile,region,compartment,config_file=None):
     if any(c in compartment for c in ("'", '\n', '\r')): raise ValueError('invalid compartment')
     cfg=oci.config.from_file(config_file or oci.config.DEFAULT_LOCATION,profile);cfg['region']=region
     retry=oci.retry.RetryStrategyBuilder(max_attempts_check=True,max_attempts=3,total_elapsed_time_check=True,total_elapsed_time_seconds=30).get_retry_strategy()
-    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'nlb':oci.network_load_balancer.NetworkLoadBalancerClient,'waf':oci.waf.WafClient,'waas':oci.waas.WaasClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient,'mysql':oci.mysql.DbSystemClient,'redis':oci.redis.RedisClusterClient,'psql':oci.psql.PostgresqlClient,'opensearch':oci.opensearch.OpensearchClusterClient,'nosql':oci.nosql.NosqlClient,'object_storage':oci.object_storage.ObjectStorageClient,'artifacts':oci.artifacts.ArtifactsClient,'devops':oci.devops.DevopsClient,'goldengate':oci.golden_gate.GoldenGateClient}.items()}
+    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'nlb':oci.network_load_balancer.NetworkLoadBalancerClient,'waf':oci.waf.WafClient,'waas':oci.waas.WaasClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient,'mysql':oci.mysql.DbSystemClient,'redis':oci.redis.RedisClusterClient,'psql':oci.psql.PostgresqlClient,'opensearch':oci.opensearch.OpensearchClusterClient,'nosql':oci.nosql.NosqlClient,'object_storage':oci.object_storage.ObjectStorageClient,'artifacts':oci.artifacts.ArtifactsClient,'devops':oci.devops.DevopsClient,'goldengate':oci.golden_gate.GoldenGateClient,'fss':oci.file_storage.FileStorageClient,'functions':oci.functions.FunctionsManagementClient,'apigw':oci.apigateway.GatewayClient,'apideploy':oci.apigateway.DeploymentClient}.items()}
     s={'version':1,'scope':{'region':region,'compartments':[compartment]},'resources':[],'coverage':[]}
     def call(service,method,*args,**kwargs):
         entry={'region':region,'compartment':compartment,'service':service,'api':method}
-        scoped={key:value for key,value in kwargs.items() if key in ('db_system_id','vm_cluster_id','exadata_infrastructure_id','waas_policy_id','redis_cluster_id','opensearch_cluster_id','deployment_id')}
+        scoped={key:value for key,value in kwargs.items() if key in ('db_system_id','vm_cluster_id','exadata_infrastructure_id','waas_policy_id','redis_cluster_id','opensearch_cluster_id','deployment_id','application_id','gateway_id','availability_domain','private_ip_id','ipv6_id','instance_id','vnic_id')}
         if scoped:entry['request_scope']=scoped
         try:
             fn=getattr(clients[service],method)
             if method.startswith(('list_','search_')): data=oci.pagination.list_call_get_all_results(fn,*args,**kwargs).data
             else:data=fn(*args,**kwargs).data
             # NLB/WAF APIs use Collection wrappers; support raw and flattened paginator results.
-            if service in ('nlb','waf','redis','psql','opensearch','nosql','artifacts','devops','goldengate') and method.startswith('list_') and not isinstance(data,list):data=data.items
+            if service in ('nlb','waf','redis','psql','opensearch','nosql','artifacts','devops','goldengate','fss','functions','apigw','apideploy') and method.startswith('list_') and not isinstance(data,list):data=data.items
             count=len(data) if isinstance(data,list) else 1
             entry.update(status='ok',count=count)
             return data
@@ -96,6 +96,12 @@ def collect(profile,region,compartment,config_file=None):
     collect_nosql(call,add,compartment)
     from .regional_services import collect_regional_services
     collect_regional_services(call,add,s,compartment)
+    from .application_services import collect_file_storage,collect_functions,collect_api_gateway
+    collect_file_storage(call,add,s,compartment)
+    collect_functions(call,add,compartment)
+    collect_api_gateway(call,add,s,compartment)
+    from .nlb_backends import resolve_nlb_backends
+    resolve_nlb_backends(call,add,s,compartment)
     # Search counts are inventory evidence only, never inferred graph relationships.
     query=oci.resource_search.models.StructuredSearchDetails(query=f"query all resources where compartmentId = '{compartment}'")
     inventory=call('search','search_resources',query)

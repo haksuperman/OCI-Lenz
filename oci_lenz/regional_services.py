@@ -8,7 +8,7 @@ DEVOPS_MODELS={
     'devops_deploy_pipeline':'DeployPipelineSummary',
     'devops_deploy_environment':'DeployEnvironmentSummary',
 }
-REGIONAL_KINDS=frozenset(('nosql_table','object_storage_bucket','container_repository','devops_project',*DEVOPS_MODELS))
+REGIONAL_KINDS=frozenset(('file_system','nosql_table','object_storage_bucket','container_repository','devops_project',*DEVOPS_MODELS))
 
 
 def collect_regional_services(call,add,snapshot,compartment):

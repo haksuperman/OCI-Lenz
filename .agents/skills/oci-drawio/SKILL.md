@@ -113,3 +113,56 @@ not a service panel: only API-owned CrossConnect children go inside; VCs/DRG/CPE
 stay outside. Public/provider-managed circuits never imply a guessed DRG, CPE or
 provider inventory. Preserve unresolved mapping IDs. BGP state is metadata, not
 proof of traffic reachability; no MD5/MACsec credentials enter the model.
+
+
+File Storage / Functions / API Gateway follow observed ownership, never inferred
+traffic. File systems are AD resources in their real compartment outside VCNs;
+Mount Targets use actual subnets and official File Storage art. Exports are logical
+tags joined by export_set_id to targets and file_system_id to systems. Do not infer
+VM NFS mounts. Application/Function share official Functions art; display an app
+once while retaining every subnet edge, and anchor its functions visually without
+asserting execution placement. Deployment tags stay near their actual API Gateway.
+Draw only configured Function IDs or uniquely observed HTTP IP backends; hostnames,
+ambiguous and out-of-scope targets remain unknown. Do not add OSN or invoke services.
+
+
+NLB registered backends without an observed VM match are supplied as backend_endpoint logical tags with
+native local IP captions. Keep each beside its exact Backend Set using the supplied
+nearby/fanout relations; never move them to an external unknown column or draw VM
+icons for them. Their Set-derived visual subnet anchor is not a verified VM subnet.
+Retain backend arrows and all evidence. Classic LB status badges stay inside their
+Set label; do not invent additional targets for those badges. Redaction is local.
+
+LB and NLB share configured-IP matching and arrows. An NLB target identity lookup
+is not a prerequisite for displaying a configured Backend. Preserve supplied VM
+arrows and normal registered-IP tags; never add VM-confirmation-failure wording,
+health-based exclusions or invented VM names. Raw target IDs remain local evidence.
+
+
+Readable-arrow contract (applies to EVERY future generation, superseding compact
+spacing guidance where they conflict): reserve 72px between connected items and
+successive fanout rows, 96px network corridors, and side-bus space inside the
+actual parent. Unrelated resources can stay compact. Enlarge the canvas/containers
+rather than squeeze lines, stretch cards or move resources to another OCI parent.
+Prefer same-owner targets side by side with one shared stem and row branch; for
+multi-row targets use a clear side bus and visible row lanes, never a chain through
+another target. Independent owners use separate landing ports/shafts; shared
+wire segments are allowed only for the same evidenced origin. Retain normal
+24px terminal shafts, 8px resource-border clearance, 24px unrelated lane spacing,
+open 10px arrowheads and 1.8px strokes. Clear independent crossings use native
+jumps. Preserve every configured edge and native source/target evidence. More
+area is acceptable only for measured connector readability gain; reject resource,
+label, ambiguous contact and arrowhead regressions. Existing plans are not silently
+repacked: report new visibility deficits and generate a fresh AI layout for room.
+Reference pictures inform these generic principles, never hardcoded coordinates.
+
+After protecting that arrow structure, trim unused OUTER frame margins. Use 16px
+around children, measured header_height above them and 8px around routed wire
+bends/side buses. The 72/96px corridors belong between connected objects/rows;
+they are not padding required on every frame edge. Prefer cropping boundaries
+without moving leaf absolute positions or changing branch/landing geometry.
+Quality unused_boundary_space feedback gives child-and-wire-aware bounds and
+per-side trim, not a command to repack. Ordinary projection-based suggested sizes
+must not override occupied paths. Revalidate titles, endpoints and parents after
+any candidate. A whitespace-only revision that adds bends/detours or reduces
+connector readability is rejected. Saved layout replay stays unchanged.

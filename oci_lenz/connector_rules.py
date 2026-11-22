@@ -1,11 +1,13 @@
 """Service-independent native-anchor contracts for configured container edges."""
 
-VERSION=1
+VERSION=2
 JUMP_SIZE=8
 CROSSING_CLEARANCE=10
-LANE_GAP=16
-STROKE_WIDTH=1.4
-ARROW_SIZE=8
+LANE_GAP=24
+STROKE_WIDTH=1.8
+ARROW_SIZE=10
+TERMINAL_LENGTH=24
+CONNECTOR_CORRIDOR=72
 
 
 def readability_groups(request):
@@ -14,14 +16,17 @@ def readability_groups(request):
     for edge in edges:
         source,target=edge['source'],edge['target'];kind=edge['kind']
         if kind=='lb_id':source,target=target,source
-        if kind in ('backend','lb_id','drg_network'):
+        if kind in ('backend','lb_id','drg_network','api_backend','mount_export'):
             fanouts.setdefault(source,set()).add(target)
-        if kind not in ('backend','edge_protection','waf_protection','peer_id'):continue
-        if items[target]['kind'] not in ('unknown','edge_origin'):continue
+        if kind not in ('backend','edge_protection','waf_protection','peer_id','api_backend'):continue
+        if items[target]['kind'] not in ('unknown','edge_origin','backend_endpoint'):continue
         owners={e['source'] for e in edges if e['target']==target}
         if owners=={source}:nearby.append({'source':source,'target':target})
     return {'nearby':sorted(nearby,key=lambda p:(p['source'],p['target'])),
-            'fanouts':[{'source':s,'targets':sorted(ts)} for s,ts in sorted(fanouts.items()) if len(ts)>1]}
+            'fanouts':[{'source':s,'targets':sorted(ts)} for s,ts in sorted(fanouts.items()) if len(ts)>1],
+            'corridors':[{'source':e['target'] if e['kind']=='lb_id' else e['source'],
+                          'target':e['source'] if e['kind']=='lb_id' else e['target'],
+                          'minimum_gap':CONNECTOR_CORRIDOR} for e in edges if e['source']!=e['target']]}
 
 
 def readability(groups,boxes):
@@ -32,7 +37,9 @@ def readability(groups,boxes):
         a,b=(boxes[pair[k]] for k in ('source','target'))
         dx=max(0,a['x']-b['x']-b['width'],b['x']-a['x']-a['width'])
         dy=max(0,a['y']-b['y']-b['height'],b['y']-a['y']-a['height'])
-        limit=2*max(a['width'],b['width'],a['height'],b['height'])
+        import math
+        count=max((len(g['targets']) for g in groups.get('fanouts',[]) if g['source']==pair['source']),default=1)
+        limit=max(2,math.ceil(math.sqrt(count)))*max(a['width'],b['width'],a['height'],b['height'])+CONNECTOR_CORRIDOR
         excess=max(0,(dx+dy-limit)/limit);distance+=excess
         if excess:
             remote+=1;feedback.append({'id':pair['target'],'with':pair['source'],
@@ -50,7 +57,34 @@ def readability(groups,boxes):
         error=sum(max(0,offset-8) for offset in offsets)/len(offsets)/max(170,max(b['width'] for b in targets))
         misalignment=max(misalignment,error)
         if error:feedback.append({'id':group['source'],'issue':'fanout_alignment','targets':group['targets'],'error':round(error,3)})
-    return {'metrics':{'remote_unknown_targets':remote,'unknown_target_distance':round(distance,6),
+    clearance=0;shadows=0
+    for pair in groups.get('corridors',[]):
+        if pair['source'] not in boxes or pair['target'] not in boxes:continue
+        a,b=boxes[pair['source']],boxes[pair['target']]
+        dx=max(0,a['x']-b['x']-b['width'],b['x']-a['x']-a['width'])
+        dy=max(0,a['y']-b['y']-b['height'],b['y']-a['y']-a['height'])
+        gap=max(dx,dy);required=pair['minimum_gap'];deficit=max(0,required-gap)/required
+        # Contained ownership arrows are not a demand to move a child outside.
+        contains=lambda x,y:x['x']<=y['x'] and x['y']<=y['y'] and x['x']+x['width']>=y['x']+y['width'] and x['y']+x['height']>=y['y']+y['height']
+        if contains(a,b) or contains(b,a):continue
+        clearance+=deficit
+        if deficit:feedback.append({'id':pair['source'],'with':pair['target'],'issue':'connector_corridor','minimum_gap':required})
+    for group in groups.get('fanouts',[]):
+        targets=[(key,boxes[key]) for key in group['targets'] if key in boxes]
+        source=boxes.get(group['source'])
+        if source is None:continue
+        # Detect near stacked rows behind one another, even if their centers align.
+        for i,(key,a) in enumerate(targets):
+            for other,b in targets[i+1:]:
+                overlap_x=min(a['x']+a['width'],b['x']+b['width'])-max(a['x'],b['x'])
+                overlap_y=min(a['y']+a['height'],b['y']+b['height'])-max(a['y'],b['y'])
+                vertical=(a['y']>=source['y']+source['height'] and b['y']>=source['y']+source['height']) or (a['y']+a['height']<=source['y'] and b['y']+b['height']<=source['y'])
+                horizontal=(a['x']>=source['x']+source['width'] and b['x']>=source['x']+source['width']) or (a['x']+a['width']<=source['x'] and b['x']+b['width']<=source['x'])
+                gap_y=max(a['y']-b['y']-b['height'],b['y']-a['y']-a['height'])
+                gap_x=max(a['x']-b['x']-b['width'],b['x']-a['x']-a['width'])
+                if (vertical and overlap_x>0 and 0<=gap_y<CONNECTOR_CORRIDOR) or (horizontal and overlap_y>0 and 0<=gap_x<CONNECTOR_CORRIDOR):
+                    shadows+=1;feedback.append({'id':key,'with':other,'issue':'fanout_row_corridor','source':group['source'],'minimum_gap':CONNECTOR_CORRIDOR})
+    return {'metrics':{'connector_clearance_shortfall':round(clearance,6),'fanout_row_obstructions':shadows,'remote_unknown_targets':remote,'unknown_target_distance':round(distance,6),
                        'fanout_misalignment':round(misalignment,6)},'feedback':feedback}
 
 
@@ -88,3 +122,24 @@ def alignment_issues(rules,plan):
         if abs(delta)>rule['tolerance']:
             issues.append('connector glyph row '+rule['edge']+' '+a+' '+b+' offset '+str(round(delta,3)))
     return issues
+
+
+def arrow_visibility(paths):
+    """Measure arrowheads independently of canonical API edge direction."""
+    import math
+    heads=[];short=0;focus=set()
+    for path in paths:
+        points=[]
+        for point in path['points']:
+            if not points or math.dist(point,points[-1])>1e-6:points.append(point)
+        if len(points)<2:continue
+        for prefix,resource,owner,end,near in [('start',path['source'],path['target'],points[0],points[1]),('end',path['target'],path['source'],points[-1],points[-2])]:
+            if path.get(prefix+'_arrow','none')=='none':continue
+            heads.append((resource,owner,end))
+            if math.dist(end,near)<TERMINAL_LENGTH-1e-6:short+=1;focus.add(resource)
+    crowded=0
+    for i,(resource,owner,point) in enumerate(heads):
+        for other,other_owner,position in heads[i+1:]:
+            if other==resource and owner!=other_owner and math.dist(point,position)<ARROW_SIZE+2-1e-6:
+                crowded+=1;focus.add(resource)
+    return {'crowded_arrowheads':crowded,'short_arrow_shafts':short},focus

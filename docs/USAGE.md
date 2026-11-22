@@ -638,7 +638,8 @@ python scripts/validate_scenarios.py --ai --case edge-waf --output /tmp/oci-lenz
 ### 백엔드셋 하단 상태 표시
 
 - 백엔드 등록 0개(조회 성공): 백엔드셋만 표시한다.
-- 등록된 백엔드의 리소스를 식별하지 못함: Set 하단에 `백엔드 대상 미확인 (N)`.
+- LB의 등록된 백엔드 리소스를 식별하지 못함: Set 하단에 `백엔드 대상 미확인 (N)`.
+- NLB의 등록 백엔드: VM IP가 유일하게 일치하면 VM에 연결하고, 그 외에는 Set 인접 IP 태그로 표시한다.
 - 백엔드 목록 조회 실패: `백엔드 조회 불가`.
 - 기존 빈 스냅샷에 조회 상태가 없음: `백엔드 조회 상태 미확인`.
 
@@ -738,3 +739,98 @@ python scripts/validate_scenarios.py --ai --case goldengate --output /tmp/oci-le
 ```
 기존 스냅샷에는 자동으로 리소스가 추가되지 않으므로 실제 OCIGG 반영에는 collect를
 다시 수행한다. 구성도 재배치만 하려는 경우에는 기존 snapshot을 그대로 사용할 수 있다.
+
+
+## File Storage · API Gateway · OCI Functions
+기존 `collect` 명령으로 세 서비스도 함께 수집한다. 리전·컴파트먼트·로컬 프로필
+지정 방식은 같다. API별 추가 권한은 [IAM](IAM.md#file-storage--api-gateway--oci-functions)을
+참고한다. IAM 정책은 앱에서 변경하지 않는다. 기존 snapshot에는 새 서비스가
+없으므로 실제 환경 반영 시 사용자가 collect를 다시 수행해야 한다.
+
+- File Storage: AD별 File System/Mount Target, Export와 실제 Subnet/NSG/IP.
+  File System은 컴파트먼트 안 VCN 밖, Mount Target은 실제 Subnet에 둔다.
+  ExportSet ID 조인으로 Export 관계를 표시한다. NFS 클라이언트 마운트나
+  Compute의 파일 사용 관계는 조회/추정하지 않는다. Export 경로/옵션은 제외한다.
+- Functions: Application/Function 소속, Application의 모든 Subnet/NSG.
+  다중 Subnet Application과 Function은 한 번 표시하며 관측 Subnet ID의 안정된
+  정렬로 시각적 기준점을 고른다. Function 위치는 실제 실행 Subnet 확정이 아니다.
+  함수 코드·환경·이미지·설정·호출 URL은 저장하지 않고 함수를 실행하지 않는다.
+- API Gateway: Gateway의 관측 IP/Subnet/NSG, Deployment의 실제 Gateway 소속과
+  설정된 Function/HTTP 백엔드. HTTP는 안전한 host/port만 저장하고 인증정보·경로·
+  쿼리·헤더·정책은 제외한다. Dynamic Routing도 설정된 후보만 추출한다.
+  HTTP Private IP는 Gateway의 관측 VCN에서 유일한 VNIC/Compute 또는 LB/NLB에만,
+  공개 IP는 수집된 공개 엔드포인트 중 유일한 대상에만 연결한다. DNS 조회 없이
+  호스트명/모호한 IP/범위 밖 대상은 `대상 미확인`으로 둔다.
+
+목록 0건은 coverage의 `ok/count: 0`, 실패는 `failed/permission_denied`다.
+AD 조회가 실패하면 File System/Mount Target 목록은 `skipped`로 기록하며
+Export 목록은 독립적으로 시도한다. 상세 조회 실패 시 목록 리소스를 보존하고
+`detail_status`/`backends_status`/`address_status`로 미확인을 구분한다.
+연결선은 구성 관계이며 실제 통신 도달성 검증 결과가 아니다.
+
+Oracle 공식 File Storage(10), Functions(2), API Gateway(79) 아이콘을 사용한다.
+Mount Target은 File Storage 심벌을 재사용하며 전용 아이콘이라고 주장하지 않는다.
+Export/Deployment는 편집 가능한 논리 태그다. OSN 영역은 추가하지 않는다.
+
+가상 검증(실제 OCI 조회 없음):
+```sh
+python scripts/validate_scenarios.py --case file-storage --case functions --case api-gateway --case application-services --output /tmp/oci-lenz-app-services
+python scripts/validate_scenarios.py --ai --case application-services --output /tmp/oci-lenz-app-services-ai
+```
+기본 CLI 경로로 단일 문서를 생성하려면:
+```sh
+oci-lenz sample --scenario application-services --output /tmp/oci-lenz-app-snapshot
+oci-lenz draw --snapshot /tmp/oci-lenz-app-snapshot/snapshot.json --output /tmp/oci-lenz-app-diagram
+```
+
+
+## LB와 NLB의 백엔드 연결
+LB와 NLB 모두 Backend Set의 등록 IP를 수집된 VNIC/Private IP와 같은 규칙으로
+대조한다. 동일 VCN에서 유일하게 일치하는 VM 또는 지원 엔드포인트로 화살표를
+연결한다. NLB의 정확한 target_id가 이미 수집된 Instance/PrivateIp와 일치하면
+그 관계를 우선 사용할 수 있다. target_id의 보완 조회 성공은 IP 매칭의 필수
+조건이 아니다. 같은 IP가 여러 대상에 있거나 범위 밖이면 임의로 연결하지 않는다.
+
+VM과 일치하지 않아도 등록 Backend는 OCI에 설정된 정상 항목으로 Set 가까이에
+IP 태그와 화살표를 표시한다. `VM 확인 불가`나 개수만 있는 NLB 배지를 붙이지
+않는다. 이 태그의 시각적 기준점은 Set이며 실제 VM Subnet을 주장하지 않는다.
+기존 스냅샷 재렌더링만으로 새 규칙을 적용할 수 있다. 태그 라벨 높이가 달라져
+이전 배치가 거부되면 새 AI 배치를 생성한다. 공유 `--redact`는 IP를 숨긴다.
+
+IP가 이미 있으면 불필요한 GetPrivateIp/GetVnic/GetInstance를 호출하지 않는다.
+IP가 없는 OCID 등록은 범위 내 읽기 전용 보완 조회가 가능하며, 그 진단은
+`target_resolution_status`/`target_resolution_stage`에 남긴다. 원래 등록 ID·IP·포트는
+보존하고 연결 근거에 ID 관계인지 등록 IP 관계인지 명시한다. 원본 응답·키·암호·
+Instance metadata/userdata는 저장하지 않는다. 연결은 실제 트래픽 도달성 검증이 아니다.
+
+가상 검증:
+```sh
+python scripts/validate_scenarios.py --ai --case nlb-backends --output /tmp/oci-lenz-nlb-backends
+```
+
+
+## 화살표 가독성과 공간 사용
+새 구성도에는 서비스 공통 화살표 규칙 v2를 적용한다. 연결된 항목/분기 행 사이
+72px, 네트워크 통로 96px를 권장하고 같은 출발점의 분기는 행 버스 또는 측면
+버스로 정리한다. 서로 다른 출발점의 화살촉을 분리하며 아이콘/라벨 근처에는
+정상 진입 구간을 둔다. 캔버스가 커져도 실제로 연결 가독성이 좋아지는 쪽을
+우선한다. 필요 없는 빈 컨테이너나 카드 자체를 크게 만드는 것은 개선이 아니다.
+
+`validation.json`의 품질 v5는 다음 항목을 추가로 확인한다.
+- `connector_clearance_shortfall`: 연결 통로 부족
+- `fanout_row_obstructions`: 앞선 대상 뒤로 좁게 겹친 분기 행
+- `crowded_arrowheads`: 서로 다른 출발점의 화살촉 혼잡
+- `short_arrow_shafts`: 너무 짧은 끝 진입 구간
+
+이전 `--reuse-layout`은 위치를 보존하고 새 라우터/품질 검사만 적용하므로 좁은
+배치의 문제가 남을 수 있다. 공간까지 확보하려면 기존 snapshot으로 새 AI 배치를
+생성한다. 새 규칙을 위해 실제 OCI를 다시 조회할 필요는 없다. 관계나 부모를
+바꾸거나 선을 숨겨 가독성을 개선하지 않는다. 코드 품질과 AI 시각 검토는 별도
+결과이며 needs_review를 통과로 표시하지 않는다.
+
+여백 보정 시 `validation.json`의 quality v6 `unused_boundary_area_ratio`와
+`design_feedback`의 `unused_boundary_space`를 확인한다. `bounds`와 `trim`은
+현재 자식과 선 경로를 보존할 수 있는 경계 축소 지침이다. 기존 배치를
+몰래 재배치하지 않으며 `--reuse-layout`은 저장된 위치를 그대로 재생한다.
+새 AI 생성의 시각 검토는 먼저 바깥 여백을 줄이고 연결 통로·화살표 구조가
+퇴행한 수정안은 거부한다. 지침만으로 시각 품질 통과를 보증하지 않는다.

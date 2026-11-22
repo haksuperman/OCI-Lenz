@@ -317,3 +317,71 @@ editable GoldenGate entry 51. Do not fetch connections, assignments, process/dat
 state or synthesize source/target database relationships or managed LB internals.
 Retain unique same-VCN endpoint matching, privacy, redaction and deterministic
 replay. Actual customer inventory verification remains separate from synthetic QA.
+
+
+## 034 — Application services without data-plane inference
+Collect FSS, Functions and API Gateway through scoped read-only metadata APIs and
+share the existing snapshot/graph/renderer rather than introducing a second path.
+Keep file systems outside VCNs and place only observed mount endpoints in subnets.
+Join exports on actual export_set_id and retain file_system_id, never infer client
+mounts. Use Function summaries without config/image/code/invoke reads; visual child
+anchors do not assert execution placement. Retain every Application subnet relation.
+API Deployments attach to actual gateway_id. Extract only configured Function IDs
+and sanitized HTTP host/port; match IPs uniquely within the applicable observed
+network scope, leaving hostnames/ambiguous targets unresolved without DNS. Do not
+persist policies, headers, URL userinfo/path/query or raw SDK responses. Report
+prerequisite failures and detail failures distinctly from successful empty lists.
+Reuse official native service art and explicit logical tags; do not revive OSN.
+
+
+## 035 — NLB target identity before owned unresolved registration display
+Supplement absent NLB references through scoped read-only IP/VNIC/attachment/instance
+APIs, reusing existing evidence and caching repeats. Reject out-of-scope nodes,
+inconsistent IDs/subnets/addresses and ambiguous attachments. Do not infer VM identity
+from health or names; do not overwrite contradictory OCIDs using an IP fallback.
+Keep unresolved registered addresses visible as logical tags adjacent to their exact
+Backend Set rather than count-only NLB badges. Keep canonical unknown identity,
+source/target edges and registration metadata intact; visual anchoring is not an
+assertion of subnet placement. Use native labels, existing proximity/fanout/connector
+quality, alias-only AI, redaction and exact replay. Do not introduce synthetic VMs,
+OCI writes, IAM changes or automatically enumerate another compartment.
+
+
+## 036 — Shared configured backend relationships for LB and NLB
+Supersede 035's requirement that unavailable NLB target identity block a configured
+IP relation. Both services use load_balancers.match_backend_ip: one observed
+same-VCN VNIC/endpoint maps to its resource; ambiguity never invents a VM. Exact
+known NLB IDs remain stronger evidence and raw target_id/IP/port stay unchanged.
+IP-derived configuration edges do not assert successful target OCID resolution.
+Do not require supplementary identity calls for records with a provided IP. Retain
+scoped enrichment only for OCID registrations without an address. Remove the VM
+failure caption from normal registered Backend tags. Reuse existing editable
+shapes, actual API parents, routing, privacy and deterministic replay contracts.
+
+
+## 037 — Readable arrows before compact canvas
+Apply a relationship-derived visibility contract to every future diagram. Reserve
+72px connected gaps/row lanes and 96px network space while keeping unrelated cards
+compact. Use validated same-owner row/side-bus trees and independent owner landing
+ports, normal shafts and foreign-card clearance. Never substitute a chain through
+one target for two source-owned branches. Measure heads, shafts and corridor/row
+obstructions even when old crossing/overlap metrics are zero.
+Allow a larger canvas and higher scalar loss when those readability metrics improve
+without protected regressions, while rejecting unrelated blank-frame inflation.
+Preserve the old area guard when no readability gain exists. Keep OCI membership,
+all API edges, editable geometry and deterministic replay. Keep legacy plan boxes
+unchanged and report their new deficits; obtain more room through fresh AI geometry.
+No customer picture coordinates, resource names or manual one-off offsets are used.
+
+
+## 038 — Crop unused borders without undoing readable arrows
+Keep the relationship-derived arrow contract from 037. Measure outer frame slack
+using current child boxes plus native wire endpoints/bends, including foreign
+wire turns. Supply alias-only per-side trim and bounds to AI visual review.
+Reserve measured headers, 16px child padding and 8px bend clearance; 72/96px
+corridors are flow lanes, not universal border padding. Preserve existing leaf
+positions and branches before considering internal compaction. No automatic
+resize/repack of model-owned geometry is introduced. Revalidate all candidates;
+without a genuine visibility repair, additional bends/detours cannot be purchased
+with lower area/loss. Saved-plan replay remains unchanged. Quality v6 separates
+wire-aware outer slack from projection estimates of internal whitespace.

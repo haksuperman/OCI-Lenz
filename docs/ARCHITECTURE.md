@@ -79,7 +79,17 @@ Name wrapping prefers natural separators and avoids one-character trailing
 identifier fragments. The native router handles LB ownership fanout in display
 direction while retaining BackendSet.lb_id source/target and separate evidence
 edges. Model prompts request content-sized containers; helpers never resize or
-repack model placements to reduce whitespace.
+repack model placements to reduce whitespace. `composition.boundary_space`
+measures unused outer margins against actual child rectangles and native wire
+endpoints/bends, including side buses and foreign wires. Quality v6 returns
+alias-only bounds/per-side trim to the model. Straight through-crossings do not
+pin the old blank border. The model may crop frames while keeping absolute leaf
+positions and accepted branches; ordinary projection estimates cannot override
+occupied paths. Candidate geometry is revalidated. Without a measured connector
+visibility repair, extra bends/detours cannot be traded for a smaller canvas.
+The local scope heading follows the region with a 16px gap so frame cropping
+does not turn internal padding into an external blank page band; resource and
+edge geometry are unaffected.
 
 `synthetic` provides a customer-free matrix for long labels, dense subnets,
 fanout, cross-compartment networks, unresolved scope and empty inventories.
@@ -450,9 +460,9 @@ to observed summary fields when a child read fails; other failed child lists sta
 explicitly failed in coverage rather than inventing backend relationships.
 
 An NLB Backend.target_id resolves only to a collected Instance ID or a unique
-PrivateIp.id returned for a collected VNIC. Missing or ambiguous explicit IDs stay
-unknown even if an IP would match. IP-only backends use the same unique same-VCN
-matching as classic LB. No out-of-scope target is fetched. Normalized private-IP
+PrivateIp.id returned for a collected VNIC. An unavailable ID does not block the
+same unique same-VCN configured-IP matching used by classic LB. No out-of-scope
+inventory is automatically enumerated. Normalized private-IP
 OCIDs are retained with VNICs to preserve exact target evidence; raw responses,
 tags, descriptions and configuration credentials are excluded. NLB participates
 in existing LB arrow direction, fanout, AI role guidance and name/IP rendering.
@@ -532,7 +542,7 @@ LB/NLB collectors persist `backends_status=ok|unavailable` independently from th
 allowlisted backend list. A successful empty list creates no invented endpoint.
 Legacy empty lists without status cannot establish successful zero collection.
 `diagram_graph` derives a local `backend_badge` without mutating canonical graph
-or inventory. Count unresolved configured backend entries per Set, including
+or inventory. For classic LB, count unresolved configured backend entries per Set, including
 mixed known/unknown sets. Overview and optional detail scenes omit backend-only
 unknown targets from AI placement and hide unresolved backend edges in native XML.
 Other uses of an unknown node, such as peering, remain independently represented.
@@ -665,3 +675,76 @@ substitute. No managed public LB, source/target database or replication line is
 invented. IP-only backends can resolve to a unique observed GoldenGate private
 endpoint only in the same evidenced LB VCN, under existing ambiguity rules.
 Official library entry 51 supplies the unchanged editable GoldenGate symbol.
+
+
+## File Storage / Functions / API Gateway
+`application_services.py` extends the common collector, canonical graph and native
+renderer. FSS lists systems/targets per observed AD; exports are independently
+compartment-scoped. Export membership joins matching export_set_id values, without
+inventing ExportSet resources or VM mounts. Missing AD prerequisites are skipped,
+not reported as successful empty lists. MountTarget summary network fields avoid
+LDAP/Kerberos-bearing detail reads; only referenced PrivateIp/IPv6 addresses are read.
+File systems remain AD resources with compartment placement outside VCN boundaries.
+Functions use Application/Function summaries only. API Gateway details supply IPs;
+Deployment details yield a narrow backend allowlist. Dynamic routing recursively
+extracts configured Function IDs and sanitized HTTP host/port only, with bounded
+depth and unsupported coverage. No DNS or data-plane invocation occurs.
+HTTP private addresses match unique observed VNIC/compute or LB/NLB endpoints in the
+Gateway VCN; observed public endpoints require global uniqueness in the snapshot.
+Unresolved endpoints retain canonical unknowns and participate in shared routing.
+Logical Export/Deployment tags use native labels; Functions share official service
+art, and Mount Target explicitly reuses File Storage art. Owner-derived placement
+is a visual anchor, not an invented runtime subnet. All Application subnet edges
+remain in the graph and index. All new shapes use existing alias-only AI layout,
+local labels/redaction, deterministic replay, connector and PNG export paths.
+
+
+## NLB reference enrichment and registered endpoint annotations
+`nlb_backends.resolve_nlb_backends` runs after scoped service collection and before
+Search comparison. Existing verified identities and configured IP addresses avoid
+new reads. OCID registrations without an IP use bounded/cached GetPrivateIp, GetVnic, explicitly filtered
+ListVnicAttachments(compartment_id, vnic_id), and GetInstance. Only allowlisted
+metadata is added, and actual compartment/ID/subnet consistency is checked before
+adding nodes. No other compartment is automatically enumerated. Backend entries
+retain target_resolution_status, while API coverage distinguishes denial/404/failure.
+load_balancers.match_backend_ip supplies the same configured-address relation for
+LB and NLB, independent of lookup status/stage or missing PrivateIp IDs. Exact known
+NLB identities take precedence. Registration target_id is retained separately from
+IP evidence; an IP-based relation does not claim the target OCID was resolved.
+Duplicate IP candidates and addresses outside the observed VCN are not guessed.
+Canonical unknown endpoints and registration IDs remain in the graph. For NLB only,
+`diagram_graph` projects each unresolved registration into a backend_endpoint logical
+tag, retaining the same source/target edge and configuration evidence. These tags
+have no invented VM icon: local registered IP only, without a VM failure caption.
+They inherit their Set's visual anchor, without asserting resource subnet placement.
+Shared proximity/fanout/orthogonal/jump rules apply; native validation enforces the
+visual anchor. Redacted labels suppress addresses and AI receives aliases/geometry
+only. Classic LB count badges and failed/legacy-empty collection badges remain.
+
+
+## Arrow readability contract v2 / quality v5
+All alias-only scene relationships receive corridor hints, not just LB edges.
+connector_rules measures deficient 72px edge gaps, obstructed fanout rows, crowded
+independent arrowheads and short terminal shafts; containment is not an instruction
+to move a child outside its actual parent. Proximity allowance grows with fanout
+size and reserved corridors. composition reserves lane budgets at edge LCAs,
+reduces area/whitespace weight and keeps genuinely empty frames content-sized.
+
+branch_routes builds same-origin row trees or side buses directly from actual
+endpoint/card bounds in all four directions. It creates no junction resource or
+invented target-to-target edge. Routes are used only when obstacle/title/boundary
+and foreign-wire clearance permit; otherwise the normal orthogonal router handles
+them. Different owners get distinct native landing positions. Multiple ports from
+the same owner retain their relationship identity without artificial head separation.
+Routing prefers 24px normal shafts, 8px foreign-card clearance, 24px lanes, larger
+open arrowheads/strokes and fewer bends. A 12px legacy shaft fallback avoids an
+export failure for tight old geometry, but quality marks it as needing review.
+Sub-micropixel boundary noise is tolerated; visible intrusions remain errors.
+
+Revisions cannot regress intrusion/contact/head/shaft/corridor metrics. A measured
+connector-visibility improvement can justify greater area and total scalar loss,
+with a guard against unrelated empty-frame inflation. Without connector gain,
+the earlier 125% area/lower-loss rules remain. v1 saved plans stay readable and
+are assessed with current metrics; the renderer never silently moves their boxes.
+Fresh AI and visual-review prompts request room before compactness. API edges,
+parents, immutable resources and alias privacy remain the same.

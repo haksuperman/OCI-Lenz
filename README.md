@@ -104,6 +104,9 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 - Oracle Base DB System: Display Name과 관측된 Node IP만 표시
 - MySQL·Autonomous DB, ExaCC·ExaCI의 인프라/VM Cluster, Exascale VM Cluster·Storage Vault와 관측된 네트워크 관계
 - OCI GoldenGate(OCIGG) 배포의 이름·관측 IP·Private Endpoint Subnet/NSG 관계
+- File Storage의 File System·Export·Mount Target과 실제 Subnet/NSG/IP
+- API Gateway·Deployment와 설정된 Function/유일한 관측 HTTP IP 백엔드
+- OCI Functions의 Application·Function 소속과 Application의 Subnet/NSG
 - OCI Cache·OCI Database with PostgreSQL·Search with OpenSearch의 이름·관측 IP·Subnet/NSG 관계
 - NoSQL 테이블 이름·OCID·컴파트먼트 메타데이터와 VCN 밖의 지역 서비스 배치
 - 범위 밖·모호한 관계의 `대상 미확인` 표시
