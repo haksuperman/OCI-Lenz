@@ -251,6 +251,10 @@
     {
       "dir": "62-connection-safe-whitespace",
       "status": "pending"
+    },
+    {
+      "dir": "63-generation-verification-note",
+      "status": "pending"
     }
   ]
 }

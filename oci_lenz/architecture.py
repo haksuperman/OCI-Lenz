@@ -336,6 +336,7 @@ def apply_design(snapshot,plan=None,detail_pages=False):
         append_information_index(doc,snapshot,graph(snapshot)[0])
     doc.set('pageMode','split' if detail_pages else 'single')
     apply_scope_heading(doc,snapshot)
+    apply_generation_notices(doc,plan)
     return E.tostring(doc,encoding='unicode')
 
 
@@ -354,9 +355,56 @@ def apply_scope_heading(doc,snapshot):
         g.set('y',str(float(region.get('y'))-height-16))
 
 
+def apply_generation_notices(doc,plan):
+    """Local editable footer, outside model geometry and all OCI boundaries."""
+    ai=any(isinstance(view,dict) and view.get('provider') in ('codex','openai') for view in plan.values())
+    text=('AI를 활용해 생성한 구성도입니다.' if ai else '자동 생성된 구성도입니다.')
+    text+=' 실제 OCI 리소스 및 설정과 대조·검증한 후 사용해 주세요.'
+    for page in doc.findall('diagram'):
+        root=page.find('mxGraphModel/root')
+        frame=root.find("mxCell[@id='layout-region']/mxGeometry")
+        if frame is not None:
+            x=float(frame.get('x'));width=float(frame.get('width'))
+            bottom=float(frame.get('y'))+float(frame.get('height'))
+        else:
+            x=30;width=1100
+            bottom=max((float(g.get('y'))+float(g.get('height')) for g in root.findall("mxCell[@vertex='1']/mxGeometry")),default=30)
+        value=wrap_text(text,width,12);height=16*len(value.split('\n'))+4
+        c=E.SubElement(root,'mxCell',id='generation-notice',value=value,vertex='1',parent='1',
+                       style='text;whiteSpace=wrap;html=0;fontSize=12;fontColor=#666666;align=left;verticalAlign=top;spacing=0;')
+        E.SubElement(c,'mxGeometry',x=str(x),y=str(bottom+16),width=str(width),height=str(height),**{'as':'geometry'})
+
+
+def validate_generation_notices(doc):
+    """Validate presentation-only footers after the resource graph checks.
+
+    Older XML without a footer remains readable. This never relaxes the resource
+    or information-index identity checks for other vertices.
+    """
+    for page in doc.findall('diagram'):
+        root=page.find('mxGraphModel/root');notes=root.findall("mxCell[@id='generation-notice']")
+        if len(notes)>1:raise ValueError('duplicate generation notice')
+        for c in notes:
+            if c.get('vertex')!='1' or c.get('parent')!='1':raise ValueError('invalid generation notice')
+            g=c.find('mxGeometry')
+            if g is None:raise ValueError('missing generation notice geometry')
+            x,y,w,h=(float(g.get(k,0)) for k in ('x','y','width','height'))
+            required=16*len(wrap_text(c.get('value',''),max(1,w),12).split('\n'))+4
+            frame=root.find("mxCell[@id='layout-region']/mxGeometry")
+            bottom=(float(frame.get('y'))+float(frame.get('height')) if frame is not None else
+                    max((float(v.get('y'))+float(v.get('height')) for cell in root.findall("mxCell[@vertex='1']") if cell is not c for v in cell.findall('mxGeometry')),default=30))
+            if not all(math.isfinite(v) for v in (x,y,w,h)) or w<=0 or h<required or y<bottom+16:
+                raise ValueError('generation notice clipping or overlap')
+
+
 def validate_architecture(xml,snapshot):
     from .draw import validate
-    doc=E.fromstring(xml);index=doc.find("diagram[@id='information-index']")
+    doc=E.fromstring(xml)
+    # Keep graph/membership errors primary. Footer positions cannot hide an
+    # invalid resource parent even if that edit also changes frame dimensions.
+    for root in doc.findall('diagram/mxGraphModel/root'):
+        for note in root.findall("mxCell[@id='generation-notice']"):root.remove(note)
+    index=doc.find("diagram[@id='information-index']")
     if index is None:raise ValueError('missing information index')
     doc.remove(index);doc.attrib.pop('style',None)
     validate(E.tostring(doc,encoding='unicode'),compact_snapshot(snapshot))
@@ -373,4 +421,5 @@ def validate_architecture(xml,snapshot):
             raise ValueError('information index clipping or overlap')
         bottom=y+h
 
+    validate_generation_notices(E.fromstring(xml))
     return True
