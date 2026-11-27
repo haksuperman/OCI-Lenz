@@ -261,3 +261,22 @@ Health 상태로 조회 성공/실패를 판단하지 않으며 수집기는 Hea
 보완 API의 실패/과거 상태나 미확인 OCID 때문에 차단하지 않는다. 알려진 정확한
 ID 관계는 우선 유지한다. 등록 IP가 있다면 보완 조회는 필요하지 않다.
 공식 근거: [Core API permissions](https://docs.oracle.com/en-us/iaas/Content/Identity/policyreference/corepolicyreference_topic-Permissions_Required_for_Each_API_Operation.htm).
+
+## Kubernetes Engine(OKE) 네트워크
+| API | 최소 IAM 권한 | verb/resource |
+| --- | --- | --- |
+| ListClusters | CLUSTER_INSPECT | inspect clusters |
+| GetCluster | CLUSTER_READ | read clusters |
+| ListNodePools | CLUSTER_NODE_POOL_INSPECT | inspect cluster-node-pools |
+| GetNodePool | CLUSTER_NODE_POOL_READ | read cluster-node-pools |
+
+List는 선택한 compartment_id와 확인된 cluster_id에 한정한다. NodePool은
+Cluster와 요청 scope를 대조하며 다른 컴파트먼트를 자동 열거하지 않는다.
+공통 페이지네이션과 최대 3회/30초 재시도를 사용한다. 권한 실패/0건/상세 실패,
+반환 ID/컴파트먼트 충돌은 coverage에 구분하며 Summary의 관측 필드는 유지한다.
+기존 VCN/Subnet/Compute 읽기 권한도 해당 수집에 필요하다. CreateKubeconfig,
+AdministerK8s, 토큰·환경·SSH 설정, Kubernetes API 및 쓰기 작업은 호출하지 않는다.
+정책을 적용하거나 권한을 자동 확장하지 않는다.
+근거: [Oracle OKE IAM](https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/contengpolicyreference.htm),
+[Cluster API](https://docs.oracle.com/en-us/iaas/tools/python/latest/api/container_engine/models/oci.container_engine.models.Cluster.html),
+[Node Pool Pod 네트워크](https://docs.oracle.com/en-us/iaas/tools/python/latest/api/container_engine/models/oci.container_engine.models.OciVcnIpNativeNodePoolPodNetworkOptionDetails.html).

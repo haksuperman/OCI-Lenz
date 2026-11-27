@@ -71,7 +71,7 @@ DRGs are regional resources, not children of one arbitrarily selected VCN.
 LPG uses a logical name tag; DRG/RPC use official stencils. Attachment records
 are internal evidence only; never draw their cards, names or frames. Leave out-of-scope peers unknown. Do not infer direct or transitive
 VCN connectivity, traverse peer scopes or treat configured peering as verified
-traffic. DRG route-policy evaluation and OKE remain separate.
+traffic. DRG route-policy evaluation remains separate.
 
 LPGs belong to their actual VCN. Peer links are dashed configured relations;
 API field names stay hidden on the canvas.
@@ -166,3 +166,17 @@ per-side trim, not a command to repack. Ordinary projection-based suggested size
 must not override occupied paths. Revalidate titles, endpoints and parents after
 any candidate. A whitespace-only revision that adds bends/detours or reduces
 connector readability is rejected. Saved layout replay stays unchanged.
+
+OKE uses official Container Engine for Kubernetes art. Preserve the supplied
+endpoint Subnet parent and OKE API Endpoint role; this does not locate Oracle's
+managed control-plane VMs there. Missing anchors fall back to a known VCN or
+actual compartment, with icon/name only. Use existing worker Compute cards; do
+not create Node Pool frames, Pod/virtual-node cards or OKE-to-worker/LB/gateway
+traffic. Only actual backend/route evidence defines those arrows. VCN-native Pod
+Subnet roles come from exact API references; preserve actual subnet names/CIDRs.
+
+Confirmed Pod Subnets use a native editable rounded `OKE Pods` badge with the
+official OKE glyph in the reserved header row. Keep actual subnet name/CIDR and
+API membership; this annotation creates no inventory node or traffic edge. Routing
+and quality treat its full rectangle as a title obstacle. Saved scene signatures
+and resource placements remain compatible.

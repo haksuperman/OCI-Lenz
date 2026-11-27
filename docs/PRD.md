@@ -13,7 +13,7 @@ DRG·Attachment, LPG·RPC의 구성 관계까지 수집한다. 범위 밖 피어
 VCN 간 전이 연결을 추론하지 않는다. Oracle Base DB의 DB System·Node·VNIC도 수집하며,
 기본 구성도에는 System Display Name과 Node IP만 표시한다. MySQL, Autonomous DB,
 ExaCC, ExaCI, Exascale의 인프라·클러스터·네트워크 관계도 수집한다.
-DB Home·일반 Database/PDB 카탈로그·Data Guard, OKE, DRG 라우팅 정책은 후속 범위다.
+DB Home·일반 Database/PDB 카탈로그·Data Guard, Kubernetes 내부 워크로드, DRG 라우팅 정책은 후속 범위다.
 FastConnect Virtual Circuit·Cross-Connect Group·Cross-Connect를 읽기 전용으로 수집하고 공식 FastConnect 심볼로 표시한다.
 Attachment는 내부 API 관계 근거로 유지하고 도형·이름·경계는 모든 페이지에서 제외한다.
 VCN–DRG–IPSec/Remote Peering 관계를 검증된 직접 연결선으로 표시한다.
@@ -125,3 +125,11 @@ LB와 NLB는 Backend Set에 등록된 IP를 같은 함수로 대조하여 동일
 산출물 하단에 AI 활용 및 실제 OCI 리소스·설정과의 대조·검증 후 사용 안내를
 표시한다. AI 미사용 진단 결과는 자동 생성으로 구분하며, 안내 추가로 자원
 위치나 연결 구조를 변경하지 않는다. Draw.io에서는 안내도 편집할 수 있다.
+
+OKE는 공식 아이콘으로 클러스터의 API Endpoint를 표현한다. 실제 Endpoint
+Subnet이 확인되면 그 안에 이름·관측 IP와 OKE API Endpoint 역할을 표시한다.
+위치 미확인/VCN 충돌이면 확인된 VCN 또는 실제 컴파트먼트에서 이름·아이콘만
+표시하며 IP 상세는 부록에 유지한다. 기존 Compute를 중복 생성하지 않는다.
+OCI VCN-native Pod Subnet은 정확한 API 참조가 확인된 경우에만 역할을 표시한다.
+Node Pool 프레임, 가상 노드/Pod 도형, OKE에서 워커/LB/게이트웨이로의 추측
+통신선은 생성하지 않는다. 실제 Control Plane이 고객 Subnet에 있다는 뜻이 아니다.

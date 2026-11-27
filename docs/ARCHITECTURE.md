@@ -748,3 +748,21 @@ the earlier 125% area/lower-loss rules remain. v1 saved plans stay readable and
 are assessed with current metrics; the renderer never silently moves their boxes.
 Fresh AI and visual-review prompts request room before compactness. API edges,
 parents, immutable resources and alias privacy remain the same.
+
+`oke.py` reduces List/Get Cluster and NodePool responses to scoped network fields.
+An oke_cluster uses official stencil 74 and represents the observed API endpoint
+when its exact Subnet/VCN agree. A missing/conflicting endpoint anchor falls back
+to an observed VCN or the actual compartment; only the appendix retains its IPs.
+The control plane is not modeled as a VM in that subnet. `network_evidence` keeps
+Cluster versus ClusterSummary nested-field provenance. Node Pool IDs and network
+references remain metadata; no Node Pool shapes or inferred traffic arrows exist.
+Exact known Compute IDs are annotated without adding VMs; VCN-native Pod Subnet
+roles are re-applied on a display copy after merging selected compartments.
+No out-of-scope traversal, kubeconfig, Kubernetes API, hostnames, tags, OIDC, SSH
+or node metadata is persisted. List/Get failures and scope conflicts remain coverage.
+
+Confirmed Pod Subnets use a native editable rounded `OKE Pods` badge with the
+official OKE glyph in the reserved header row. Keep actual subnet name/CIDR and
+API membership; this annotation creates no inventory node or traffic edge. Routing
+and quality treat its full rectangle as a title obstacle. Saved scene signatures
+and resource placements remain compatible.

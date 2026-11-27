@@ -4,14 +4,22 @@ from collections import Counter
 
 from .database_synthetic import CASES as DATABASE_CASES
 
-SCENARIOS=('nlb-backends','application-services','file-storage','api-gateway','functions','goldengate','regional-services','regional-services-only','cache-nosql','nosql','nosql-only','managed-data','oci-cache','postgresql','opensearch','backend-status','edge-waf','regional-waf','network-load-balancer','long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
+SCENARIOS=('oke','nlb-backends','application-services','file-storage','api-gateway','functions','goldengate','regional-services','regional-services-only','cache-nosql','nosql','nosql-only','managed-data','oci-cache','postgresql','opensearch','backend-status','edge-waf','regional-waf','network-load-balancer','long-names','dense','fanout','cross-compartment','unresolved','empty','network-peering','base-database','ipsec-vpn','drg-centered','fastconnect',*DATABASE_CASES)
 
 
 def build_scenario(case):
     from .model import sample
     if case not in SCENARIOS:raise ValueError('unknown synthetic matrix case')
     s=sample('overview' if case in ('cross-compartment','network-peering') else 'basic')
-    if case in ('application-services','file-storage','api-gateway','functions'):
+    if case=='oke':
+        s['resources'].extend([
+            {'id':'qa-oke','kind':'oke_cluster','name':'Synthetic OKE Production','vcn_id':'vcn','subnet_id':'public','nsg_ids':['app-nsg'],
+             'private_ips':['10.0.1.90'],'primary_private_ip':'10.0.1.90','public_ip':'192.0.2.90',
+             'node_pool_networks':[{'id':'qa-pool','worker_ids':['compute'],'pod_subnet_ids':['qa-pods']} ]},
+            {'id':'qa-pods','kind':'subnet','name':'Synthetic OKE Pods','vcn_id':'vcn','cidr_block':'10.0.4.0/24','public':False,'route_table_id':'private-rt'},
+            {'id':'qa-oke-vcn-only','kind':'oke_cluster','name':'Synthetic OKE VCN Reference','vcn_id':'vcn','subnet_id':'unobserved-endpoint-subnet'},
+            {'id':'qa-oke-scope-only','kind':'oke_cluster','name':'Synthetic OKE Scope Reference','vcn_id':'unobserved-vcn'}])
+    elif case in ('application-services','file-storage','api-gateway','functions'):
         if case in ('application-services','file-storage'):
             s['resources'].extend([
                 {'id':'qa-files','kind':'file_system','name':'Synthetic Shared Files','availability_domain':'Synthetic AD'},

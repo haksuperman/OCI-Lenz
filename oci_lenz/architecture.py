@@ -29,7 +29,8 @@ def compact_snapshot(snapshot):
         details=r.get('display_details',[])
         selected=r.get('summary_details',details[:3])
         if r['kind'] not in ('vcn','subnet'):
-            selected=[value for value in selected if value.startswith(('Private: ','Public: ','IP: ','Customer: ','Oracle: '))]
+            prefixes=('Private: ','Public: ','IP: ','Customer: ','Oracle: ')+(('OKE API Endpoint','OKE Cluster') if r['kind']=='oke_cluster' else ())
+            selected=[value for value in selected if value.startswith(prefixes)]
         r['display_details']=list(selected)
     return result
 
@@ -252,7 +253,7 @@ def apply_plan(snapshot,scene,plan,region_only=False):
             right=24;bottom=100
             for key,c in cells.items():
                 if not key.startswith('layout-compartment-'):continue
-                children=[v for k,v in cells.items() if v.get('parent')==key and k in nodes and nodes[k]['kind'] in ({'vcn'} | REGIONAL_KINDS | APPLICATION_KINDS)]
+                children=[v for k,v in cells.items() if v.get('parent')==key and k in nodes and nodes[k]['kind'] in ({'vcn','oke_cluster'} | REGIONAL_KINDS | APPLICATION_KINDS)]
                 if not children:continue
                 geometries=[v.find('mxGeometry') for v in children]
                 dx=min(float(g.get('x')) for g in geometries)-24
@@ -291,6 +292,8 @@ def apply_plan(snapshot,scene,plan,region_only=False):
                 array=E.SubElement(g,'Array',**{'as':'points'})
                 for point in route_map['e'+str(i)]:E.SubElement(array,'mxPoint',x=str(point['x']-parent['x']),y=str(point['y']-parent['y']))
         cells['notice'].set('value','OCI-Lenz | Architecture\nResource names and observed IPs | Overview: LB/backend flow; VCN pages: network links; information index: complete data')
+        from .oke_badges import decorate_pod_subnets
+        decorate_pod_subnets(page.find('mxGraphModel/root'),nodes)
         from .routing import route_native_edges
         route_native_edges(page.find('mxGraphModel/root'),nodes)
     if region_only:return E.tostring(doc,encoding='unicode')
@@ -311,7 +314,7 @@ def append_information_index(doc,snapshot,nodes):
     y=30
     for i,r in enumerate(sorted(resources,key=lambda r:(r['kind'],r['id']))):
         lines=[r['name']+' / '+r['kind'],*r.get('display_details',[])]
-        if r['kind'] in ({'vcn'} | REGIONAL_KINDS | APPLICATION_KINDS) and r.get('compartment_id') and not snapshot.get('presentation',{}).get('redacted'):
+        if r['kind'] in ({'vcn','oke_cluster'} | REGIONAL_KINDS | APPLICATION_KINDS) and r.get('compartment_id') and not snapshot.get('presentation',{}).get('redacted'):
             lines.append('Compartment: '+r['compartment_id'])
         for rule in r.get('rules',[]):lines.append(rule.get('destination','')+' → '+nodes.get(rule.get('network_entity_id'),{}).get('name','대상 미확인'))
         for key in r.get('nsg_ids',[]):lines.append('NSG: '+nodes.get(key,{}).get('name','대상 미확인'))
@@ -407,6 +410,8 @@ def validate_architecture(xml,snapshot):
     index=doc.find("diagram[@id='information-index']")
     if index is None:raise ValueError('missing information index')
     doc.remove(index);doc.attrib.pop('style',None)
+    from .oke_badges import validate_badges
+    validate_badges(doc,graph(snapshot)[0])
     validate(E.tostring(doc,encoding='unicode'),compact_snapshot(snapshot))
     rows=index.findall('.//mxCell[@vertex="1"]')
     from .diagram_model import diagram_resources

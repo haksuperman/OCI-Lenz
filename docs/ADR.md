@@ -385,3 +385,22 @@ resize/repack of model-owned geometry is introduced. Revalidate all candidates;
 without a genuine visibility repair, additional bends/detours cannot be purchased
 with lower area/loss. Saved-plan replay remains unchanged. Quality v6 separates
 wire-aware outer slack from projection estimates of internal whitespace.
+
+
+## 039 — OKE network endpoint, not an invented control-plane deployment
+Use the official Container Engine for Kubernetes stencil for a cluster's observed
+API endpoint in its exact subnet, with a local role label and IPs. Keep missing
+endpoint anchors at a known VCN or actual compartment with icon/name only. Use
+existing Compute instances and exact native-CNI Pod Subnet references, preserving
+API compartment/VCN ownership. Store Node Pool network metadata without adding
+frames or OKE-to-worker/LB/gateway traffic arrows. Read only scoped Cluster/NodePool
+List/Get APIs; never request kubeconfig or serialize tags, SSH/node metadata/OIDC.
+Preserve summary fields when detail reads fail and distinguish failed versus zero.
+
+
+## 040 — Pod Subnet role badge without invented deployment boundaries
+Replace the reserved Pod network text row with a compact editable rounded badge
+and official OKE stencil. Retain the actual Subnet identity, name, CIDR and API
+parent. Do not create a Pod resource or infer traffic. Decorate after applying
+model geometry, preserving scene signatures and saved layouts. Route around the
+full badge rectangle and include it in title intrusion assessment.

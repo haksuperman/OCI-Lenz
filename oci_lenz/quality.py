@@ -91,6 +91,8 @@ def assess(snapshot,plan=None,*,xml=None,scene=None):
         size=float(st.get('fontSize',12));spacing=float(st.get('spacing',12));x,y,w,h=box(key)
         for i,line in enumerate(cell.get('value','').split('\n')):
             if line:titles.append((key,(x+spacing,y+spacing+i*(size+4),min(max(0,w-2*spacing),text_width(line,size)),size+4)))
+    from .oke_badges import badge_rectangles
+    titles.extend(badge_rectangles(root,box))
     # XML anchor math can differ by ~1e-12 from stored bend coordinates.
     # Snap sub-micropixel noise before orthogonal intersection measurement.
     paths=[{**p,'points':[(round(x,6),round(y,6)) for x,y in p['points']]}

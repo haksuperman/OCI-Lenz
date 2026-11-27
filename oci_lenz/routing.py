@@ -223,6 +223,8 @@ def _route_native_edges(root,nodes,future=()):
         x,y,w,h=rectangle(key)
         for i,line in enumerate(c.get('value','').split('\n')):
             if line:titles.append((x+spacing-2,y+spacing+i*(size+4)-2,min(max(0,w-2*spacing),text_width(line,size))+4,size+8))
+    from .oke_badges import badge_rectangles
+    titles.extend((x-2,y-2,w+4,h+4) for _,(x,y,w,h) in badge_rectangles(root,rectangle))
     obstacles=list(rectangles.values())+titles
     def inside(point,rect):
         x,y,w,h=rect;return x<point[0]<x+w and y<point[1]<y+h

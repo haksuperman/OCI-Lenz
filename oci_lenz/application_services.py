@@ -28,6 +28,9 @@ def primary_subnet(resource,nodes):
 
 def compartment_resource(resource,nodes):
     from .regional_services import REGIONAL_KINDS
+    if resource['kind']=='oke_cluster':
+        from .oke import network_parent
+        return network_parent(resource,nodes) is None
     return resource['kind'] in REGIONAL_KINDS or (resource['kind'] in KINDS and nodes.get(primary_subnet(resource,nodes),{}).get('kind')!='subnet')
 
 
