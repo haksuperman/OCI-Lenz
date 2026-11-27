@@ -1,0 +1,18 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "65-readme-service-summary",
+  "steps": [
+    {
+      "step": 0,
+      "name": "concise-service-name-table",
+      "status": "pending",
+      "ac": [
+        [
+          "git",
+          "diff",
+          "--check"
+        ]
+      ]
+    }
+  ]
+}

@@ -97,33 +97,17 @@ oci-lenz draw --snapshot /local/private-snapshot/snapshot.json \
 
 ### OCI 서비스별 지원 범위
 
-OCI 콘솔의 메뉴 대분류를 기준으로 정리했습니다. 아래 표는 서비스 전체 기능이 아닌, OCI-Lenz가 수집·표시하는 리소스와 관계의 범위입니다.
+OCI 콘솔 대분류별로 구현된 서비스를 정리했습니다.
 
-| OCI 콘솔 대분류 | 지원 서비스·리소스 | 수집·표시 내용 |
-| --- | --- | --- |
-| Networking | VCN · Public/Private Subnet · Internet Gateway(IGW) · NAT Gateway(NGW) · Service Gateway(SGW) | 네트워크 경계·CIDR과 게이트웨이 소속 |
-| Networking | Route Table · Network Security Group(NSG) | Route 목적지·다음 홉, NSG 연결 정보 |
-| Networking | Load Balancer(LB) · Network Load Balancer(NLB) | 이름·IP, Backend Set과 등록 백엔드·관측된 VM의 연결 |
-| Networking | DRG · Local Peering Gateway(LPG) · Remote Peering Connection(RPC) | VCN–DRG 직접 연결과 로컬·원격 피어링 관계 |
-| Networking | Site-to-Site VPN(IPSec) · CPE · FastConnect | VPN 내부 터널과 DRG·CPE 연결, Virtual Circuit·Cross-Connect·그룹의 구성 관계 |
-| Compute | Compute Instance · VNIC | 인스턴스 이름·관측 IP, 기본·보조 VNIC를 통한 Subnet 관계 |
-| Storage | File Storage | File System·Export·Mount Target과 실제 Subnet·NSG·IP |
-| Storage | Object Storage | 버킷 이름·컴파트먼트 메타데이터; VCN 밖에 표시 |
-| Oracle AI Database | Oracle Base Database Service(Base DB/DBCS) | DB System의 Display Name과 관측된 Node IP |
-| Oracle AI Database | Exadata: Cloud@Customer(ExaCC) · Dedicated Infrastructure(ExaCI/ExaCS) · Exascale Infrastructure(ExaDB-XS) | 인프라·VM Cluster·관측된 네트워크 관계; Exascale의 Storage Vault 포함 |
-| Oracle AI Database | Autonomous AI Database(ADB) | Serverless·Dedicated의 DB와 관측된 네트워크 관계, Dedicated의 관련 인프라·VM Cluster·Container DB |
-| Oracle AI Database | GoldenGate(OCIGG) | 배포 이름·관측 IP·Private Endpoint의 Subnet·NSG 관계 |
-| Databases | MySQL HeatWave · OCI Database with PostgreSQL | DB System 이름·관측 IP·Subnet·NSG 관계 |
-| Databases | OCI Cache · Search with OpenSearch | 클러스터 이름·관측 IP·Subnet·NSG 관계 |
-| Databases | NoSQL Database | 테이블 이름·OCID·컴파트먼트 메타데이터; VCN 밖에 표시 |
-| Developer Services | API Gateway | Gateway·Deployment와 설정된 Function 또는 유일하게 일치하는 관측 HTTP IP 백엔드 |
-| Developer Services | OCI Functions | Application·Function 소속과 Application의 Subnet·NSG 관계 |
-| Developer Services | Container Registry · DevOps | 컨테이너 저장소, 프로젝트·코드 저장소·빌드/배포 파이프라인·배포 환경과 프로젝트 소속; VCN 밖에 표시 |
-| Identity & Security | Regional WAF · Edge WAF(WAAS) | Regional WAF → 보호 대상 LB, Edge WAF → 선택된 Origin 연결 |
-
-메뉴 분류는 Oracle 공식 안내의 [Oracle AI Database](https://docs.oracle.com/en-us/iaas/database-overview/overview.html), [GoldenGate](https://docs.oracle.com/en/cloud/paas/goldengate-service/ocigg/access-oracle-cloud-infrastructure-goldengate.html), [Databases](https://docs.oracle.com/en-us/iaas/mysql-database/doc/listing-db-systems.html), [Developer Services](https://docs.oracle.com/en-us/iaas/Content/APIGateway/Tasks/apigatewayquickstartsetupcreatedeploy.htm), [WAF](https://docs.oracle.com/en-us/iaas/Content/WAF/Policies/list_waf-policy.htm)를 참고했습니다. 이 분류는 지원 범위 안내용이며, 실제 구성도는 API로 확인된 컴파트먼트·VCN·Subnet과 관계를 따라 배치합니다.
-
-기본 페이지는 주요 리소스와 흐름을 중심으로 표시합니다. VNIC·Route Table·NSG의 기술 도형은 기본 페이지에서 생략하고 상세 페이지·정보 부록·편집 가능한 XML에 보존합니다. Attachment도 연결 근거로 유지하되 도형·이름·경계는 표시하지 않습니다. 범위 밖·모호한 대상은 `대상 미확인`으로 구분하며, VM이 확인되지 않은 NLB 등록 백엔드는 해당 Backend Set 근처에 등록 IP 태그로 표시합니다.
+| OCI 콘솔 대분류 | 지원 서비스 |
+| --- | --- |
+| Networking | VCN · Subnet · IGW · NAT Gateway · SGW · Route Table · NSG · LB · NLB · DRG · LPG · RPC · Site-to-Site VPN · CPE · FastConnect |
+| Compute | Compute Instance · VNIC |
+| Storage | File Storage · Object Storage |
+| Oracle AI Database | Base DB(DBCS) · ExaCC · ExaCI(ExaCS) · Exascale · Autonomous AI Database(ADB) · GoldenGate |
+| Databases | MySQL HeatWave · PostgreSQL · OCI Cache · NoSQL Database · OpenSearch |
+| Developer Services | API Gateway · OCI Functions · Container Registry · DevOps |
+| Identity & Security | Regional WAF · Edge WAF(WAAS) |
 
 ### 생성 파일
 
