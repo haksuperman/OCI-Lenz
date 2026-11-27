@@ -322,7 +322,7 @@ reachability. Only resources returned for selected compartments are resolved;
 remote regions/tenancies/compartments are never fetched automatically. An API
 reports PEERED but omits the peer ID → the peer remains explicitly unknown.
 Other attachment network types (beyond VCN/RPC/IPSec-tunnel/VirtualCircuit) are retained as references and recorded as
-unsupported endpoints; DRG route-policy evaluation is not implemented. DB catalog/PDB/Data Guard and OKE remain follow-up scope. IAM policies are never changed.
+unsupported endpoints; DRG route-policy evaluation is not implemented. DB catalog/PDB/Data Guard and Kubernetes workloads remain follow-up scope. IAM policies are never changed.
 
 DRG and RPC use official native toolkit icons; LPG uses a logical editable tag.
 Attachment names/cards/frames are omitted from all diagram pages. Direct DRG
@@ -840,3 +840,24 @@ python scripts/validate_scenarios.py --ai --case nlb-backends --output /tmp/oci-
 안내는 편집 가능한 텍스트이며 프레임/연결선 밖에 배치된다. AI provider가
 확인되지 않은 진단/수동 배치에는 “자동 생성된 구성도입니다.”로 구분한다.
 기존 파일을 수정하지는 않으며 다시 draw하면 새 안내가 포함된다.
+
+## OKE 네트워크 표시
+선택 컴파트먼트의 ListClusters/GetCluster와 클러스터별 ListNodePools/GetNodePool로
+네트워크 필드만 수집한다. 공식 Container Engine for Kubernetes 아이콘(74번)을
+사용하며 Endpoint Subnet에서 클러스터명, OKE API Endpoint, 관측 IP를 표시한다.
+Subnet을 확인하지 못하면 확인된 VCN 또는 실제 컴파트먼트에 OKE Cluster 아이콘과
+이름만 표시한다. API Endpoint 위치가 Oracle 관리 Control Plane의 물리적 위치를
+뜻하지 않는다. IPv4/IPv6 Endpoint는 IP만 저장하며 URL·인증정보·호스트명은 저장하지 않는다.
+
+기존 Compute 워커는 중복 생성하지 않는다. Node Pool은 네트워크 근거 메타데이터로
+보존하며 별도 프레임/화살표를 만들지 않는다. VCN-native CNI의 Pod Subnet ID가
+같은 VCN의 수집된 Subnet과 정확히 일치하면 해당 Subnet 제목 아래에 공식 OKE
+아이콘이 포함된 `OKE Pods` 배지를 표시한다. Subnet 이름과 CIDR은 유지하며,
+배지는 별도 리소스가 아닌 편집 가능한 역할 표시다.
+Flannel, 미확인 Subnet, Virtual Node/Pod/Service/Ingress 등은 추측하지 않는다.
+LB/NLB와 게이트웨이 연결은 기존 실제 백엔드/Route Rule 근거만 사용한다.
+
+가상 예제: `oci-lenz sample --scenario oke --output /tmp/oci-lenz-oke`, 이후
+`oci-lenz draw --snapshot /tmp/oci-lenz-oke/snapshot.json --output /tmp/oci-lenz-oke-diagram`.
+새 OKE 정보 수집에는 collect를 다시 실행하고 새 인벤토리의 배치를 생성한다.
+Kubeconfig·Kubernetes API·SSH·태그/노드 메타데이터·OIDC 정보는 수집하지 않는다.

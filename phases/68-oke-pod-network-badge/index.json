@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "68-oke-pod-network-badge",
+  "steps": [
+    {
+      "step": 0,
+      "name": "official-oke-subnet-role-badge",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_oke_badges",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}

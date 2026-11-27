@@ -116,7 +116,7 @@ class ExaciTests(unittest.TestCase):
         self.assertIn('unknown:outside-backup',nodes)
         self.assertIn('10.0.0.51',nodes['civm']['private_ips'])
         self.assertNotIn('DO-NOT-STORE',json.dumps(s))
-        self.assertTrue(all(n.removeprefix('mysql_').removeprefix('nlb_').removeprefix('waf_').removeprefix('waas_').removeprefix('redis_').removeprefix('psql_').removeprefix('opensearch_').removeprefix('nosql_').removeprefix('object_storage_').removeprefix('artifacts_').removeprefix('devops_').removeprefix('goldengate_').removeprefix('fss_').removeprefix('functions_').removeprefix('apigw_').removeprefix('apideploy_').startswith(('list_','get_','search_')) for n,a,k in req))
+        self.assertTrue(all(n.removeprefix('mysql_').removeprefix('nlb_').removeprefix('waf_').removeprefix('waas_').removeprefix('redis_').removeprefix('psql_').removeprefix('opensearch_').removeprefix('nosql_').removeprefix('object_storage_').removeprefix('artifacts_').removeprefix('devops_').removeprefix('goldengate_').removeprefix('oke_').removeprefix('fss_').removeprefix('functions_').removeprefix('apigw_').removeprefix('apideploy_').startswith(('list_','get_','search_')) for n,a,k in req))
 
     def test_denied_nodes_does_not_discard_cluster_or_infra(self):
         s=collect(self.responses(),fail='list_db_nodes');nodes,_=graph(s)

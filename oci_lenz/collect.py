@@ -5,11 +5,11 @@ def collect(profile,region,compartment,config_file=None):
     if any(c in compartment for c in ("'", '\n', '\r')): raise ValueError('invalid compartment')
     cfg=oci.config.from_file(config_file or oci.config.DEFAULT_LOCATION,profile);cfg['region']=region
     retry=oci.retry.RetryStrategyBuilder(max_attempts_check=True,max_attempts=3,total_elapsed_time_check=True,total_elapsed_time_seconds=30).get_retry_strategy()
-    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'nlb':oci.network_load_balancer.NetworkLoadBalancerClient,'waf':oci.waf.WafClient,'waas':oci.waas.WaasClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient,'mysql':oci.mysql.DbSystemClient,'redis':oci.redis.RedisClusterClient,'psql':oci.psql.PostgresqlClient,'opensearch':oci.opensearch.OpensearchClusterClient,'nosql':oci.nosql.NosqlClient,'object_storage':oci.object_storage.ObjectStorageClient,'artifacts':oci.artifacts.ArtifactsClient,'devops':oci.devops.DevopsClient,'goldengate':oci.golden_gate.GoldenGateClient,'fss':oci.file_storage.FileStorageClient,'functions':oci.functions.FunctionsManagementClient,'apigw':oci.apigateway.GatewayClient,'apideploy':oci.apigateway.DeploymentClient}.items()}
+    clients={k:c(cfg,retry_strategy=retry) for k,c in {'identity':oci.identity.IdentityClient,'network':oci.core.VirtualNetworkClient,'compute':oci.core.ComputeClient,'lb':oci.load_balancer.LoadBalancerClient,'nlb':oci.network_load_balancer.NetworkLoadBalancerClient,'waf':oci.waf.WafClient,'waas':oci.waas.WaasClient,'search':oci.resource_search.ResourceSearchClient,'database':oci.database.DatabaseClient,'mysql':oci.mysql.DbSystemClient,'redis':oci.redis.RedisClusterClient,'psql':oci.psql.PostgresqlClient,'opensearch':oci.opensearch.OpensearchClusterClient,'nosql':oci.nosql.NosqlClient,'object_storage':oci.object_storage.ObjectStorageClient,'artifacts':oci.artifacts.ArtifactsClient,'devops':oci.devops.DevopsClient,'goldengate':oci.golden_gate.GoldenGateClient,'oke':oci.container_engine.ContainerEngineClient,'fss':oci.file_storage.FileStorageClient,'functions':oci.functions.FunctionsManagementClient,'apigw':oci.apigateway.GatewayClient,'apideploy':oci.apigateway.DeploymentClient}.items()}
     s={'version':1,'scope':{'region':region,'compartments':[compartment]},'resources':[],'coverage':[]}
     def call(service,method,*args,**kwargs):
         entry={'region':region,'compartment':compartment,'service':service,'api':method}
-        scoped={key:value for key,value in kwargs.items() if key in ('db_system_id','vm_cluster_id','exadata_infrastructure_id','waas_policy_id','redis_cluster_id','opensearch_cluster_id','deployment_id','application_id','gateway_id','availability_domain','private_ip_id','ipv6_id','instance_id','vnic_id')}
+        scoped={key:value for key,value in kwargs.items() if key in ('db_system_id','vm_cluster_id','exadata_infrastructure_id','waas_policy_id','redis_cluster_id','opensearch_cluster_id','deployment_id','cluster_id','node_pool_id','application_id','gateway_id','availability_domain','private_ip_id','ipv6_id','instance_id','vnic_id')}
         if scoped:entry['request_scope']=scoped
         try:
             fn=getattr(clients[service],method)
@@ -102,6 +102,8 @@ def collect(profile,region,compartment,config_file=None):
     collect_api_gateway(call,add,s,compartment)
     from .nlb_backends import resolve_nlb_backends
     resolve_nlb_backends(call,add,s,compartment)
+    from .oke import collect_oke
+    collect_oke(call,add,s,compartment)
     # Search counts are inventory evidence only, never inferred graph relationships.
     query=oci.resource_search.models.StructuredSearchDetails(query=f"query all resources where compartmentId = '{compartment}'")
     inventory=call('search','search_resources',query)
@@ -109,6 +111,6 @@ def collect(profile,region,compartment,config_file=None):
         mapping={'Vcn':'vcn','Subnet':'subnet','Instance':'compute','LoadBalancer':'lb','NetworkLoadBalancer':'nlb','NatGateway':'nat','InternetGateway':'internet','ServiceGateway':'service','NetworkSecurityGroup':'nsg','RouteTable':'route'}
         s['coverage'][-1]['inventory_comparison']={kind:{'search':sum(getattr(r,'resource_type',None)==api_type for r in inventory),'collected':sum(r['kind']==kind for r in s['resources'])} for api_type,kind in mapping.items()}
         s['coverage'][-1]['comparison_note']='Search visibility/indexing may differ; differences do not establish missing resources.'
-    for kind in ('database_catalog','oke','drg_routing'):
+    for kind in ('database_catalog','drg_routing'):
         s['coverage'].append({'region':region,'compartment':compartment,'service':kind,'status':'unsupported'})
     return s

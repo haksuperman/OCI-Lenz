@@ -263,6 +263,18 @@
     {
       "dir": "65-readme-service-summary",
       "status": "pending"
+    },
+    {
+      "dir": "66-oke-network-endpoints",
+      "status": "pending"
+    },
+    {
+      "dir": "67-oke-live-validation",
+      "status": "pending"
+    },
+    {
+      "dir": "68-oke-pod-network-badge",
+      "status": "pending"
     }
   ]
 }

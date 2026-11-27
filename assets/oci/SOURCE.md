@@ -88,3 +88,8 @@ Exports are native editable logical tags. Functions Application and Function use
 entry 2 (Compute - Functions), and API Gateway uses entry 79 (Developer Services -
 API Gateway). API Deployments use logical tags, not a fabricated resource icon.
 All resource labels, stencils and relationship edges remain editable separately.
+
+OKE uses official entry 74, Developer Services - Container Engine for Kubernetes,
+as editable native vector cells. In a subnet the glyph represents that cluster's
+Kubernetes API endpoint, not Oracle's managed control-plane VMs. Unknown endpoint
+placement falls back to the known VCN or compartment; no substitute VM icon is used.

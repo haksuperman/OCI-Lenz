@@ -1,0 +1,11 @@
+# 검증 결과
+- 전체 unittest 449개 통과. 새 배지 테스트 5개 포함.
+- harness 구조 검사, git diff --check 통과.
+- 가상 및 기존 실제 스냅샷을 저장 배치로 재렌더링. 추가 OCI 조회/AI 호출 없음.
+- 동일 배치 XML 정확 재생성, 모든 PNG chunk CRC 검증.
+- 공식 OKE 네이티브 glyph와 둥근 역할 배지는 각각 편집 가능한 mxCell.
+- 실제 리소스 위치·부모 불변, 확인된 Pod Subnet에 배지 1개.
+- 가상 PNG와 실제 데이터의 익명화 미리보기 생성. 가상 PNG에서 배지·아이콘·제목 잘림 없음.
+- 양쪽 결과 title/resource intersections 0. 가상 quality clear.
+- 실제 기존 배치의 unbridged crossings 2개는 그대로 남아 needs_review이며 이 작업에서 재배치하지 않음.
+- 실제 자료/산출물은 저장소 밖 유지. commit/push 미수행.

@@ -26,10 +26,12 @@ def network_label(resource,prefix):
 
 def prepare_display(snapshot,redact=False):
     result=copy.deepcopy(snapshot)
+    from .oke import annotate_networks
+    annotate_networks(result['resources'])
     result.setdefault('presentation',{})['redacted']=redact
     from .database_services import DB_SYSTEMS,node_owner,MODELS
     nodes,_=graph(result)
-    aliases={'file_system':'File System','mount_target':'Mount Target','file_export':'Export','api_gateway':'API Gateway','api_deployment':'API Deployment','functions_application':'Functions Application','function':'Function','goldengate_deployment':'OCI GoldenGate','object_storage_bucket':'Object Storage bucket','container_repository':'Container Registry','devops_project':'DevOps project','devops_repository':'Code repository','devops_build_pipeline':'Build pipeline','devops_deploy_pipeline':'Deploy pipeline','devops_deploy_environment':'Deploy environment','compute':'VM','lb':'LB','nlb':'NLB','waf':'WAF','edge_waf':'Edge WAF','edge_origin':'Origin','nosql_table':'NoSQL table','oci_cache':'OCI Cache','postgresql_db_system':'PostgreSQL','opensearch_cluster':'OpenSearch','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','drg':'DRG','lpg':'LPG','rpc':'RPC','virtual_circuit':'FastConnect','cross_connect':'CrossConnect','cross_connect_group':'CrossConnect group','cpe':'CPE','ipsec':'IPSec VPN','ipsec_tunnel':'VPN tunnel','db_system':'Base DB','db_node':'DB Node','unknown':'대상 미확인'}
+    aliases={'oke_cluster':'OKE','file_system':'File System','mount_target':'Mount Target','file_export':'Export','api_gateway':'API Gateway','api_deployment':'API Deployment','functions_application':'Functions Application','function':'Function','goldengate_deployment':'OCI GoldenGate','object_storage_bucket':'Object Storage bucket','container_repository':'Container Registry','devops_project':'DevOps project','devops_repository':'Code repository','devops_build_pipeline':'Build pipeline','devops_deploy_pipeline':'Deploy pipeline','devops_deploy_environment':'Deploy environment','compute':'VM','lb':'LB','nlb':'NLB','waf':'WAF','edge_waf':'Edge WAF','edge_origin':'Origin','nosql_table':'NoSQL table','oci_cache':'OCI Cache','postgresql_db_system':'PostgreSQL','opensearch_cluster':'OpenSearch','backend_set':'Backend set','vnic':'VNIC','vcn':'VCN','subnet':'Subnet','route':'RT','nsg':'NSG','nat':'NAT','internet':'IGW','service':'SGW','drg':'DRG','lpg':'LPG','rpc':'RPC','virtual_circuit':'FastConnect','cross_connect':'CrossConnect','cross_connect_group':'CrossConnect group','cpe':'CPE','ipsec':'IPSec VPN','ipsec_tunnel':'VPN tunnel','db_system':'Base DB','db_node':'DB Node','unknown':'대상 미확인'}
     aliases.update({kind:kind.replace('_',' ').title() for kind in MODELS})
     alias={k:aliases.get(r['kind'],r['kind'])+' '+str(i+1) for i,(k,r) in enumerate(sorted(nodes.items()))}
     for r in result['resources']:
@@ -37,6 +39,11 @@ def prepare_display(snapshot,redact=False):
         r.pop('summary_details',None)
         if redact:
             r['name']=alias[r['id']]
+            if r['kind']=='oke_cluster':
+                from .oke import caption_role
+                r['display_details']=[caption_role(r,nodes)];r['summary_details']=list(r['display_details'])
+            if r['kind']=='subnet' and r.get('oke_pod_cluster_ids'):
+                r['display_details']=['OKE Pod network'];r['summary_details']=['OKE Pod network']
             for rule in r.get('rules',[]):
                 if rule.get('destination')!='0.0.0.0/0':rule['destination']='Route destination hidden'
             continue
@@ -107,6 +114,13 @@ def prepare_display(snapshot,redact=False):
         if r['kind']=='edge_waf':
             details.append('Origin status: '+r.get('origin_status','unavailable'))
             details.extend('Origin '+o['key']+': '+(o.get('host') or '대상 미확인') for o in r.get('origins',[]))
+        if r['kind']=='oke_cluster':
+            from .oke import caption_role
+            role=caption_role(r,nodes);details.insert(0,role)
+            summary=[role]+(summary if role=='OKE API Endpoint' else [])
+            details.extend('Pod subnet: '+nodes.get(key,{}).get('name','대상 미확인') for pool in r.get('node_pool_networks',[]) for key in pool.get('pod_subnet_ids',[]))
+        if r['kind']=='subnet' and r.get('oke_pod_cluster_ids'):
+            details.append('OKE Pod network');summary.append('OKE Pod network')
         r['display_details']=details
         r['summary_details']=['IP: '+ip for ip in private] if r['kind'] in DB_SYSTEMS else summary
     if redact:

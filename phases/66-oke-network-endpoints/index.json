@@ -1,0 +1,29 @@
+{
+  "project": "OCI-Lenz",
+  "phase": "66-oke-network-endpoints",
+  "steps": [
+    {
+      "step": 0,
+      "name": "read-only-oke-endpoint-and-network-display",
+      "status": "pending",
+      "ac": [
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_oke",
+          "-v"
+        ],
+        [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ]
+      ]
+    }
+  ]
+}
